@@ -20,15 +20,27 @@ import pandas as pd
 
 from agent.stan.journal import Journal
 from agent.stan.persona import pct, signed_pct
-from agent.stan.study import StudyConfig, build_panel, find_lessons, summarize, walk_forward
+from agent.stan.strategies import stress_test
+from agent.stan.study import StudyConfig, build_panel, find_lessons, luck_test, summarize, walk_forward
 
-DEFAULT_SYMBOLS = ("SPY", "QQQ", "AAPL", "MSFT", "NVDA", "AMD", "TSLA", "IWM")
+# The 8 stocks from Stan's first term. Several were picked knowing they became huge
+# winners, so the stress tests check his strategy on the other stocks separately.
+ORIGINAL_EIGHT = ("SPY", "QQQ", "AAPL", "MSFT", "NVDA", "AMD", "TSLA", "IWM")
+# Term 2 universe: big, liquid names from every sector, including long-time laggards
+# (INTC, PFE, BA, MMM, T, VZ, F, C), so the test is not only past winners.
+DEFAULT_SYMBOLS = ORIGINAL_EIGHT + (
+    "DIA", "AMZN", "GOOGL", "META", "JPM", "BAC", "WFC", "GS", "C", "XOM", "CVX",
+    "JNJ", "PFE", "MRK", "UNH", "KO", "PEP", "PG", "WMT", "HD", "MCD", "NKE", "DIS",
+    "INTC", "CSCO", "ORCL", "IBM", "T", "VZ", "BA", "CAT", "GE", "MMM", "F", "GM",
+)
 CURRICULUM = [
     ("collect", "Collect 15 years of price history"),
     ("features", "Turn prices into signals I can study"),
     ("regimes", "Learn the eras: bull, bear and sideways years"),
     ("exams", "Sit an exam on every year I have not seen"),
     ("review", "Review my wins and losses"),
+    ("selloff", "Strategy exam: buy after a sharp selloff"),
+    ("stress", "Stress-test the selloff strategy"),
     ("report", "Write my report card"),
 ]
 
@@ -205,7 +217,7 @@ def run_training(
                               f"{signed_pct(best['ret'])} in {best['days']} day(s).", "win")
         pause()
 
-    exams, trades = walk_forward(panel, cfg, on_year)
+    exams, trades, daily = walk_forward(panel, cfg, on_year)
     if not exams:
         msg = (f"I need at least {cfg.min_train_years} years of history before my first exam, "
                "and I don't have that yet.")
@@ -213,8 +225,19 @@ def run_training(
         journal.think(msg, "fail")
         journal.set_meta("state", "stopped")
         return {}
-    summary = summarize(exams, trades)
+    journal.update_task("exams", 1.0, "Checking whether random entries would have done as well")
+    closes = {sym: df.sort_index()["close"].astype(float) for sym, df in history.items()}
+    luck = luck_test(trades, closes, cfg.cost_per_side, reps=cfg.luck_reps)
+    summary = summarize(exams, trades, daily, luck)
     journal.finish_task("exams", f"{summary['years_passed']} of {summary['years_tested']} exams passed")
+    if luck["p_value"] is not None:
+        beat = luck["p_value"] < 0.05
+        journal.think(
+            f"Luck test: my trades averaged {signed_pct(luck['actual_avg'], 2)} each. The same number of "
+            f"random entries in the same stocks and years averaged {signed_pct(luck['random_avg'], 2)} "
+            f"(p = {luck['p_value']}). " + ("My picks beat random timing." if beat else
+            "I can't tell my picks apart from random timing yet."),
+            "win" if beat else "fail", luck)
 
     # 5. review
     journal.start_task("review", "Sorting my trades by market condition")
@@ -222,7 +245,8 @@ def run_training(
     for lesson in lessons:
         e = lesson["evidence"]
         text = (f"Across {e['trades']} trades {e['when']}, I won {pct(e['win_rate'])} with an average of "
-                f"{signed_pct(e['avg_return'], 2)} per trade. My overall win rate is {pct(e['overall_win_rate'])}.")
+                f"{signed_pct(e['avg_return'], 2)} per trade. Overall I win {pct(e['overall_win_rate'])} and "
+                f"average {signed_pct(e['overall_avg'], 2)}.")
         if lesson["kind"] == "mistake":
             text += " Next step: trade smaller or stand aside in these conditions, then retest."
         else:
@@ -231,10 +255,52 @@ def run_training(
         journal.think(f"Lesson: {lesson['title']}. {text}", "lesson")
         pause()
     if not lessons:
-        journal.think("I don't have enough trades in any one condition to draw a fair lesson yet.", "thought")
+        journal.think("No market condition stands out clearly from my average, so I have no fair lesson "
+                      "to draw yet.", "thought")
     journal.finish_task("review", f"{len(lessons)} lesson(s) written down")
 
-    # 6. report
+    # 6. selloff strategy exam
+    journal.start_task("selloff", f"Testing on {len(history)} stocks, every year")
+    journal.think("Time for my first named strategy: the selloff bounce. When a stock's RSI closes under 30, "
+                  "I buy at the next morning's open and sell when RSI recovers to 50 or after 10 days. "
+                  "It needs no training, so every year is a fair test.", "milestone")
+    strategy_checks: list[dict] = []
+
+    def on_check(item: dict) -> None:
+        strategy_checks.append(item)
+        done = len(strategy_checks)
+        task = "selloff" if done <= 2 else "stress"
+        if done == 3:
+            journal.finish_task("selloff", "Year-by-year results recorded")
+            journal.start_task("stress", "Trying to break it")
+        progress = done / 2 if task == "selloff" else (done - 2) / 8
+        journal.update_task(task, min(1.0, progress), item["name"])
+        if item["key"] == "years":
+            for y in item["data"].get("by_year", []):
+                if y["trades"]:
+                    journal.think(f"Selloff bounce in {y['year']}: {y['trades']} trades, won {pct(y['win_rate'])}, "
+                                  f"average {signed_pct(y['avg'], 2)} per trade.",
+                                  "win" if (y["avg"] or 0) > 0 else "fail", y)
+                    pause()
+        verdict = "Passed" if item["passed"] else "Failed"
+        journal.think(f"Stress test, {verdict.lower()}: {item['name']}. {item['detail']}.",
+                      "win" if item["passed"] else "fail", {"check": item["key"]})
+        pause()
+
+    strategy = stress_test(history, list(ORIGINAL_EIGHT), on_check=on_check, luck_reps=cfg.luck_reps)
+    journal.finish_task("stress", f"Passed {strategy['checks_passed']} of {strategy['checks_total']} stress tests")
+    journal.set_meta("strategy", strategy)
+    if strategy["verdict"] == "real_edge":
+        journal.think("The selloff bounce survived every stress test I threw at it. That's my first real edge.",
+                      "milestone")
+    elif strategy["verdict"] == "promising":
+        journal.think(f"The selloff bounce passed {strategy['checks_passed']} of {strategy['checks_total']} stress "
+                      "tests. Promising, not proven. I'll study the ones it failed.", "lesson")
+    else:
+        journal.think(f"The selloff bounce passed only {strategy['checks_passed']} of {strategy['checks_total']} "
+                      "stress tests. It isn't a real edge yet.", "fail")
+
+    # 7. report
     journal.start_task("report", "Adding it all up")
     journal.set_meta("summary", summary)
     edge = summary["accuracy"] - summary["baseline_up"]
@@ -247,8 +313,20 @@ def run_training(
             f"Trading: {summary['trades']} trades, won {pct(summary['win_rate'])}, profit factor "
             f"{summary['profit_factor']}. $1 with me became ${summary['stan_growth']:.2f}. "
             f"$1 simply held became ${summary['hold_growth']:.2f}.", "progress")
-    if summary["ready_for_paper"]:
+        extra = []
+        if summary.get("spy_growth"):
+            extra.append(f"$1 in SPY alone became ${summary['spy_growth']:.2f}")
+        if summary.get("max_dd") is not None:
+            extra.append(f"my worst drop was {pct(summary['max_dd'])} vs {pct(summary['hold_max_dd'])} holding")
+        if summary.get("per_day_invested") is not None:
+            extra.append(f"I was invested {pct(summary['exposure'])} of the time, earning "
+                         f"{signed_pct(summary['per_day_invested'], 3)} per day invested vs "
+                         f"{signed_pct(summary['per_day_hold'], 3)} per day holding")
+        if extra:
+            journal.think("Fair comparison: " + "; ".join(extra) + ".", "progress")
+    if summary["ready_for_paper"] or strategy["verdict"] == "real_edge":
         journal.set_meta("stage", "paper_candidate")
+    if summary["ready_for_paper"]:
         verdict = ("I cleared my bar: I win at least half my trades, make more than I lose, and beat "
                    "holding after costs. I'm ready to try paper trading. Still no real money.")
         journal.think(verdict, "milestone")
@@ -260,10 +338,15 @@ def run_training(
             reasons.append("I lose more than I make")
         if summary["stan_growth"] <= summary["hold_growth"]:
             reasons.append("simply holding beat me")
-        verdict = ("I'm not ready to trade yet: " + "; ".join(reasons) + ". "
-                   "That's the honest result. I stay in school and work on my lessons.")
+        verdict = ("My all-round model isn't ready to trade: " + "; ".join(reasons) + ". "
+                   "That's the honest result, and I keep working on it.")
         journal.think(verdict, "fail")
-    journal.finish_task("report", "Ready for paper trading" if summary["ready_for_paper"] else "Not ready yet")
+    if not summary["ready_for_paper"] and strategy["verdict"] == "real_edge":
+        journal.think("My overall model still loses to simply holding, but the selloff bounce passed every "
+                      "stress test. That earns it a paper-trading trial on its own. Still no real money.",
+                      "milestone")
+    ready_any = summary["ready_for_paper"] or strategy["verdict"] == "real_edge"
+    journal.finish_task("report", "Ready for paper trading" if ready_any else "Not ready yet")
     journal.set_meta("state", "finished")
     return summary
 
