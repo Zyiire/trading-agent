@@ -50,6 +50,52 @@ Your phone and computer must be on the same Wi-Fi. The app has four tabs:
    wins at least half his trades, makes more than he loses, and beats simply
    holding after costs.
 
+### Term 2: stress tests
+
+Stan now studies 43 big stocks from every sector (including long-time laggards
+like INTC, PFE, BA and T), not just 8 famous winners. His report card adds:
+
+- **Fair comparison:** SPY alone, time invested, return per day invested, and worst drop.
+- **Luck test:** would random entries in the same stocks and years have done as well?
+- **Strategy exam:** his "selloff bounce" (buy at the next open after RSI closes
+  under 30, sell when RSI reaches 50 or after 10 days), which must survive 10
+  stress tests: basic profitability at 0.10% costs, 70% of years profitable, the
+  luck test, 0.25% costs, entry timing, 12 nearby settings, stocks he never
+  studied, both market trends, return per day invested, and worst drop.
+
+He earns the "Paper Trader (candidate)" rank if his all-round model beats holding,
+or if the selloff bounce passes every stress test. A real run takes a few minutes.
+
+### Shadow trading (practice on live days, no orders)
+
+Once a day after the market closes, Stan:
+
+1. **Follows the selloff bounce live** on days that happen after shadowing starts,
+   and compares the results with what the backtest promised. Closed trades are
+   recorded once and never rewritten.
+2. **Makes beat-or-lag calls.** To break the "always guess up" habit, he no longer
+   calls whether stocks go up. Every day he names 5 stocks he expects to **beat**
+   SPY tomorrow and 5 he expects to **lag** it, then grades yesterday's calls.
+   About half of all stocks beat the market on any day, so always saying "beat"
+   earns nothing, and he always makes as many lag calls as beat calls.
+
+Run it by hand:
+
+```bash
+python -m agent.stan.shadow          # one daily run (after 4:30pm ET)
+python -m agent.stan.shadow --demo   # replay 40 days of practice data
+```
+
+To run it automatically on Windows: open **Task Scheduler**, choose **Create Basic
+Task**, set it to **Daily** at **4:45 PM**, pick **Start a program**, and browse to
+`run_shadow.bat` in this folder. Then open the task's properties and, under
+**Triggers**, edit it to repeat on weekdays only. The PC has to be on (asleep is
+fine if you tick **Wake the computer to run this task** under **Conditions**).
+Output goes to `data/shadow.log`, and results show in the app's **Shadow** tab.
+
+Live results need roughly 100 closed trades (about 3 to 4 months) before they
+say much. Rerunning Stan's school never erases his shadow history.
+
 Stan's thoughts are written from the real numbers his training produces. They
 are templates filled with results, not a chatbot. A local language model for
 richer explanations comes later in the plan.
@@ -96,7 +142,7 @@ set to $50).
 | `agent/broker/alpaca.py` | Alpaca adapter (read-only) |
 | `agent/store.py` | SQLite tables: daily bars, option snapshots, account snapshots |
 | `agent/jobs/` | Alpaca connection check, price download, options snapshots |
-| `agent/stan/` | Stan: persona, journal, study method, training school |
+| `agent/stan/` | Stan: persona, journal, study method, training school, strategies, shadow trading |
 | `agent/api.py` | Read-only API for the phone app |
 | `stan-app/` | Expo (React Native) iPhone app |
 | `tests/` | Offline tests using fake Alpaca clients |

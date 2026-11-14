@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from agent.stan.journal import Journal
 from agent.stan.persona import STAN, rank_for
+from agent.stan.shadow import ShadowBook, snapshot
 
 
 def create_app(journal_path: str | Path = "data/stan.db", token: str | None = None) -> FastAPI:
@@ -52,6 +53,7 @@ def create_app(journal_path: str | Path = "data/stan.db", token: str | None = No
             "tasks_done": done,
             "tasks_total": len(tasks),
             "summary": meta.get("summary"),
+            "strategy": meta.get("strategy"),
         }
 
     @app.get("/tasks", dependencies=[Depends(auth)])
@@ -69,6 +71,14 @@ def create_app(journal_path: str | Path = "data/stan.db", token: str | None = No
     @app.get("/lessons", dependencies=[Depends(auth)])
     def lessons(j: Journal = Depends(journal)) -> list[dict]:
         return j.lessons()
+
+    @app.get("/shadow", dependencies=[Depends(auth)])
+    def shadow() -> dict:
+        book = ShadowBook(journal_path)
+        try:
+            return snapshot(book)
+        finally:
+            book.close()
 
     return app
 

@@ -22,7 +22,33 @@ export type Summary = {
   profit_factor: number | null;
   stan_growth: number;
   hold_growth: number;
+  spy_growth?: number | null;
+  exposure?: number;
+  per_day_invested?: number | null;
+  per_day_hold?: number | null;
+  max_dd?: number | null;
+  hold_max_dd?: number | null;
+  luck?: { p_value: number | null; actual_avg: number | null; random_avg: number | null } | null;
   ready_for_paper: boolean;
+};
+
+export type StrategyCheck = { key: string; name: string; passed: boolean; detail: string };
+
+export type Strategy = {
+  name: string;
+  rule: string;
+  cost: number;
+  stocks: number;
+  score: { trades: number; win_rate: number | null; profit_factor: number | null; avg: number | null };
+  by_year: { year: number; trades: number; win_rate: number | null; profit_factor: number | null; avg: number | null }[];
+  versus: {
+    growth: number; hold_growth: number; spy_growth: number | null; exposure: number;
+    per_day_invested: number; per_day_hold: number; max_dd: number; hold_max_dd: number;
+  };
+  checks: StrategyCheck[];
+  checks_passed: number;
+  checks_total: number;
+  verdict: 'real_edge' | 'promising' | 'not_proven';
 };
 
 export type StanProfile = {
@@ -39,6 +65,7 @@ export type StanProfile = {
   tasks_done: number;
   tasks_total: number;
   summary: Summary | null;
+  strategy?: Strategy | null;
 };
 
 export type ThoughtKind = 'thought' | 'progress' | 'win' | 'fail' | 'lesson' | 'milestone';
@@ -54,6 +81,9 @@ export type Exam = {
   profit_factor: number | null;
   stan_return: number;
   hold_return: number;
+  spy_return?: number | null;
+  exposure?: number;
+  max_dd?: number;
   passed: boolean;
   beat_hold: boolean;
 };
@@ -64,6 +94,53 @@ import demo from './demo.json';
 
 // Typing "demo" as the server address shows a saved practice run, with no server needed.
 export const DEMO = 'demo';
+
+export type ShadowPosition = {
+  symbol: string;
+  signal_date: string;
+  status: 'pending' | 'open' | 'closed';
+  entry_date: string | null;
+  entry_price: number | null;
+  exit_date: string | null;
+  exit_price: number | null;
+  last_price: number | null;
+  days: number | null;
+  net_ret: number | null;
+};
+
+export type ShadowCall = {
+  made_on: string;
+  symbol: string;
+  call: 'beat' | 'lag';
+  p_beat: number;
+  graded: number;
+  correct: number | null;
+  stock_ret: number | null;
+  market_ret: number | null;
+};
+
+export type Shadow = {
+  started: string | null;
+  last_day: string | null;
+  mode: 'demo' | 'real' | 'none';
+  rule: string | null;
+  expected: { win_rate: number | null; avg: number | null; profit_factor: number | null } | null;
+  selloff: {
+    stats: { open: number; pending: number; closed: number; win_rate: number | null; avg: number | null; profit_factor: number | null; needed: number };
+    open: ShadowPosition[];
+    recent_closed: ShadowPosition[];
+  };
+  calls: {
+    stats: {
+      graded: number; days_graded: number; hit_rate: number | null; beat_hit_rate: number | null;
+      lag_hit_rate: number | null; always_beat_rate: number | null; avg_daily_spread: number | null;
+      total_spread: number | null; beat_share_recent: number | null;
+    };
+    latest_day: string | null;
+    latest: ShadowCall[];
+  };
+  log: { id: number; day: string; kind: ThoughtKind; text: string }[];
+};
 
 export function cleanUrl(url: string): string {
   return url.trim().replace(/\/+$/, '');
