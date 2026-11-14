@@ -60,11 +60,24 @@ export type Exam = {
 
 export type Lesson = { id: number; kind: 'mistake' | 'strength'; title: string; text: string };
 
+import demo from './demo.json';
+
+// Typing "demo" as the server address shows a saved practice run, with no server needed.
+export const DEMO = 'demo';
+
 export function cleanUrl(url: string): string {
   return url.trim().replace(/\/+$/, '');
 }
 
 export async function getJson<T>(baseUrl: string, path: string, token: string): Promise<T> {
+  if (cleanUrl(baseUrl).toLowerCase() === DEMO) {
+    const key = path.split('?')[0] as keyof typeof demo;
+    if (key === '/thoughts') {
+      const after = Number(/after=(\d+)/.exec(path)?.[1] ?? 0);
+      return demo['/thoughts'].filter((t) => t.id > after) as T;
+    }
+    return demo[key] as T;
+  }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 6000);
   try {

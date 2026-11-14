@@ -1,0 +1,586 @@
+{
+ "/stan": {
+  "name": "Stan",
+  "title": "Trader in training",
+  "goal": "Become a top-tier day trader, one honest test at a time.",
+  "bio": "Stan studies market history, sits a test on every year he has not seen, and keeps a journal of what his wins and losses teach him. He trades paper money until he earns real money.",
+  "principles": [
+   "No emotions. Only rules and evidence.",
+   "Every loss gets written down and studied.",
+   "A result only counts on data I have never seen.",
+   "Beating a coin flip is not enough. I have to beat simply holding.",
+   "Protect the account first. Profit second."
+  ],
+  "rank": {
+   "key": "student",
+   "name": "Student",
+   "description": "Studying history. No trading yet.",
+   "level": 1,
+   "of": 5,
+   "next": "Paper Trader (candidate)"
+  },
+  "run_id": null,
+  "mode": "demo",
+  "state": "finished",
+  "current_task": null,
+  "tasks_done": 6,
+  "tasks_total": 6,
+  "summary": {
+   "years_tested": 10,
+   "years_passed": 4,
+   "years_beat_hold": 4,
+   "accuracy": 0.5135,
+   "baseline_up": 0.5084,
+   "trades": 474,
+   "win_rate": 0.4937,
+   "profit_factor": 0.832,
+   "stan_growth": 0.902,
+   "hold_growth": 2.3573,
+   "ready_for_paper": false
+  }
+ },
+ "/tasks": [
+  {
+   "id": 1,
+   "key": "collect",
+   "title": "Collect 15 years of price history",
+   "status": "done",
+   "progress": 1.0,
+   "detail": "8 stocks, 30,240 trading days, 14.5 years",
+   "started_at": "2026-11-14T16:38:18+00:00",
+   "finished_at": "2026-11-14T16:38:18+00:00"
+  },
+  {
+   "id": 2,
+   "key": "features",
+   "title": "Turn prices into signals I can study",
+   "status": "done",
+   "progress": 1.0,
+   "detail": "28,224 study rows, 14 signals each",
+   "started_at": "2026-11-14T16:38:18+00:00",
+   "finished_at": "2026-11-14T16:38:18+00:00"
+  },
+  {
+   "id": 3,
+   "key": "regimes",
+   "title": "Learn the eras: bull, bear and sideways years",
+   "status": "done",
+   "progress": 1.0,
+   "detail": "7 bull, 4 bear, 4 sideways years",
+   "started_at": "2026-11-14T16:38:18+00:00",
+   "finished_at": "2026-11-14T16:38:18+00:00"
+  },
+  {
+   "id": 4,
+   "key": "exams",
+   "title": "Sit an exam on every year I have not seen",
+   "status": "done",
+   "progress": 1.0,
+   "detail": "4 of 10 exams passed",
+   "started_at": "2026-11-14T16:38:18+00:00",
+   "finished_at": "2026-11-14T16:38:20+00:00"
+  },
+  {
+   "id": 5,
+   "key": "review",
+   "title": "Review my wins and losses",
+   "status": "done",
+   "progress": 1.0,
+   "detail": "2 lesson(s) written down",
+   "started_at": "2026-11-14T16:38:20+00:00",
+   "finished_at": "2026-11-14T16:38:20+00:00"
+  },
+  {
+   "id": 6,
+   "key": "report",
+   "title": "Write my report card",
+   "status": "done",
+   "progress": 1.0,
+   "detail": "Not ready yet",
+   "started_at": "2026-11-14T16:38:20+00:00",
+   "finished_at": "2026-11-14T16:38:20+00:00"
+  }
+ ],
+ "/thoughts": [
+  {
+   "id": 1,
+   "ts": "2026-11-14T16:38:18+00:00",
+   "kind": "milestone",
+   "text": "Day one of school. No trades until I pass my exams. Let's study."
+  },
+  {
+   "id": 2,
+   "ts": "2026-11-14T16:38:18+00:00",
+   "kind": "thought",
+   "text": "Heads up: this is practice data, not real market history. The numbers show how I work, not how real markets behave."
+  },
+  {
+   "id": 3,
+   "ts": "2026-11-14T16:38:18+00:00",
+   "kind": "progress",
+   "text": "I have 30,240 days of prices across 8 stocks from practice data (demo), covering 14.5 years."
+  },
+  {
+   "id": 4,
+   "ts": "2026-11-14T16:38:18+00:00",
+   "kind": "progress",
+   "text": "Built 28,224 study rows. Each one holds only what I could have known at that day's close. No peeking at tomorrow."
+  },
+  {
+   "id": 5,
+   "ts": "2026-11-14T16:38:18+00:00",
+   "kind": "thought",
+   "text": "2012: SPY went +15.6% with a worst drop of -7.4%. I'm filing that as a bull year."
+  },
+  {
+   "id": 6,
+   "ts": "2026-11-14T16:38:18+00:00",
+   "kind": "thought",
+   "text": "2013: SPY went +9.4% with a worst drop of -25.1%. I'm filing that as a sideways year."
+  },
+  {
+   "id": 7,
+   "ts": "2026-11-14T16:38:18+00:00",
+   "kind": "thought",
+   "text": "2014: SPY went +26.7% with a worst drop of -18.4%. I'm filing that as a bull year."
+  },
+  {
+   "id": 8,
+   "ts": "2026-11-14T16:38:18+00:00",
+   "kind": "thought",
+   "text": "2015: SPY went -25.8% with a worst drop of -53.5%. I'm filing that as a bear year."
+  },
+  {
+   "id": 9,
+   "ts": "2026-11-14T16:38:18+00:00",
+   "kind": "thought",
+   "text": "2016: SPY went +15.4% with a worst drop of -23.5%. I'm filing that as a bull year."
+  },
+  {
+   "id": 10,
+   "ts": "2026-11-14T16:38:18+00:00",
+   "kind": "thought",
+   "text": "2017: SPY went +51.0% with a worst drop of -15.0%. I'm filing that as a bull year."
+  },
+  {
+   "id": 11,
+   "ts": "2026-11-14T16:38:18+00:00",
+   "kind": "thought",
+   "text": "2018: SPY went -22.0% with a worst drop of -29.3%. I'm filing that as a bear year."
+  },
+  {
+   "id": 12,
+   "ts": "2026-11-14T16:38:18+00:00",
+   "kind": "thought",
+   "text": "2019: SPY went +24.4% with a worst drop of -20.3%. I'm filing that as a bull year."
+  },
+  {
+   "id": 13,
+   "ts": "2026-11-14T16:38:18+00:00",
+   "kind": "thought",
+   "text": "2020: SPY went +26.6% with a worst drop of -16.2%. I'm filing that as a bull year."
+  },
+  {
+   "id": 14,
+   "ts": "2026-11-14T16:38:18+00:00",
+   "kind": "thought",
+   "text": "2021: SPY went -3.2% with a worst drop of -23.3%. I'm filing that as a sideways year."
+  },
+  {
+   "id": 15,
+   "ts": "2026-11-14T16:38:18+00:00",
+   "kind": "thought",
+   "text": "2022: SPY went +26.5% with a worst drop of -15.9%. I'm filing that as a bull year."
+  },
+  {
+   "id": 16,
+   "ts": "2026-11-14T16:38:18+00:00",
+   "kind": "thought",
+   "text": "2023: SPY went +1.3% with a worst drop of -23.2%. I'm filing that as a sideways year."
+  },
+  {
+   "id": 17,
+   "ts": "2026-11-14T16:38:18+00:00",
+   "kind": "thought",
+   "text": "2024: SPY went -14.7% with a worst drop of -42.2%. I'm filing that as a bear year."
+  },
+  {
+   "id": 18,
+   "ts": "2026-11-14T16:38:18+00:00",
+   "kind": "thought",
+   "text": "2025: SPY went +7.8% with a worst drop of -32.6%. I'm filing that as a sideways year."
+  },
+  {
+   "id": 19,
+   "ts": "2026-11-14T16:38:18+00:00",
+   "kind": "thought",
+   "text": "2026: SPY went -24.0% with a worst drop of -32.9%. I'm filing that as a bear year."
+  },
+  {
+   "id": 20,
+   "ts": "2026-11-14T16:38:18+00:00",
+   "kind": "thought",
+   "text": "Mostly up years means always guessing 'up' looks smart. I have to beat that, not just beat a coin flip."
+  },
+  {
+   "id": 21,
+   "ts": "2026-11-14T16:38:19+00:00",
+   "kind": "win",
+   "text": "2017 exam: 212 trades, won 55.2%, profit factor 1.133. I made +2.4% and trailed simply holding (+32.0%). Passed."
+  },
+  {
+   "id": 22,
+   "ts": "2026-11-14T16:38:19+00:00",
+   "kind": "fail",
+   "text": "Worst trade of 2017: SPY on Nov 27, -6.7% in 10 day(s). Logged for review."
+  },
+  {
+   "id": 23,
+   "ts": "2026-11-14T16:38:19+00:00",
+   "kind": "win",
+   "text": "Best trade of 2017: AMD on Nov 10, +12.9% in 6 day(s)."
+  },
+  {
+   "id": 24,
+   "ts": "2026-11-14T16:38:19+00:00",
+   "kind": "fail",
+   "text": "2018 exam: 134 trades, won 40.3%, profit factor 0.484. I made -10.5% and beat simply holding (-36.2%). Failed."
+  },
+  {
+   "id": 25,
+   "ts": "2026-11-14T16:38:19+00:00",
+   "kind": "fail",
+   "text": "Worst trade of 2018: TSLA on Apr 04, -11.6% in 12 day(s). Logged for review."
+  },
+  {
+   "id": 26,
+   "ts": "2026-11-14T16:38:19+00:00",
+   "kind": "win",
+   "text": "Best trade of 2018: AMD on Jul 25, +4.1% in 1 day(s)."
+  },
+  {
+   "id": 27,
+   "ts": "2026-11-14T16:38:19+00:00",
+   "kind": "fail",
+   "text": "2019 exam: 10 trades, won 40.0%, profit factor 0.414. I made -0.7% and trailed simply holding (+10.8%). Failed."
+  },
+  {
+   "id": 28,
+   "ts": "2026-11-14T16:38:19+00:00",
+   "kind": "fail",
+   "text": "Worst trade of 2019: IWM on Jun 06, -2.4% in 1 day(s). Logged for review."
+  },
+  {
+   "id": 29,
+   "ts": "2026-11-14T16:38:19+00:00",
+   "kind": "win",
+   "text": "Best trade of 2019: MSFT on Feb 13, +1.6% in 2 day(s)."
+  },
+  {
+   "id": 30,
+   "ts": "2026-11-14T16:38:19+00:00",
+   "kind": "thought",
+   "text": "2020 exam: I was never confident enough to trade, so I sat in cash. Holding did +39.5%."
+  },
+  {
+   "id": 31,
+   "ts": "2026-11-14T16:38:19+00:00",
+   "kind": "win",
+   "text": "2021 exam: 3 trades, won 66.7%, profit factor 2.143. I made +0.2% and beat simply holding (-5.2%). Passed."
+  },
+  {
+   "id": 32,
+   "ts": "2026-11-14T16:38:19+00:00",
+   "kind": "fail",
+   "text": "Worst trade of 2021: IWM on Mar 10, -1.4% in 1 day(s). Logged for review."
+  },
+  {
+   "id": 33,
+   "ts": "2026-11-14T16:38:19+00:00",
+   "kind": "win",
+   "text": "Best trade of 2021: TSLA on Aug 09, +2.2% in 1 day(s)."
+  },
+  {
+   "id": 34,
+   "ts": "2026-11-14T16:38:19+00:00",
+   "kind": "win",
+   "text": "2022 exam: 13 trades, won 69.2%, profit factor 2.7. I made +1.4% and trailed simply holding (+59.3%). Passed."
+  },
+  {
+   "id": 35,
+   "ts": "2026-11-14T16:38:19+00:00",
+   "kind": "fail",
+   "text": "Worst trade of 2022: AMD on Jan 04, -2.6% in 2 day(s). Logged for review."
+  },
+  {
+   "id": 36,
+   "ts": "2026-11-14T16:38:19+00:00",
+   "kind": "win",
+   "text": "Best trade of 2022: SPY on Sep 06, +3.4% in 1 day(s)."
+  },
+  {
+   "id": 37,
+   "ts": "2026-11-14T16:38:19+00:00",
+   "kind": "fail",
+   "text": "2023 exam: 17 trades, won 52.9%, profit factor 0.955. I made -0.1% and trailed simply holding (+23.1%). Failed."
+  },
+  {
+   "id": 38,
+   "ts": "2026-11-14T16:38:19+00:00",
+   "kind": "fail",
+   "text": "Worst trade of 2023: MSFT on Jun 19, -5.1% in 2 day(s). Logged for review."
+  },
+  {
+   "id": 39,
+   "ts": "2026-11-14T16:38:19+00:00",
+   "kind": "win",
+   "text": "Best trade of 2023: MSFT on Jun 13, +2.7% in 3 day(s)."
+  },
+  {
+   "id": 40,
+   "ts": "2026-11-14T16:38:19+00:00",
+   "kind": "fail",
+   "text": "2024 exam: 43 trades, won 48.8%, profit factor 0.911. I made -0.5% and beat simply holding (-8.1%). Failed."
+  },
+  {
+   "id": 41,
+   "ts": "2026-11-14T16:38:19+00:00",
+   "kind": "fail",
+   "text": "Worst trade of 2024: AMD on Aug 26, -3.9% in 1 day(s). Logged for review."
+  },
+  {
+   "id": 42,
+   "ts": "2026-11-14T16:38:19+00:00",
+   "kind": "win",
+   "text": "Best trade of 2024: AMD on May 07, +4.0% in 1 day(s)."
+  },
+  {
+   "id": 43,
+   "ts": "2026-11-14T16:38:20+00:00",
+   "kind": "fail",
+   "text": "2025 exam: 17 trades, won 23.5%, profit factor 0.148. I made -2.0% and trailed simply holding (+21.1%). Failed."
+  },
+  {
+   "id": 44,
+   "ts": "2026-11-14T16:38:20+00:00",
+   "kind": "fail",
+   "text": "Worst trade of 2025: TSLA on Dec 26, -3.3% in 1 day(s). Logged for review."
+  },
+  {
+   "id": 45,
+   "ts": "2026-11-14T16:38:20+00:00",
+   "kind": "win",
+   "text": "Best trade of 2025: QQQ on Dec 18, +1.0% in 1 day(s)."
+  },
+  {
+   "id": 46,
+   "ts": "2026-11-14T16:38:20+00:00",
+   "kind": "win",
+   "text": "2026 exam: 25 trades, won 56.0%, profit factor 1.056. I made +0.1% and beat simply holding (-12.4%). Passed."
+  },
+  {
+   "id": 47,
+   "ts": "2026-11-14T16:38:20+00:00",
+   "kind": "fail",
+   "text": "Worst trade of 2026: AAPL on Jan 19, -8.0% in 12 day(s). Logged for review."
+  },
+  {
+   "id": 48,
+   "ts": "2026-11-14T16:38:20+00:00",
+   "kind": "win",
+   "text": "Best trade of 2026: AAPL on Feb 06, +5.8% in 12 day(s)."
+  },
+  {
+   "id": 49,
+   "ts": "2026-11-14T16:38:20+00:00",
+   "kind": "lesson",
+   "text": "Lesson: I do worst when the stock is overbought (RSI over 70). Across 37 trades when the stock is overbought (RSI over 70), I won 32.4% with an average of -0.84% per trade. My overall win rate is 49.4%. Next step: trade smaller or stand aside in these conditions, then retest."
+  },
+  {
+   "id": 50,
+   "ts": "2026-11-14T16:38:20+00:00",
+   "kind": "lesson",
+   "text": "Lesson: I do best when volatility is rising. Across 75 trades when volatility is rising, I won 50.7% with an average of +0.03% per trade. My overall win rate is 49.4%. Next step: check this holds on new data before I lean on it."
+  },
+  {
+   "id": 51,
+   "ts": "2026-11-14T16:38:20+00:00",
+   "kind": "progress",
+   "text": "Report card: on 10 unseen years I called direction right 51.3% of the time. Always guessing 'up' scores 50.8%, so my edge on direction is +0.5%."
+  },
+  {
+   "id": 52,
+   "ts": "2026-11-14T16:38:20+00:00",
+   "kind": "progress",
+   "text": "Trading: 474 trades, won 49.4%, profit factor 0.832. $1 with me became $0.90. $1 simply held became $2.36."
+  },
+  {
+   "id": 53,
+   "ts": "2026-11-14T16:38:20+00:00",
+   "kind": "fail",
+   "text": "I'm not ready to trade yet: I win fewer than half my trades; I lose more than I make; simply holding beat me. That's the honest result. I stay in school and work on my lessons."
+  }
+ ],
+ "/exams": [
+  {
+   "year": 2017,
+   "n_calls": 2080,
+   "accuracy": 0.5111,
+   "baseline_up": 0.5322,
+   "trades": 212,
+   "win_rate": 0.5519,
+   "profit_factor": 1.133,
+   "stan_return": 0.0239,
+   "hold_return": 0.3199,
+   "passed": true,
+   "beat_hold": false
+  },
+  {
+   "year": 2018,
+   "n_calls": 2088,
+   "accuracy": 0.5072,
+   "baseline_up": 0.455,
+   "trades": 134,
+   "win_rate": 0.403,
+   "profit_factor": 0.484,
+   "stan_return": -0.1049,
+   "hold_return": -0.3621,
+   "passed": false,
+   "beat_hold": true
+  },
+  {
+   "year": 2019,
+   "n_calls": 2088,
+   "accuracy": 0.4914,
+   "baseline_up": 0.4871,
+   "trades": 10,
+   "win_rate": 0.4,
+   "profit_factor": 0.414,
+   "stan_return": -0.0065,
+   "hold_return": 0.1076,
+   "passed": false,
+   "beat_hold": false
+  },
+  {
+   "year": 2020,
+   "n_calls": 2096,
+   "accuracy": 0.5267,
+   "baseline_up": 0.5363,
+   "trades": 0,
+   "win_rate": null,
+   "profit_factor": null,
+   "stan_return": 0.0,
+   "hold_return": 0.3947,
+   "passed": false,
+   "beat_hold": false
+  },
+  {
+   "year": 2021,
+   "n_calls": 2088,
+   "accuracy": 0.5067,
+   "baseline_up": 0.5096,
+   "trades": 3,
+   "win_rate": 0.6667,
+   "profit_factor": 2.143,
+   "stan_return": 0.002,
+   "hold_return": -0.0518,
+   "passed": true,
+   "beat_hold": true
+  },
+  {
+   "year": 2022,
+   "n_calls": 2080,
+   "accuracy": 0.5399,
+   "baseline_up": 0.5394,
+   "trades": 13,
+   "win_rate": 0.6923,
+   "profit_factor": 2.7,
+   "stan_return": 0.0136,
+   "hold_return": 0.5931,
+   "passed": true,
+   "beat_hold": false
+  },
+  {
+   "year": 2023,
+   "n_calls": 2080,
+   "accuracy": 0.501,
+   "baseline_up": 0.5096,
+   "trades": 17,
+   "win_rate": 0.5294,
+   "profit_factor": 0.955,
+   "stan_return": -0.001,
+   "hold_return": 0.2306,
+   "passed": false,
+   "beat_hold": false
+  },
+  {
+   "year": 2024,
+   "n_calls": 2096,
+   "accuracy": 0.5258,
+   "baseline_up": 0.499,
+   "trades": 43,
+   "win_rate": 0.4884,
+   "profit_factor": 0.911,
+   "stan_return": -0.0049,
+   "hold_return": -0.0814,
+   "passed": false,
+   "beat_hold": true
+  },
+  {
+   "year": 2025,
+   "n_calls": 2088,
+   "accuracy": 0.5235,
+   "baseline_up": 0.5177,
+   "trades": 17,
+   "win_rate": 0.2353,
+   "profit_factor": 0.148,
+   "stan_return": -0.0202,
+   "hold_return": 0.2112,
+   "passed": false,
+   "beat_hold": false
+  },
+  {
+   "year": 2026,
+   "n_calls": 1808,
+   "accuracy": 0.5,
+   "baseline_up": 0.4972,
+   "trades": 25,
+   "win_rate": 0.56,
+   "profit_factor": 1.056,
+   "stan_return": 0.0014,
+   "hold_return": -0.1237,
+   "passed": true,
+   "beat_hold": true
+  }
+ ],
+ "/lessons": [
+  {
+   "id": 1,
+   "ts": "2026-11-14T16:38:20+00:00",
+   "kind": "mistake",
+   "title": "I do worst when the stock is overbought (RSI over 70)",
+   "text": "Across 37 trades when the stock is overbought (RSI over 70), I won 32.4% with an average of -0.84% per trade. My overall win rate is 49.4%. Next step: trade smaller or stand aside in these conditions, then retest.",
+   "evidence": {
+    "when": "when the stock is overbought (RSI over 70)",
+    "trades": 37,
+    "win_rate": 0.3243,
+    "avg_return": -0.00838,
+    "overall_win_rate": 0.4937
+   }
+  },
+  {
+   "id": 2,
+   "ts": "2026-11-14T16:38:20+00:00",
+   "kind": "strength",
+   "title": "I do best when volatility is rising",
+   "text": "Across 75 trades when volatility is rising, I won 50.7% with an average of +0.03% per trade. My overall win rate is 49.4%. Next step: check this holds on new data before I lean on it.",
+   "evidence": {
+    "when": "when volatility is rising",
+    "trades": 75,
+    "win_rate": 0.5067,
+    "avg_return": 0.00033,
+    "overall_win_rate": 0.4937
+   }
+  }
+ ]
+}

@@ -5,7 +5,8 @@ import { FlatList, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput,
 import { Exam, Lesson, StanProfile, Task, Thought, ThoughtKind, getJson, pct, signedPct } from './src/api';
 
 // Set EXPO_PUBLIC_STAN_URL in stan-app/.env to your computer's address, e.g. http://192.168.1.20:8000
-const DEFAULT_URL = process.env.EXPO_PUBLIC_STAN_URL ?? 'http://localhost:8000';
+// With no address set, the app shows a saved practice run ("demo").
+const DEFAULT_URL = process.env.EXPO_PUBLIC_STAN_URL ?? 'demo';
 const DEFAULT_TOKEN = process.env.EXPO_PUBLIC_STAN_TOKEN ?? '';
 
 const C = {
@@ -98,6 +99,7 @@ export default function App() {
   const latest = thoughts[0];
 
   return (
+    <View style={s.outer}>
     <View style={s.screen}>
       <StatusBar style="light" />
       <View style={s.header}>
@@ -225,8 +227,10 @@ export default function App() {
           <ScrollView contentContainerStyle={s.pad} keyboardShouldPersistTaps="handled">
             <View style={s.card}>
               <Text style={s.label}>CONNECTION</Text>
-              <Text style={[s.text, { color: error ? C.bad : C.good }]}>{error ? `Not connected: ${error}` : 'Connected to Stan'}</Text>
-              <Text style={[s.dim, { marginTop: 12 }]}>Server address (your computer on the same Wi-Fi)</Text>
+              <Text style={[s.text, { color: error ? C.bad : url.trim().toLowerCase() === 'demo' ? C.warn : C.good }]}>
+                {error ? `Not connected: ${error}` : url.trim().toLowerCase() === 'demo' ? 'Showing a saved practice run (no server needed)' : 'Connected to Stan'}
+              </Text>
+              <Text style={[s.dim, { marginTop: 12 }]}>Server address (your computer on the same Wi-Fi), or type demo for a saved practice run</Text>
               <TextInput style={s.input} value={draftUrl} onChangeText={setDraftUrl} autoCapitalize="none" autoCorrect={false}
                 keyboardType="url" placeholder="http://192.168.1.20:8000" placeholderTextColor={C.dim} accessibilityLabel="Server address" />
               <Text style={[s.dim, { marginTop: 12 }]}>Token (only if you set STAN_API_TOKEN)</Text>
@@ -258,6 +262,7 @@ export default function App() {
         ))}
       </View>
     </View>
+    </View>
   );
 }
 
@@ -272,7 +277,8 @@ function Stat({ label, value, note }: { label: string; value: string; note: stri
 }
 
 const s = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: C.bg, paddingTop: Platform.OS === 'ios' ? 56 : 36 },
+  outer: { flex: 1, backgroundColor: '#05080B', alignItems: 'center' },
+  screen: { flex: 1, width: '100%', maxWidth: 520, backgroundColor: C.bg, paddingTop: Platform.OS === 'ios' ? 56 : Platform.OS === 'web' ? 16 : 36 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingBottom: 12 },
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: C.bg, fontSize: 22, fontWeight: '800' },
