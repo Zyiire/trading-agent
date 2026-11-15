@@ -34,6 +34,7 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingClassifier
 
+from agent.stan import daytrade
 from agent.stan.persona import pct, signed_pct
 from agent.stan.strategies import BASE_COST, BASE_RULE, SelloffRule
 from agent.stan.study import FEATURES, make_features, rsi
@@ -442,8 +443,33 @@ def snapshot(book: ShadowBook) -> dict:
             "latest_day": latest_made,
             "latest": [c for c in calls if c["made_on"] == latest_made],
         },
+        "practice": _practice_snapshot(book.path),
         "log": book.logs(100),
     }
+
+
+def _practice_snapshot(path: str) -> dict:
+    pb = daytrade.PracticeBook(path)
+    try:
+        rows = pb.rows()
+    finally:
+        pb.close()
+    return {"stats": daytrade.practice_stats(rows), "recent": rows[:40]}
+
+
+def run_practice(book: ShadowBook, day: date, symbols: Sequence[str], demo: bool = False,
+                 replays: int = 10000) -> list[dict]:
+    """The evening's day-trade practice, walked with the Day Trader skill pack."""
+    pb = daytrade.PracticeBook(book.path)
+    try:
+        if pb.has_day(day.isoformat()):
+            return []
+        texts = daytrade.load_charts([s for s in symbols if s != MARKET], demo=demo,
+                                     log=lambda m: book.log(day, "thought", f"5-minute data missing: {m}"))
+        return daytrade.practice_day(pb, texts, day.isoformat(), replays=replays,
+                                     log=lambda kind, text: book.log(day, kind, text))
+    finally:
+        pb.close()
 
 
 # ---------------------------------------------------------------- command line
@@ -486,6 +512,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             when = datetime.combine(days[k - 1].date(), time(17, 0), tzinfo=ET)
             run_day(book, cut, now=when, demo=True, max_iter=40, train_years=2,
                     expected={"win_rate": 0.553, "avg": 0.0002, "profit_factor": 1.009, "trades": 3419})
+        pb = daytrade.PracticeBook(demo_path)
+        texts = daytrade.load_charts([s for s in symbols if s != MARKET][:15], demo=True)
+        for d in days[-8:]:
+            daytrade.practice_day(pb, texts, d.date().isoformat(), replays=2000,
+                                  log=lambda kind, text, d=d: book.log(d.date(), kind, text))
+        pb.close()
         print(f"Practice replay saved to {demo_path}. Start the server with "
               f"STAN_JOURNAL={demo_path} to view it, or just open the Shadow tab in demo mode.")
         book.close()
@@ -497,6 +529,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 1
     book = ShadowBook(args.journal)
     result = run_day(book, history, expected=expected_from_school(args.journal))
+    practiced = run_practice(book, date.fromisoformat(result["day"]), symbols)
     s, c = result["selloff"], result["calls"]
     print(f"Shadow day {result['day']} ({source}).")
     print(f"  Selloff bounce: {s['closed']} closed, {s['open']} open, {s['pending']} buying at the next open."
@@ -504,6 +537,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"  Beat-or-lag calls: {c['graded']} graded, {pct(c['hit_rate'])} right "
           f"(beat {pct(c['beat_hit_rate'])}, lag {pct(c['lag_hit_rate'])}).")
     print(f"  New calls made for the day after {result['made_on']}.")
+    taken = sum(r["taken"] for r in practiced)
+    print(f"  Day-trade practice: {len(practiced)} opening-range breakouts walked through the skill pack, "
+          f"{taken} would have been taken on the $50 plan.")
     book.close()
     return 0
 

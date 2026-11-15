@@ -159,7 +159,10 @@ def test_stress_test_runs_every_check():
 def trained(tmp_path_factory):
     path = tmp_path_factory.mktemp("stan") / "stan.db"
     journal = Journal(path)
-    summary = run_training(journal, demo_history(["SPY", "QQQ", "AAPL"], years=8), "practice data", demo=True, cfg=FAST)
+    from agent.stan.daytrade import load_charts
+
+    summary = run_training(journal, demo_history(["SPY", "QQQ", "AAPL"], years=8), "practice data", demo=True,
+                           cfg=FAST, intraday=load_charts(["SPY", "QQQ", "AAPL"], demo=True))
     yield path, journal, summary
     journal.close()
 
@@ -180,6 +183,13 @@ def test_training_runs_every_task(trained):
     assert {"milestone", "progress", "thought"} <= kinds
 
 
+def test_training_without_intraday_data_skips_only_the_day_exam():
+    journal = Journal(":memory:")
+    run_training(journal, demo_history(["SPY", "QQQ"], years=6), "practice data", demo=True, cfg=FAST)
+    status = {t["key"]: t["status"] for t in journal.tasks()}
+    assert status["daytrade"] == "failed" and status["report"] == "done"
+
+
 def test_training_without_data_fails_clearly():
     journal = Journal(":memory:")
     assert run_training(journal, {}, "nowhere") == {}
@@ -194,6 +204,10 @@ def test_api_serves_the_journal(trained):
     assert stan["name"] == "Stan" and stan["mode"] == "demo" and stan["state"] == "finished"
     assert stan["tasks_done"] == stan["tasks_total"] == len(CURRICULUM)
     assert stan["strategy"]["checks_total"] == 10
+    assert stan["daytrade_exam"]["checks_total"] == 7
+    skills = client.get("/skills").json()
+    assert len(skills["skills"]) == 11 and skills["pack"]["license"] == "MIT"
+    assert next(k for k in skills["skills"] if k["key"] == "trader-broker")["status"] == "locked"
     assert stan["summary"]["trades"] == summary["trades"]
     assert len(client.get("/tasks").json()) == len(CURRICULUM)
     thoughts = client.get("/thoughts", params={"limit": 500}).json()

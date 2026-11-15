@@ -96,6 +96,31 @@ Output goes to `data/shadow.log`, and results show in the app's **Shadow** tab.
 Live results need roughly 100 closed trades (about 3 to 4 months) before they
 say much. Rerunning Stan's school never erases his shadow history.
 
+### Term 3: the Day Trader skill pack
+
+Stan's library now includes [The Day Trader skill](https://github.com/Jakeschincariol/day-trader-skill)
+by Jake Schincariol (MIT), copied unchanged into `agent/skills/day_trader/` (version
+and license in its `NOTICE.md`). The app's **Now** tab lists all 11 skills and how
+Stan uses each one:
+
+| Skill | Status | How Stan uses it |
+| --- | --- | --- |
+| Chart Scanner, Entry Timer, Exit Planner | in use | The opening-range breakout: buy on the first 5-minute close above the first 15 minutes' high, stop at the range midpoint, 1R target, out by 3:55 PM |
+| Time Machine | in use | 10,000 replays before every practice trade (earlier sessions only), plus its history replay as his day-trading exam |
+| Budget Manager, Risk Manager | in use | Size and check every practice trade on the $50 plan ($5 max loss, 3 trades and $10 risk a day) |
+| Order Executor | locked | Stan can't place orders until he passes the go-live checks |
+| Price Alerts, News Monitor, Earnings Analyst, Pelosi Tracker | learned | In his library, not wired into decisions yet |
+
+- **Day-trading exam** (part of `python -m agent.stan.train`): the breakout on all 43
+  stocks over the last 60 days of free 5-minute bars, with 7 checks (costs, a luck test,
+  a 2R target, how many stocks it works on, week by week, new stocks). Free 5-minute
+  data only goes back 60 days, so this is one market mood.
+- **Day-trade practice** (part of `python -m agent.stan.shadow`, every evening): each
+  breakout is walked through the pack (plan, Time Machine, budget, risk) and then graded
+  against what actually happened. The **Shadow** tab tracks whether the Time Machine's
+  odds come true. With $50, the budget manager refuses most stocks: one whole share
+  costs more than the plan allows.
+
 Stan's thoughts are written from the real numbers his training produces. They
 are templates filled with results, not a chatbot. A local language model for
 richer explanations comes later in the plan.
@@ -143,6 +168,7 @@ set to $50).
 | `agent/store.py` | SQLite tables: daily bars, option snapshots, account snapshots |
 | `agent/jobs/` | Alpaca connection check, price download, options snapshots |
 | `agent/stan/` | Stan: persona, journal, study method, training school, strategies, shadow trading |
+| `agent/skills/day_trader/` | The Day Trader skill pack, vendored unchanged (MIT) |
 | `agent/api.py` | Read-only API for the phone app |
 | `stan-app/` | Expo (React Native) iPhone app |
 | `tests/` | Offline tests using fake Alpaca clients |

@@ -2,7 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { Exam, Lesson, Shadow, StanProfile, Strategy, Task, Thought, ThoughtKind, getJson, pct, signedPct } from './src/api';
+import { Exam, Lesson, Shadow, SkillLibrary, StanProfile, Strategy, Task, Thought, ThoughtKind, getJson, pct, signedPct } from './src/api';
 
 // Set EXPO_PUBLIC_STAN_URL in stan-app/.env to your computer's address, e.g. http://192.168.1.20:8000
 // With no address set, the app shows a saved practice run ("demo").
@@ -56,6 +56,7 @@ export default function App() {
   const [exams, setExams] = useState<Exam[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [shadow, setShadow] = useState<Shadow | null>(null);
+  const [skills, setSkills] = useState<SkillLibrary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const lastThought = useRef(0);
   const runId = useRef<string | null>(null);
@@ -77,6 +78,7 @@ export default function App() {
         getJson<Shadow>(url, '/shadow', token).catch(() => null),
       ]);
       setShadow(shadowData);
+      getJson<SkillLibrary>(url, '/skills', token).then(setSkills).catch(() => setSkills(null));
       setStan(profile);
       setTasks(taskList);
       setExams(examList);
@@ -155,6 +157,8 @@ export default function App() {
             })}
             {tasks.length === 0 && <Text style={s.dim}>No training has started yet. Run Stan’s training on your computer.</Text>}
 
+            {skills && <SkillsCard library={skills} />}
+
             {stan && (
               <View style={s.card}>
                 <Text style={s.label}>STAN’S RULES</Text>
@@ -229,6 +233,7 @@ export default function App() {
             )}
 
             {stan?.strategy && <StrategyCard strategy={stan.strategy} />}
+            {stan?.daytrade_exam && <StrategyCard strategy={stan.daytrade_exam} />}
 
             {exams.length > 0 && <Text style={s.section}>Yearly exams (years he had never seen)</Text>}
             {exams.map((e) => (
@@ -366,6 +371,8 @@ function ShadowView({ shadow }: { shadow: Shadow | null }) {
         </View>
       )}
 
+      {shadow.practice && <PracticeSection practice={shadow.practice} />}
+
       <Text style={s.section}>Beat or lag the market</Text>
       <View style={s.card}>
         <Text style={s.dim}>
@@ -404,6 +411,94 @@ function ShadowView({ shadow }: { shadow: Shadow | null }) {
   );
 }
 
+const SKILL_STATUS: Record<string, { label: string; color: string }> = {
+  in_use: { label: 'IN USE', color: C.good },
+  learned: { label: 'LEARNED', color: C.accent },
+  locked: { label: 'LOCKED', color: C.warn },
+};
+
+function SkillsCard({ library }: { library: SkillLibrary }) {
+  const [open, setOpen] = useState<string | null>(null);
+  return (
+    <View style={s.card}>
+      <Text style={s.label}>STAN’S SKILLS · {library.skills.length}</Text>
+      <Text style={s.dim}>
+        {library.pack.name} by {library.pack.author} ({library.pack.license}). {library.counts.in_use} in use,{' '}
+        {library.counts.learned} learned, {library.counts.locked} locked. Tap one to see how Stan uses it.
+      </Text>
+      {library.skills.map((k) => (
+        <Pressable key={k.key} onPress={() => setOpen(open === k.key ? null : k.key)} style={s.listRow}
+          accessibilityRole="button" accessibilityState={{ expanded: open === k.key }}>
+          <View style={s.row}>
+            <Text style={[s.text, { flex: 1 }]}>{k.name}</Text>
+            <Text style={[s.small, { color: SKILL_STATUS[k.status].color, fontWeight: '700' }]}>{SKILL_STATUS[k.status].label}</Text>
+          </View>
+          {open === k.key && (
+            <>
+              <Text style={[s.dim, { marginTop: 4 }]}>{k.job}</Text>
+              <Text style={[s.small, { marginTop: 4, color: C.text }]}>Stan: {k.stan}</Text>
+            </>
+          )}
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+function PracticeSection({ practice }: { practice: NonNullable<Shadow['practice']> }) {
+  const st = practice.stats;
+  if (!st.setups) {
+    return (
+      <>
+        <Text style={s.section}>Day-trade practice</Text>
+        <View style={s.card}>
+          <Text style={s.dim}>
+            Each evening Stan walks every opening-range breakout through the Day Trader skill pack: entry, exit plan, Time Machine,
+            budget and risk on the $50 plan, then grades what happened. Nothing has been practiced yet.
+          </Text>
+        </View>
+      </>
+    );
+  }
+  return (
+    <>
+      <Text style={s.section}>Day-trade practice</Text>
+      <View style={s.card}>
+        <Text style={s.dim}>
+          Opening-range breakouts walked through the Day Trader skill pack each evening, graded after the close. No orders.
+        </Text>
+      </View>
+      <View style={s.grid}>
+        <Stat label="Setups graded" value={String(st.setups)} note={`${st.days} day(s)`} />
+        <Stat label="Avg result" value={`${(st.avg_R ?? 0) >= 0 ? '+' : ''}${(st.avg_R ?? 0).toFixed(2)}R`} note={`won ${pct(st.win_rate)}`} />
+        <Stat label="Taken on $50" value={String(st.taken ?? 0)} note={st.taken_avg_R === null || st.taken_avg_R === undefined ? 'none yet' : `avg ${st.taken_avg_R >= 0 ? '+' : ''}${st.taken_avg_R.toFixed(2)}R`} />
+        <Stat label="Budget said no" value={String(st.refused_by_budget ?? 0)} note="0 whole shares fit" />
+      </View>
+      <View style={s.card}>
+        <Text style={s.label}>CAN HE TRUST THE TIME MACHINE?</Text>
+        <Text style={s.text}>
+          It gave the target {pct(st.tm_predicted_target)} odds on average. The target actually came first {pct(st.tm_actual_target)} of the time.
+        </Text>
+      </View>
+      <View style={s.card}>
+        <Text style={s.label}>RECENT PRACTICE</Text>
+        {practice.recent.slice(0, 12).map((r) => (
+          <View key={`${r.day}-${r.symbol}`} style={s.listRow}>
+            <View style={s.row}>
+              <Text style={[s.text, { width: 64, fontWeight: '700' }]}>{r.symbol}</Text>
+              <Text style={[s.small, { flex: 1 }]}>{r.day} · {r.entry_time} · {r.outcome}</Text>
+              <Text style={[s.small, { color: r.net_R > 0 ? C.good : C.bad }]}>{r.net_R >= 0 ? '+' : ''}{r.net_R.toFixed(2)}R</Text>
+            </View>
+            <Text style={s.small}>
+              {r.taken ? 'Taken on the $50 plan' : r.budget_qty ? `Not taken: ${r.risk_reason || r.risk_verdict}` : 'Budget: 0 shares fit on $50'}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </>
+  );
+}
+
 const VERDICT: Record<Strategy['verdict'], { text: string; color: string }> = {
   real_edge: { text: 'Real edge: passed every stress test', color: C.good },
   promising: { text: 'Promising, not proven', color: C.warn },
@@ -420,9 +515,17 @@ function StrategyCard({ strategy }: { strategy: Strategy }) {
         <Text style={[s.big, { color: v.color }]}>{v.text}</Text>
         <Text style={s.dim}>Passed {strategy.checks_passed} of {strategy.checks_total}. Rule: {strategy.rule}.</Text>
         <Text style={[s.dim, { marginTop: 6 }]}>
-          {strategy.score.trades} trades on {strategy.stocks} stocks · won {pct(strategy.score.win_rate)} · profit factor{' '}
-          {strategy.score.profit_factor === null ? 'n/a' : strategy.score.profit_factor.toFixed(2)} · {(strategy.cost * 100).toFixed(2)}% costs each way
+          {strategy.score.trades} trades on {strategy.stocks} stocks · won {pct(strategy.score.win_rate)} ·{' '}
+          {strategy.unit === 'R' && strategy.score.avg_R !== undefined && strategy.score.avg_R !== null
+            ? `${strategy.score.avg_R >= 0 ? '+' : ''}${strategy.score.avg_R.toFixed(3)}R a trade`
+            : `profit factor ${strategy.score.profit_factor === null ? 'n/a' : strategy.score.profit_factor.toFixed(2)}`}{' '}
+          · {(strategy.cost * 100).toFixed(2)}% costs each way
         </Text>
+        {strategy.sessions ? (
+          <Text style={s.small}>
+            {strategy.sessions} sessions of 5-minute bars, {strategy.first_day} to {strategy.last_day}. Rule from the Day Trader skill pack.
+          </Text>
+        ) : null}
       </View>
       {strategy.checks.map((c) => (
         <View key={c.key} style={[s.card, { borderLeftWidth: 3, borderLeftColor: c.passed ? C.good : C.bad }]}>

@@ -32,16 +32,37 @@ export type Summary = {
   ready_for_paper: boolean;
 };
 
+export type Skill = { key: string; name: string; status: 'in_use' | 'learned' | 'locked'; job: string; stan: string };
+export type SkillLibrary = {
+  pack: { name: string; author: string; source: string; version: string; license: string };
+  skills: Skill[];
+  counts: { in_use: number; learned: number; locked: number };
+};
+
+export type PracticeRow = {
+  day: string; symbol: string; entry_time: string; entry: number; stop: number; target: number;
+  p_target: number; p_stop: number; verdict: string; budget_qty: number; risk_verdict: string;
+  risk_reason: string | null; taken: number; outcome: 'target' | 'stop' | 'close'; net_R: number;
+};
+export type PracticeStats = {
+  days: number; setups: number; win_rate?: number; avg_R?: number; taken?: number; taken_avg_R?: number | null;
+  refused_by_budget?: number; blocked_by_risk?: number; tm_predicted_target?: number; tm_actual_target?: number;
+};
+
 export type StrategyCheck = { key: string; name: string; passed: boolean; detail: string };
 
 export type Strategy = {
   name: string;
+  unit?: 'R';
+  sessions?: number;
+  first_day?: string | null;
+  last_day?: string | null;
   rule: string;
   cost: number;
   stocks: number;
-  score: { trades: number; win_rate: number | null; profit_factor: number | null; avg: number | null };
+  score: { trades: number; win_rate: number | null; profit_factor: number | null; avg: number | null; avg_R?: number | null };
   by_year: { year: number; trades: number; win_rate: number | null; profit_factor: number | null; avg: number | null }[];
-  versus: {
+  versus?: {
     growth: number; hold_growth: number; spy_growth: number | null; exposure: number;
     per_day_invested: number; per_day_hold: number; max_dd: number; hold_max_dd: number;
   };
@@ -66,6 +87,7 @@ export type StanProfile = {
   tasks_total: number;
   summary: Summary | null;
   strategy?: Strategy | null;
+  daytrade_exam?: Strategy | null;
 };
 
 export type ThoughtKind = 'thought' | 'progress' | 'win' | 'fail' | 'lesson' | 'milestone';
@@ -139,6 +161,7 @@ export type Shadow = {
     latest_day: string | null;
     latest: ShadowCall[];
   };
+  practice?: { stats: PracticeStats; recent: PracticeRow[] };
   log: { id: number; day: string; kind: ThoughtKind; text: string }[];
 };
 

@@ -20,6 +20,7 @@ import pandas as pd
 
 from agent.stan.journal import Journal
 from agent.stan.persona import pct, signed_pct
+from agent.stan import daytrade
 from agent.stan.strategies import stress_test
 from agent.stan.study import StudyConfig, build_panel, find_lessons, luck_test, summarize, walk_forward
 
@@ -41,6 +42,7 @@ CURRICULUM = [
     ("review", "Review my wins and losses"),
     ("selloff", "Strategy exam: buy after a sharp selloff"),
     ("stress", "Stress-test the selloff strategy"),
+    ("daytrade", "Day-trading exam: opening-range breakout"),
     ("report", "Write my report card"),
 ]
 
@@ -119,6 +121,7 @@ def run_training(
     demo: bool = False,
     cfg: StudyConfig = StudyConfig(),
     pace: float = 0.0,
+    intraday: dict[str, str] | None = None,
 ) -> dict:
     """Run every task, writing progress and thoughts to the journal. Returns the summary."""
 
@@ -300,7 +303,44 @@ def run_training(
         journal.think(f"The selloff bounce passed only {strategy['checks_passed']} of {strategy['checks_total']} "
                       "stress tests. It isn't a real edge yet.", "fail")
 
-    # 7. report
+    # 7. day-trading exam (Day Trader skill pack)
+    journal.start_task("daytrade", "Loading 60 days of 5-minute bars")
+    sessions = daytrade.exam_sessions(intraday or {})
+    if not sessions:
+        journal.finish_task("daytrade", "No 5-minute data, so I skipped this exam", failed=True)
+        journal.think("I couldn't load any 5-minute bars, so the day-trading exam waits for next time.", "fail")
+    else:
+        n_sessions = max(len(v) for v in sessions.values())
+        journal.think(
+            f"New skill pack in my library: the Day Trader skill. Term 3 tests its opening-range breakout on "
+            f"{len(sessions)} stocks over the last {n_sessions} sessions of 5-minute bars, exactly the way its "
+            "Time Machine replays history. Only about 3 months of data exist for free, so this is one market mood, "
+            "not 15 years.", "milestone")
+        done = {"n": 0}
+
+        def on_day_check(item: dict) -> None:
+            done["n"] += 1
+            journal.update_task("daytrade", done["n"] / 7, item["name"])
+            journal.think(f"Day-trading exam, {'passed' if item['passed'] else 'failed'}: {item['name']}. "
+                          f"{item['detail']}.", "win" if item["passed"] else "fail")
+            pause()
+
+        exam = daytrade.day_trade_exam(sessions, list(ORIGINAL_EIGHT), on_check=on_day_check,
+                                       luck_reps=max(100, cfg.luck_reps // 3))
+        journal.set_meta("daytrade_exam", exam)
+        journal.finish_task("daytrade", f"Passed {exam['checks_passed']} of {exam['checks_total']} checks")
+        if exam["verdict"] == "real_edge":
+            journal.think("The opening-range breakout passed every check on these 60 days. One market mood is thin "
+                          "evidence, so nightly practice has to confirm it.", "milestone")
+        elif exam["verdict"] == "promising":
+            journal.think(f"The opening-range breakout passed {exam['checks_passed']} of {exam['checks_total']} "
+                          "checks. Promising, not proven.", "lesson")
+        else:
+            journal.think(f"The opening-range breakout passed only {exam['checks_passed']} of "
+                          f"{exam['checks_total']} checks. On my stocks lately it isn't an edge, which is exactly "
+                          "what the Time Machine is there to show before a dollar is risked.", "lesson")
+
+    # 8. report
     journal.start_task("report", "Adding it all up")
     journal.set_meta("summary", summary)
     edge = summary["accuracy"] - summary["baseline_up"]
@@ -369,8 +409,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         history, source = real_history(symbols, args.years, args.db)
     pace = args.pace if args.pace is not None else (0.6 if args.demo else 0.2)
 
+    intraday = daytrade.load_charts(symbols, demo=args.demo)
     journal = Journal(args.journal)
-    summary = run_training(journal, history, source, demo=args.demo, pace=pace)
+    summary = run_training(journal, history, source, demo=args.demo, pace=pace, intraday=intraday)
     for t in journal.thoughts(limit=1000):
         print(f"[{t['kind']:>9}] {t['text']}")
     journal.close()
