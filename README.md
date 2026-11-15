@@ -121,6 +121,32 @@ Stan uses each one:
   odds come true. With $50, the budget manager refuses most stocks: one whole share
   costs more than the plan allows.
 
+### Paper trading (Alpaca paper account)
+
+Stan trades the **selloff bounce** on your Alpaca **paper** account with whatever paper
+money it holds. This was your call: he passed 9 of 10 stress tests, not all 10, and the
+app says so.
+
+- After the close he places **market-on-open** orders (filled in the next opening auction,
+  like the backtest): buy after RSI closes under 30; sell after RSI closes at 50+ or 10
+  trading days pass.
+- **Sizing:** 10% of the account per trade, up to 10 positions, whole shares.
+- **Kill switch:** at 20% below the starting balance he sells everything at the next open
+  and stops. Only you can restart him (`--resume`).
+- **Safety:** every evening he checks his records against Alpaca's positions and stops on
+  any mismatch. Each order has a fixed ID, so it can't be sent twice. He leaves alone any
+  stock the account already holds outside his trades. Live trading stays locked in code.
+
+```bash
+python -m agent.stan.paper --dry-run   # see what he would do, send nothing (try this first)
+python -m agent.stan.paper             # the real evening run (after 4:30pm ET)
+python -m agent.stan.paper --status    # account, positions, halted or running
+python -m agent.stan.paper --resume    # restart after the kill switch or a mismatch
+```
+
+`run_shadow.bat` now runs shadow trading and then paper trading, so the same 4:45 PM
+scheduled task covers both. Results show at the top of the app's **Trades** tab.
+
 Stan's thoughts are written from the real numbers his training produces. They
 are templates filled with results, not a chatbot. A local language model for
 richer explanations comes later in the plan.

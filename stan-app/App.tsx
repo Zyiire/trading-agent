@@ -2,7 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { Exam, Lesson, Shadow, SkillLibrary, StanProfile, Strategy, Task, Thought, ThoughtKind, getJson, pct, signedPct } from './src/api';
+import { Exam, Lesson, Paper, Shadow, SkillLibrary, StanProfile, Strategy, Task, Thought, ThoughtKind, getJson, pct, signedPct } from './src/api';
 
 // Set EXPO_PUBLIC_STAN_URL in stan-app/.env to your computer's address, e.g. http://192.168.1.20:8000
 // With no address set, the app shows a saved practice run ("demo").
@@ -27,7 +27,7 @@ type Tab = 'now' | 'mind' | 'shadow' | 'report' | 'setup';
 const TABS: { key: Tab; label: string }[] = [
   { key: 'now', label: 'Now' },
   { key: 'mind', label: 'Mind' },
-  { key: 'shadow', label: 'Shadow' },
+  { key: 'shadow', label: 'Trades' },
   { key: 'report', label: 'Report' },
   { key: 'setup', label: 'Setup' },
 ];
@@ -57,6 +57,7 @@ export default function App() {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [shadow, setShadow] = useState<Shadow | null>(null);
   const [skills, setSkills] = useState<SkillLibrary | null>(null);
+  const [paper, setPaper] = useState<Paper | null>(null);
   const [error, setError] = useState<string | null>(null);
   const lastThought = useRef(0);
   const runId = useRef<string | null>(null);
@@ -79,6 +80,7 @@ export default function App() {
       ]);
       setShadow(shadowData);
       getJson<SkillLibrary>(url, '/skills', token).then(setSkills).catch(() => setSkills(null));
+      getJson<Paper>(url, '/paper', token).then(setPaper).catch(() => setPaper(null));
       setStan(profile);
       setTasks(taskList);
       setExams(examList);
@@ -186,7 +188,7 @@ export default function App() {
           />
         )}
 
-        {tab === 'shadow' && <ShadowView shadow={shadow} />}
+        {tab === 'shadow' && <ShadowView shadow={shadow} paper={paper} />}
 
         {tab === 'report' && (
           <ScrollView contentContainerStyle={s.pad}>
@@ -301,10 +303,11 @@ export default function App() {
   );
 }
 
-function ShadowView({ shadow }: { shadow: Shadow | null }) {
+function ShadowView({ shadow, paper }: { shadow: Shadow | null; paper: Paper | null }) {
   if (!shadow || !shadow.started) {
     return (
       <ScrollView contentContainerStyle={s.pad}>
+        {paper && <PaperSection paper={paper} />}
         <View style={s.card}>
           <Text style={s.label}>SHADOW TRADING</Text>
           <Text style={s.big}>Not started yet</Text>
@@ -323,8 +326,11 @@ function ShadowView({ shadow }: { shadow: Shadow | null }) {
   const progress = Math.min(1, sell.closed / sell.needed);
   return (
     <ScrollView contentContainerStyle={s.pad}>
+      {paper && <PaperSection paper={paper} />}
+
+      <Text style={s.section}>Shadow trading</Text>
       <View style={s.card}>
-        <Text style={s.label}>SHADOW TRADING · NO REAL ORDERS</Text>
+        <Text style={s.label}>SHADOW TRADING · NO ORDERS</Text>
         <Text style={s.big}>Practicing on live days</Text>
         <Text style={s.dim}>Started {shadow.started}. Last finished day: {shadow.last_day}.</Text>
       </View>
@@ -408,6 +414,87 @@ function ShadowView({ shadow }: { shadow: Shadow | null }) {
         </View>
       ))}
     </ScrollView>
+  );
+}
+
+const PAPER_STATUS: Record<string, string> = {
+  pending_entry: 'buying at next open', open: 'holding', pending_exit: 'selling at next open',
+  closed: 'closed', cancelled: 'cancelled',
+};
+
+function money(x: number | null | undefined): string {
+  if (x === null || x === undefined) return 'n/a';
+  const abs = Math.abs(x).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `${x < 0 ? '-' : ''}$${abs}`;
+}
+
+function PaperSection({ paper }: { paper: Paper }) {
+  if (!paper.enabled) {
+    return (
+      <>
+        <Text style={s.section}>Paper account</Text>
+        <View style={s.card}>
+          <Text style={s.label}>ALPACA PAPER · NOT STARTED</Text>
+          <Text style={s.dim}>Run "python -m agent.stan.paper" after the market closes to start Stan's paper trading.</Text>
+        </View>
+      </>
+    );
+  }
+  const up = (paper.change ?? 0) >= 0;
+  return (
+    <>
+      <Text style={s.section}>Paper account</Text>
+      <View style={[s.card, { borderColor: paper.halted ? C.bad : C.line }]}>
+        <Text style={s.label}>ALPACA PAPER MONEY · {paper.halted ? 'STOPPED' : 'TRADING'}</Text>
+        <Text style={s.big}>{money(paper.equity)}</Text>
+        <Text style={[s.text, { color: up ? C.good : C.bad }]}>
+          {signedPct(paper.change, 2)} since {paper.started} (started at {money(paper.start_equity)})
+        </Text>
+        <Text style={s.dim}>Kill switch at {money(paper.kill_floor)}. Strategy: selloff bounce.</Text>
+        <Text style={[s.small, { marginTop: 6 }]}>
+          Paper trading was {paper.approved_by}’s call: Stan passed 9 of 10 stress tests, not all 10.
+        </Text>
+        {paper.halted && <Text style={[s.text, { color: C.bad, marginTop: 8 }]}>{paper.halt_reason}. Run --resume to restart.</Text>}
+      </View>
+      <View style={s.grid}>
+        <Stat label="Closed trades" value={String(paper.stats.closed)} note={`won ${pct(paper.stats.win_rate)}`} />
+        <Stat label="Realized P&L" value={money(paper.stats.pnl)} note={`avg ${signedPct(paper.stats.avg, 2)} a trade`} />
+      </View>
+      {paper.open.length > 0 && (
+        <View style={s.card}>
+          <Text style={s.label}>POSITIONS AND ORDERS ({paper.open.length})</Text>
+          {paper.open.map((t) => (
+            <View key={`${t.symbol}-${t.signal_date}`} style={[s.row, s.listRow]}>
+              <Text style={[s.text, { width: 64, fontWeight: '700' }]}>{t.symbol}</Text>
+              <Text style={[s.small, { flex: 1 }]}>
+                {t.qty} sh · {PAPER_STATUS[t.status]}{t.entry_price ? ` · in at ${money(t.entry_price)}` : ''}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
+      {paper.closed.length > 0 && (
+        <View style={s.card}>
+          <Text style={s.label}>CLOSED</Text>
+          {paper.closed.slice(0, 8).map((t) => (
+            <View key={`${t.symbol}-${t.signal_date}`} style={[s.row, s.listRow]}>
+              <Text style={[s.text, { width: 64, fontWeight: '700' }]}>{t.symbol}</Text>
+              <Text style={[s.small, { flex: 1 }]}>{t.qty} sh · sold {t.exit_date}</Text>
+              <Text style={[s.small, { color: (t.pnl ?? 0) > 0 ? C.good : C.bad }]}>{money(t.pnl)}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+      {paper.log.slice(0, 6).map((l) => (
+        <View key={`p${l.id}`} style={[s.card, { borderLeftWidth: 3, borderLeftColor: KIND[l.kind]?.color ?? C.dim }]}>
+          <View style={s.row}>
+            <Text style={[s.label, { color: KIND[l.kind]?.color ?? C.dim, flex: 1 }]}>PAPER · {KIND[l.kind]?.label ?? l.kind}</Text>
+            <Text style={s.small}>{l.day}</Text>
+          </View>
+          <Text style={s.text}>{l.text}</Text>
+        </View>
+      ))}
+    </>
   );
 }
 

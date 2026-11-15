@@ -18,6 +18,7 @@ from agent.stan.journal import Journal
 from agent.stan.persona import STAN, rank_for
 from agent.stan.shadow import ShadowBook, snapshot
 from agent.stan.skills import library
+from agent.stan.paper import PaperBook, snapshot as paper_snapshot
 
 
 def create_app(journal_path: str | Path = "data/stan.db", token: str | None = None) -> FastAPI:
@@ -73,6 +74,14 @@ def create_app(journal_path: str | Path = "data/stan.db", token: str | None = No
     @app.get("/lessons", dependencies=[Depends(auth)])
     def lessons(j: Journal = Depends(journal)) -> list[dict]:
         return j.lessons()
+
+    @app.get("/paper", dependencies=[Depends(auth)])
+    def paper() -> dict:
+        book = PaperBook(journal_path)
+        try:
+            return paper_snapshot(book)
+        finally:
+            book.close()
 
     @app.get("/skills", dependencies=[Depends(auth)])
     def skills() -> dict:

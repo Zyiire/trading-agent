@@ -3720,5 +3720,277 @@
     "text": "Bought CVX at the open for $492.72 (shadow)."
    }
   ]
+ },
+ "/paper": {
+  "enabled": true,
+  "approved_by": "Zy",
+  "started": "2026-08-03",
+  "start_equity": 100000.0,
+  "equity": 99909.23151778868,
+  "change": -0.0009076848221132305,
+  "kill_floor": 80000.0,
+  "halted": false,
+  "halt_reason": null,
+  "last_day": "2026-09-11",
+  "open": [],
+  "closed": [
+   {
+    "symbol": "AAA",
+    "signal_date": "2026-08-28",
+    "status": "closed",
+    "qty": 100,
+    "entry_order": "stan-AAA-20260828-buy",
+    "entry_date": "2026-08-31",
+    "entry_price": 98.1641855373021,
+    "exit_signal_date": "2026-09-03",
+    "exit_reason": "RSI recovered to 54",
+    "exit_order": "stan-AAA-20260828-sell20260903",
+    "exit_date": "2026-09-04",
+    "exit_price": 110.48465564870811,
+    "pnl": 1232.05,
+    "ret": 0.12551,
+    "created_at": "2026-11-15T12:56:38-05:00"
+   },
+   {
+    "symbol": "AAA",
+    "signal_date": "2026-08-13",
+    "status": "closed",
+    "qty": 90,
+    "entry_order": "stan-AAA-20260813-buy",
+    "entry_date": "2026-08-14",
+    "entry_price": 110.00298442836755,
+    "exit_signal_date": "2026-08-27",
+    "exit_reason": "10 trading days passed",
+    "exit_order": "stan-AAA-20260813-sell20260827",
+    "exit_date": "2026-08-28",
+    "exit_price": 95.30503450223505,
+    "pnl": -1322.82,
+    "ret": -0.13361,
+    "created_at": "2026-11-15T12:56:38-05:00"
+   }
+  ],
+  "stats": {
+   "closed": 2,
+   "win_rate": 0.5,
+   "avg": -0.00405,
+   "pnl": -90.77
+  },
+  "equity_history": [
+   {
+    "day": "2026-08-03",
+    "equity": 100000.0,
+    "cash": 100000.0
+   },
+   {
+    "day": "2026-08-04",
+    "equity": 100000.0,
+    "cash": 100000.0
+   },
+   {
+    "day": "2026-08-05",
+    "equity": 100000.0,
+    "cash": 100000.0
+   },
+   {
+    "day": "2026-08-06",
+    "equity": 100000.0,
+    "cash": 100000.0
+   },
+   {
+    "day": "2026-08-07",
+    "equity": 100000.0,
+    "cash": 100000.0
+   },
+   {
+    "day": "2026-08-10",
+    "equity": 100000.0,
+    "cash": 100000.0
+   },
+   {
+    "day": "2026-08-11",
+    "equity": 100000.0,
+    "cash": 100000.0
+   },
+   {
+    "day": "2026-08-12",
+    "equity": 100000.0,
+    "cash": 100000.0
+   },
+   {
+    "day": "2026-08-13",
+    "equity": 100000.0,
+    "cash": 100000.0
+   },
+   {
+    "day": "2026-08-14",
+    "equity": 99742.85016627135,
+    "cash": 90099.73140144692
+   },
+   {
+    "day": "2026-08-17",
+    "equity": 99501.77219715074,
+    "cash": 90099.73140144692
+   },
+   {
+    "day": "2026-08-18",
+    "equity": 99266.72117725814,
+    "cash": 90099.73140144692
+   },
+   {
+    "day": "2026-08-19",
+    "equity": 99037.54643286286,
+    "cash": 90099.73140144692
+   },
+   {
+    "day": "2026-08-20",
+    "equity": 98814.10105707747,
+    "cash": 90099.73140144692
+   },
+   {
+    "day": "2026-08-21",
+    "equity": 98596.24181568669,
+    "cash": 90099.73140144692
+   },
+   {
+    "day": "2026-08-24",
+    "equity": 98383.8290553307,
+    "cash": 90099.73140144692
+   },
+   {
+    "day": "2026-08-25",
+    "equity": 98176.7266139836,
+    "cash": 90099.73140144692
+   },
+   {
+    "day": "2026-08-26",
+    "equity": 98419.03647035972,
+    "cash": 90099.73140144692
+   },
+   {
+    "day": "2026-08-27",
+    "equity": 98668.6156224271,
+    "cash": 90099.73140144692
+   },
+   {
+    "day": "2026-08-28",
+    "equity": 98677.18450664807,
+    "cash": 98677.18450664807
+   },
+   {
+    "day": "2026-08-31",
+    "equity": 98961.57625295995,
+    "cash": 88860.76595291786
+   },
+   {
+    "day": "2026-09-01",
+    "equity": 99264.6005619612,
+    "cash": 88860.76595291786
+   },
+   {
+    "day": "2026-09-02",
+    "equity": 99576.7156002325,
+    "cash": 88860.76595291786
+   },
+   {
+    "day": "2026-09-03",
+    "equity": 99898.19408965194,
+    "cash": 88860.76595291786
+   },
+   {
+    "day": "2026-09-04",
+    "equity": 99909.23151778868,
+    "cash": 99909.23151778868
+   },
+   {
+    "day": "2026-09-07",
+    "equity": 99909.23151778868,
+    "cash": 99909.23151778868
+   },
+   {
+    "day": "2026-09-08",
+    "equity": 99909.23151778868,
+    "cash": 99909.23151778868
+   },
+   {
+    "day": "2026-09-09",
+    "equity": 99909.23151778868,
+    "cash": 99909.23151778868
+   },
+   {
+    "day": "2026-09-10",
+    "equity": 99909.23151778868,
+    "cash": 99909.23151778868
+   },
+   {
+    "day": "2026-09-11",
+    "equity": 99909.23151778868,
+    "cash": 99909.23151778868
+   }
+  ],
+  "log": [
+   {
+    "id": 9,
+    "ts": "2026-11-15T12:56:38-05:00",
+    "day": "2026-09-04",
+    "kind": "win",
+    "text": "Sold 100 AAA at $110.48: +12.55% ($+1,232.05)."
+   },
+   {
+    "id": 8,
+    "ts": "2026-11-15T12:56:38-05:00",
+    "day": "2026-09-03",
+    "kind": "thought",
+    "text": "Selling 100 AAA at tomorrow's open: RSI recovered to 54."
+   },
+   {
+    "id": 7,
+    "ts": "2026-11-15T12:56:38-05:00",
+    "day": "2026-08-31",
+    "kind": "progress",
+    "text": "Bought 100 AAA at $98.16 in the opening auction."
+   },
+   {
+    "id": 6,
+    "ts": "2026-11-15T12:56:38-05:00",
+    "day": "2026-08-28",
+    "kind": "thought",
+    "text": "Buying 100 AAA at tomorrow's open (RSI closed at 22, about $9,807)."
+   },
+   {
+    "id": 5,
+    "ts": "2026-11-15T12:56:38-05:00",
+    "day": "2026-08-28",
+    "kind": "fail",
+    "text": "Sold 90 AAA at $95.31: -13.36% ($-1,322.82)."
+   },
+   {
+    "id": 4,
+    "ts": "2026-11-15T12:56:38-05:00",
+    "day": "2026-08-27",
+    "kind": "thought",
+    "text": "Selling 90 AAA at tomorrow's open: 10 trading days passed."
+   },
+   {
+    "id": 3,
+    "ts": "2026-11-15T12:56:38-05:00",
+    "day": "2026-08-14",
+    "kind": "progress",
+    "text": "Bought 90 AAA at $110.00 in the opening auction."
+   },
+   {
+    "id": 2,
+    "ts": "2026-11-15T12:56:38-05:00",
+    "day": "2026-08-13",
+    "kind": "thought",
+    "text": "Buying 90 AAA at tomorrow's open (RSI closed at 29, about $9,890)."
+   },
+   {
+    "id": 1,
+    "ts": "2026-11-15T12:56:38-05:00",
+    "day": "2026-08-03",
+    "kind": "milestone",
+    "text": "Paper trading starts with $100,000.00 of paper money. Rule: the selloff bounce. Each trade gets 10% of the account, up to 10 at once. Kill switch at 20% below the start."
+   }
+  ]
  }
 }

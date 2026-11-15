@@ -1,6 +1,8 @@
-"""Alpaca adapter. Reads only: account, positions, clock, bars, option chains.
+"""Alpaca adapter: account, positions, clock, bars, option chains, and
+paper-only market-on-open orders for Stan's paper trading.
 
-No order methods exist here yet on purpose. Nothing in this phase can trade.
+Live trading is impossible here: the constructor refuses non-paper settings
+and the trading client is always created with paper=True.
 """
 from __future__ import annotations
 
@@ -13,12 +15,15 @@ from alpaca.data.historical.option import OptionHistoricalDataClient
 from alpaca.data.requests import OptionChainRequest, StockBarsRequest
 from alpaca.data.timeframe import TimeFrame
 from alpaca.trading.client import TradingClient
+from alpaca.trading.enums import OrderSide, QueryOrderStatus, TimeInForce
+from alpaca.trading.requests import GetOrdersRequest, MarketOrderRequest
 
 from agent.broker.base import (
     AccountInfo,
     DailyBar,
     MarketClock,
     OptionQuote,
+    OrderInfo,
     PositionInfo,
     parse_occ_symbol,
 )
@@ -170,3 +175,47 @@ class AlpacaBroker:
                 )
             )
         return quotes
+
+
+    # ----- paper orders (Stan's paper trading) -----
+    @staticmethod
+    def _order_info(o) -> OrderInfo:
+        return OrderInfo(
+            client_order_id=str(o.client_order_id),
+            symbol=o.symbol,
+            side=_enum_text(o.side),
+            qty=_f(o.qty) or 0.0,
+            status=_enum_text(o.status),
+            filled_qty=_f(o.filled_qty) or 0.0,
+            filled_avg_price=_f(o.filled_avg_price),
+            filled_at=o.filled_at,
+        )
+
+    def submit_open_order(self, symbol: str, qty: int, side: str, client_order_id: str) -> OrderInfo:
+        """A market order that fills at the next opening auction (time in force OPG)."""
+        if not self._paper:
+            raise RuntimeError("Live trading is locked.")
+        if qty <= 0 or int(qty) != qty:
+            raise ValueError("Opening-auction orders need a whole number of shares.")
+        order = self._trading.submit_order(MarketOrderRequest(
+            symbol=symbol, qty=int(qty), side=OrderSide.BUY if side == "buy" else OrderSide.SELL,
+            time_in_force=TimeInForce.OPG, client_order_id=client_order_id,
+        ))
+        return self._order_info(order)
+
+    def get_order(self, client_order_id: str) -> OrderInfo | None:
+        try:
+            return self._order_info(self._trading.get_order_by_client_id(client_order_id))
+        except Exception as err:  # Alpaca answers 404 for an unknown client id
+            if "404" in str(err) or "not found" in str(err).lower():
+                return None
+            raise
+
+    def cancel_open_orders(self) -> int:
+        open_orders = self._trading.get_orders(GetOrdersRequest(status=QueryOrderStatus.OPEN))
+        count = 0
+        for o in open_orders:
+            if str(o.client_order_id).startswith("stan-"):
+                self._trading.cancel_order_by_id(o.id)
+                count += 1
+        return count
