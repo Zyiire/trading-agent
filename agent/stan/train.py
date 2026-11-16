@@ -22,7 +22,7 @@ from agent.stan.journal import Journal
 from agent.stan.persona import pct, signed_pct
 from agent.stan import daytrade, qqq_trend
 from agent.stan.price_action.exam import price_action_exam
-from agent.stan import arena, portfolio
+from agent.stan import arena, levels, portfolio
 from agent.stan.strategies import stress_test
 from agent.stan.study import StudyConfig, build_panel, find_lessons, luck_test, summarize, walk_forward
 
@@ -47,6 +47,7 @@ CURRICULUM = [
     ("daytrade", "Day-trading exam: opening-range breakout"),
     ("trend", "Day-trading exam: the QQQ trend bot from the reel"),
     ("priceaction", "Day-trading exam: price action at key levels"),
+    ("levels", "Day-trading exam: level play (FVG + volume profile)"),
     ("portfolio", "Build my portfolio, one tested stage at a time"),
     ("arena", "Strategy arena: rank 16 strategies by risk tier"),
     ("report", "Write my report card"),
@@ -416,6 +417,35 @@ def run_training(
             journal.think(f"Price action passed only {pexam['checks_passed']} of {pexam['checks_total']} checks. "
                           "On these 60 days, the playbook as written doesn't pay. Next I can test its settings "
                           "one at a time, carefully, without fitting them to this one stretch.", "lesson")
+
+    # 9b. level play (TZ's FVG + volume profile)
+    journal.start_task("levels", "Building volume profiles")
+    if not sessions:
+        journal.finish_task("levels", "No 5-minute data, so I skipped this exam", failed=True)
+    else:
+        journal.think(
+            "Zy sent me TZ's reels. His idea: mark levels with a volume profile (the busiest price, the value "
+            "area, and the low-volume nodes price rushes through), then trade when price loses or reclaims a "
+            "level with a fair value gap. 'Lose 680, puts. Reclaim 680, calls.' I can't test his options-flow "
+            "step, so I'm testing the levels and the gaps.", "milestone")
+        done_l = {"n": 0}
+
+        def on_lv_check(item: dict) -> None:
+            done_l["n"] += 1
+            journal.update_task("levels", done_l["n"] / 9, item["name"])
+            journal.think(f"Level play exam, {'passed' if item['passed'] else 'failed'}: {item['name']}. "
+                          f"{item['detail']}.", "win" if item["passed"] else "fail")
+            pause()
+
+        lexam = levels.levels_exam(sessions, on_check=on_lv_check, luck_reps=max(100, cfg.luck_reps // 3))
+        journal.set_meta("levels_exam", lexam)
+        journal.finish_task("levels", f"Passed {lexam['checks_passed']} of {lexam['checks_total']} checks")
+        journal.think({"real_edge": "Level play passed every check. That's rare for a day-trading rule.",
+                       "promising": f"Level play passed {lexam['checks_passed']} of {lexam['checks_total']}. "
+                                    "Promising, not proven.",
+                       "not_proven": f"Level play passed only {lexam['checks_passed']} of {lexam['checks_total']} "
+                                     "checks on these 60 days. If Zy trades it anyway, it's on paper, and I'll keep "
+                                     "score."}[lexam["verdict"]], "lesson")
 
     # 10. the portfolio: four documented edges, each kept only if it helps
     journal.start_task("portfolio", "Stage 1: the trend core")

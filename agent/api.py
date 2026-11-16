@@ -60,6 +60,7 @@ def create_app(journal_path: str | Path = "data/stan.db", token: str | None = No
             "daytrade_exam": meta.get("daytrade_exam"),
             "trend_exam": meta.get("trend_exam"),
             "price_action_exam": meta.get("price_action_exam"),
+            "levels_exam": meta.get("levels_exam"),
             "portfolio": meta.get("portfolio"),
             "arena": meta.get("arena"),
         }

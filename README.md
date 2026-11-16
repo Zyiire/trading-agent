@@ -247,6 +247,24 @@ higher costs, the short side alone, all three risk levels, the chop filter, week
 breadth beyond QQQ, and drawdown. It shows on the Report tab. It does not trade until it
 passes; if it does, the next step is shadow practice, then the paper account.
 
+## Level play (TZ's FVG + volume profile)
+
+`agent/stan/levels.py` rebuilds the strategy from TZ (@tz.fund)'s reels, and
+`agent/stan/intraday.py` trades it live on the paper account.
+
+- **Levels:** a volume profile of the last 3 sessions: the busiest price (POC), the 70% value
+  area's edges, and low-volume nodes (quiet stretches price passed through fast).
+- **Trigger:** a 5-minute bar closes below a level ("lose the level", his put side) or back above
+  it ("reclaim", his call side), with a fair value gap in the last 3 bars.
+- **Exits:** stop past the last 3 bars, target the next level (1R to 3R), break-even at 1R,
+  flat by 3:45 PM. At most 3 trades a day, 1% of the account at risk per trade.
+- **Live:** choose **Level play** in the web app and press **Start level play**, or let the 9:35 AM
+  scheduled run start it (that window then stays open until 3:50 PM). Longs buy QQQ; the put side
+  sells QQQ short, which needs a margin account (Stan skips shorts on a cash account).
+- **Not tested from the reels:** his options-flow step (no free history) and his exact settings.
+  Stan trades shares, not same-day options. The school's 9-check exam grades it on 60 days of bars.
+- **Switching** to or from level play sells the previous plan's holdings first.
+
 ## Price action at key levels
 
 `agent/stan/price_action/` turns Zy's discretionary playbook into fixed rules on raw OHLCV

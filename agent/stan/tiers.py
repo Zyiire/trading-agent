@@ -161,7 +161,7 @@ def sell_all(broker: Broker, day: str, say, dry_run: bool = False) -> None:
                 except Exception as err:
                     say("fail", f"Couldn't send the {pos.symbol} sell: {err}")
                     continue
-            say("fail", f"Selling all {pos.qty:g} {pos.symbol} at the next open.")
+            say("progress" if not dry_run else "thought", f"{'Would sell' if dry_run else 'Selling'} all {pos.qty:g} {pos.symbol}.")
 
 
 def now_et() -> datetime:
