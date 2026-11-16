@@ -80,6 +80,7 @@ class AlpacaBroker:
             pattern_day_trader=bool(a.pattern_day_trader),
             trading_blocked=bool(a.trading_blocked),
             multiplier=str(a.multiplier) if a.multiplier is not None else None,
+            last_equity=_f(getattr(a, "last_equity", None)),
         )
 
     def get_positions(self) -> list[PositionInfo]:

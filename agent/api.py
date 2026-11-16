@@ -1,4 +1,4 @@
-"""Read-only API the phone app talks to.
+"""Read-only API the phone app talks to. (The desktop web app in agent/web.py builds on it.)
 
 Run:  python -m agent.api
 Then point the app at http://<this computer's IP>:8000
@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from agent.stan.journal import Journal
@@ -25,8 +25,9 @@ def create_app(journal_path: str | Path = "data/stan.db", token: str | None = No
     app = FastAPI(title="Stan", version="0.1.0")
     app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"], allow_headers=["*"])
 
-    def auth(authorization: str | None = Header(default=None)) -> None:
-        if token and authorization != f"Bearer {token}":
+    def auth(request: Request, authorization: str | None = Header(default=None)) -> None:
+        local = request.client is not None and request.client.host in ("127.0.0.1", "::1", "localhost")
+        if token and not local and authorization != f"Bearer {token}":
             raise HTTPException(status_code=401, detail="Bad or missing token")
 
     def journal() -> Journal:

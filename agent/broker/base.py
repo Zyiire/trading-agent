@@ -23,6 +23,7 @@ class AccountInfo:
     pattern_day_trader: bool
     trading_blocked: bool
     multiplier: str | None  # "1" means a cash account
+    last_equity: float | None = None  # equity at the previous close
 
 
 @dataclass(frozen=True)

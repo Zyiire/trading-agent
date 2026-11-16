@@ -295,7 +295,7 @@ def run_evening(broker: Broker, book: PaperBook, history: dict[str, pd.DataFrame
         else:
             prices = {s: float(df["close"].iloc[-1]) for s, df in history.items() if s in tiers.TIER_SYMBOLS}
             tiers.run_tier(broker, book, history, strategy, d, account.equity, prices, say, dry_run,
-                           low_fraction=book.get("low_fraction", tiers.DEFAULT_LOW_FRACTION))
+                           low_fraction=book.get("low_fraction", tiers.DEFAULT_LOW_FRACTION), cash=account.cash)
         if not dry_run:
             book.set("last_day", d)
         return {"day": d, "halted": False, "equity": account.equity, "start": start, "floor": floor,
@@ -392,6 +392,25 @@ def _low_fraction_from_arena(journal_path: str) -> float | None:
     return None
 
 
+def set_strategy(book: PaperBook, journal_path: str, name: str) -> str:
+    """Choose what the paper account trades from the next run on. Returns a one-line confirmation."""
+    if name not in ("selloff", "low", "medium", "high"):
+        raise ValueError(f"unknown strategy {name}")
+    frac = tiers.DEFAULT_LOW_FRACTION
+    if name == "low":
+        frac = _low_fraction_from_arena(str(journal_path)) or frac
+        book.set("low_fraction", frac)
+    old = book.get("strategy", "selloff")
+    if old == name:
+        return f"Paper account is already on: {name}."
+    book.set("strategy", name)
+    book.set("tier_orders_day", None)   # a new choice may trade the same evening
+    book.log(datetime.now(ET).date().isoformat(), "milestone",
+             f"Zy switched the paper account from {old} to {name}" + (f" ({frac:.0%} size)" if name == "low" else "") + ".")
+    return (f"Paper account set to: {name}" + (f" (low risk at {frac:.0%} size)" if name == "low" else "")
+            + ". It takes effect at the next run; open selloff trades finish first.")
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     from agent.broker.alpaca import AlpacaBroker
     from agent.config import ConfigError, load_settings
@@ -410,17 +429,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.use:
         book = PaperBook(args.journal)
         try:
-            frac = tiers.DEFAULT_LOW_FRACTION
-            if args.use == "low":
-                frac = _low_fraction_from_arena(args.journal) or frac
-                book.set("low_fraction", frac)
-            old = book.get("strategy", "selloff")
-            book.set("strategy", args.use)
-            book.log(datetime.now(ET).date().isoformat(), "milestone",
-                     f"Zy switched the paper account from {old} to {args.use}"
-                     + (f" ({frac:.0%} size)" if args.use == "low" else "") + ".")
-            print(f"Paper account set to: {args.use}" + (f" (low risk at {frac:.0%} size)" if args.use == "low" else "")
-                  + ". It takes effect at the next evening run; open selloff trades finish first.")
+            print(set_strategy(book, args.journal, args.use))
             return 0
         finally:
             book.close()

@@ -140,3 +140,19 @@ def test_kill_switch_sells_tier_holdings_and_stops():
     res = run_evening(broker, book, cut, now=datetime.combine(days[258].date(), time(17, 0), tzinfo=ET))
     assert res["halted"]
     assert any(o["symbol"] == "TQQQ" and o["side"] == "sell" for o in broker.orders.values())
+
+
+def test_buys_never_exceed_cash_on_hand_when_switching():
+    """Going from SPY to TQQQ: the sale's cash isn't spendable yet, so the buy is capped."""
+    h, broker, book = _market(qqq_trend=0.002), FakeAlpaca(cash=1_000), PaperBook(":memory:")
+    days = h["SPY"].index
+    cut = {s: df[df.index <= days[260]] for s, df in h.items()}
+    spy_px, tq_px = float(cut["SPY"]["close"].iloc[-1]), float(cut["TQQQ"]["close"].iloc[-1])
+    broker.positions["SPY"] = 9_000 / spy_px
+    broker.mark({s: float(df["close"].iloc[-1]) for s, df in cut.items()})
+    book.set("strategy", "high")
+    res = run_evening(broker, book, cut, now=datetime.combine(days[260].date(), time(17, 0), tzinfo=ET))
+    buy = next(o for o in broker.orders.values() if o["symbol"] == "TQQQ")
+    assert buy["qty"] * tq_px <= 1_000 * 0.98 + 0.01
+    assert any(o["symbol"] == "SPY" and o["side"] == "sell" for o in broker.orders.values())
+    assert any("rest follows on the next run" in a for a in res["actions"])
