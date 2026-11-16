@@ -20,7 +20,7 @@ import pandas as pd
 
 from agent.stan.journal import Journal
 from agent.stan.persona import pct, signed_pct
-from agent.stan import daytrade
+from agent.stan import daytrade, qqq_trend
 from agent.stan.strategies import stress_test
 from agent.stan.study import StudyConfig, build_panel, find_lessons, luck_test, summarize, walk_forward
 
@@ -43,6 +43,7 @@ CURRICULUM = [
     ("selloff", "Strategy exam: buy after a sharp selloff"),
     ("stress", "Stress-test the selloff strategy"),
     ("daytrade", "Day-trading exam: opening-range breakout"),
+    ("trend", "Day-trading exam: the QQQ trend bot from the reel"),
     ("report", "Write my report card"),
 ]
 
@@ -340,7 +341,40 @@ def run_training(
                           f"{exam['checks_total']} checks. On my stocks lately it isn't an edge, which is exactly "
                           "what the Time Machine is there to show before a dollar is risked.", "lesson")
 
-    # 8. report
+    # 8. QQQ trend bot (rebuilt from Nick Fischer's reel)
+    journal.start_task("trend", "Rebuilding the QQQ trend bot")
+    if not sessions:
+        journal.finish_task("trend", "No 5-minute data, so I skipped this exam", failed=True)
+    else:
+        journal.think(
+            "Zy showed me a reel of someone's QQQ options bots. It shows the switches (trend filter, chop filter, "
+            "stop loss, profit lock, trailing stop, daily loss limit) and one good week, including a day down "
+            "$6,364, but never the entry rule. So I rebuilt a rule from those switches and I'm testing it on the "
+            "stock itself, long and short, before believing any of it.", "milestone")
+        done_t = {"n": 0}
+
+        def on_trend_check(item: dict) -> None:
+            done_t["n"] += 1
+            journal.update_task("trend", done_t["n"] / 9, item["name"])
+            journal.think(f"Trend bot exam, {'passed' if item['passed'] else 'failed'}: {item['name']}. "
+                          f"{item['detail']}.", "win" if item["passed"] else "fail")
+            pause()
+
+        texam = qqq_trend.trend_exam(sessions, on_check=on_trend_check, luck_reps=max(100, cfg.luck_reps // 3))
+        journal.set_meta("trend_exam", texam)
+        journal.finish_task("trend", f"Passed {texam['checks_passed']} of {texam['checks_total']} checks")
+        if texam["verdict"] == "real_edge":
+            journal.think("The trend bot passed every check, on both sides of the market. Next it practises in "
+                          "the shadow book before it goes anywhere near the paper account.", "milestone")
+        elif texam["verdict"] == "promising":
+            journal.think(f"The trend bot passed {texam['checks_passed']} of {texam['checks_total']} checks. "
+                          "Promising, not proven. A good week on someone's screen isn't a strategy.", "lesson")
+        else:
+            journal.think(f"The trend bot passed only {texam['checks_passed']} of {texam['checks_total']} checks. "
+                          "Whatever makes the reel's bots money, this rebuild of them doesn't have it on my data, "
+                          "so it stays out of my trading.", "lesson")
+
+    # 9. report
     journal.start_task("report", "Adding it all up")
     journal.set_meta("summary", summary)
     edge = summary["accuracy"] - summary["baseline_up"]

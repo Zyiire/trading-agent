@@ -236,6 +236,7 @@ export default function App() {
 
             {stan?.strategy && <StrategyCard strategy={stan.strategy} />}
             {stan?.daytrade_exam && <StrategyCard strategy={stan.daytrade_exam} />}
+            {stan?.trend_exam && <StrategyCard strategy={stan.trend_exam} />}
 
             {exams.length > 0 && <Text style={s.section}>Yearly exams (years he had never seen)</Text>}
             {exams.map((e) => (
@@ -610,7 +611,8 @@ function StrategyCard({ strategy }: { strategy: Strategy }) {
         </Text>
         {strategy.sessions ? (
           <Text style={s.small}>
-            {strategy.sessions} sessions of 5-minute bars, {strategy.first_day} to {strategy.last_day}. Rule from the Day Trader skill pack.
+            {strategy.sessions} sessions of 5-minute bars, {strategy.first_day} to {strategy.last_day}.{' '}
+            {strategy.source ? `Rule ${strategy.source}.` : 'Rule from the Day Trader skill pack.'}
           </Text>
         ) : null}
       </View>

@@ -199,6 +199,26 @@ set to $50).
 | `stan-app/` | Expo (React Native) iPhone app |
 | `tests/` | Offline tests using fake Alpaca clients |
 
+## The QQQ trend bot (from the reel)
+
+`agent/stan/qqq_trend.py` is Stan's rebuild of the "QQQ BOTS" shown in Nick Fischer's
+Instagram reel. The reel shows the dashboard switches (trend filter, chop filter, stop loss,
+profit lock, trailing stop, daily loss limit, risk Low/Medium/High) and about one week of
+results, but never the entry rule or a backtest. So this is a reconstruction from those
+switches, not his code.
+
+The rule, on 5-minute bars of the stock itself (options are not modelled):
+
+- Long above VWAP with EMA9 over EMA21 and rising; short on the mirror (puts, in options terms).
+- Chop filter: only when the last hour moved in a fairly straight line (efficiency ratio 0.30+).
+- Stop 1.5 ATR. At +1R the stop moves to break-even, then trails the best price by 2 ATR.
+- Out on a close back across VWAP, or at 3:55 PM. At most 3 trades a day, none after -2R.
+
+Training runs it as its own exam with 9 checks: profit after costs, beating random entries,
+higher costs, the short side alone, all three risk levels, the chop filter, weeks ahead,
+breadth beyond QQQ, and drawdown. It shows on the Report tab. It does not trade until it
+passes; if it does, the next step is shadow practice, then the paper account.
+
 ## Notes
 
 - Free Alpaca data: stock bars come from the IEX feed (history starts around 2016),
