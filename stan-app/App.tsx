@@ -2,7 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { Exam, Lesson, Paper, Portfolio, PortfolioStats, Shadow, SkillLibrary, StanProfile, Strategy, Task, Thought, ThoughtKind, getJson, pct, signedPct } from './src/api';
+import { Exam, Lesson, Arena, ArenaEntry, Paper, Portfolio, PortfolioStats, Shadow, SkillLibrary, StanProfile, Strategy, Task, Thought, ThoughtKind, getJson, pct, signedPct } from './src/api';
 
 // Set EXPO_PUBLIC_STAN_URL in stan-app/.env to your computer's address, e.g. http://192.168.1.20:8000
 // With no address set, the app shows a saved practice run ("demo").
@@ -234,6 +234,7 @@ export default function App() {
               <Text style={s.dim}>The report card appears when Stan finishes his exams.</Text>
             )}
 
+            {stan?.arena && <ArenaCard a={stan.arena} />}
             {stan?.portfolio && <PortfolioCard p={stan.portfolio} />}
             {stan?.strategy && <StrategyCard strategy={stan.strategy} />}
             {stan?.daytrade_exam && <StrategyCard strategy={stan.daytrade_exam} />}
@@ -594,6 +595,73 @@ const VERDICT: Record<Strategy['verdict'], { text: string; color: string }> = {
   promising: { text: 'Promising, not proven', color: C.warn },
   not_proven: { text: 'Not a real edge yet', color: C.bad },
 };
+
+const TIER: Record<'low' | 'medium' | 'high', { label: string; color: string }> = {
+  low: { label: 'LOW RISK', color: C.good },
+  medium: { label: 'MEDIUM RISK', color: C.warn },
+  high: { label: 'HIGH RISK', color: C.bad },
+};
+
+function ArenaCard({ a }: { a: Arena }) {
+  const byKey: Record<string, ArenaEntry> = {};
+  a.strategies.forEach((x) => (byKey[x.key] = x));
+  const ran = a.strategies.filter((x) => !x.skipped);
+  const sharpe = (x: number | null | undefined) => (x === null || x === undefined ? 'n/a' : x.toFixed(2));
+  return (
+    <>
+      <Text style={s.section}>Strategy arena: best by risk level</Text>
+      {(['low', 'medium', 'high'] as const).map((t) => {
+        const w = a.winners[t] ? byKey[a.winners[t] as string] : null;
+        return (
+          <View key={t} style={[s.card, { borderLeftWidth: 3, borderLeftColor: TIER[t].color }]}>
+            <Text style={[s.label, { color: TIER[t].color }]}>{TIER[t].label}</Text>
+            {w ? (
+              <>
+                <Text style={s.big}>{w.name}</Text>
+                <Text style={s.dim}>
+                  {pct(w.cagr)} a year · worst drop {pct(w.max_dd)} · Sharpe {sharpe(w.sharpe)} · $1 became ${w.growth?.toFixed(2)}
+                </Text>
+                <Text style={s.small}>{w.how}. Evidence: {w.evidence}.</Text>
+              </>
+            ) : (
+              <Text style={s.dim}>No strategy passed every check at this risk level.</Text>
+            )}
+          </View>
+        );
+      })}
+      <View style={s.card}>
+        <Text style={s.label}>FULL RANKING BY SHARPE ({a.first_day} TO {a.last_day})</Text>
+        <View style={s.row}>
+          <Text style={[s.label, { flex: 2.4 }]}>STRATEGY</Text>
+          <Text style={[s.label, { flex: 1, textAlign: 'right' }]}>A YEAR</Text>
+          <Text style={[s.label, { flex: 1, textAlign: 'right' }]}>SHARPE</Text>
+          <Text style={[s.label, { flex: 1, textAlign: 'right' }]}>WORST</Text>
+        </View>
+        {ran.map((x) => (
+          <View key={x.key} style={[s.listRow]}>
+            <View style={s.row}>
+              <Text style={[s.text, { flex: 2.4 }]}>
+                {x.rank}. {x.name}
+              </Text>
+              <Text style={[s.small, { flex: 1, textAlign: 'right' }]}>{pct(x.cagr)}</Text>
+              <Text style={[s.small, { flex: 1, textAlign: 'right' }]}>{sharpe(x.sharpe)}</Text>
+              <Text style={[s.small, { flex: 1, textAlign: 'right' }]}>{pct(x.max_dd)}</Text>
+            </View>
+            <Text style={[s.small, { color: x.tier && x.tier !== 'n/a' ? TIER[x.tier].color : C.dim }]}>
+              {x.tier} risk{x.key === 'hold_spy' ? ' · benchmark' : x.survivorship ? ' · survivorship bias, can\'t win' : x.eligible ? ' · eligible' : ' · failed a check'}
+            </Text>
+          </View>
+        ))}
+        {a.strategies.filter((x) => x.skipped).map((x) => (
+          <Text key={x.key} style={s.small}>{x.name}: skipped ({x.skipped})</Text>
+        ))}
+        {a.notes.map((n) => (
+          <Text key={n} style={[s.small, { marginTop: 6 }]}>{n}</Text>
+        ))}
+      </View>
+    </>
+  );
+}
 
 const PORT_VERDICT: Record<Portfolio['verdict'], { text: string; color: string }> = {
   real_edge: { text: 'Beats holding SPY on risk', color: C.good },
