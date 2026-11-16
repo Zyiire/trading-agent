@@ -237,6 +237,7 @@ export default function App() {
             {stan?.strategy && <StrategyCard strategy={stan.strategy} />}
             {stan?.daytrade_exam && <StrategyCard strategy={stan.daytrade_exam} />}
             {stan?.trend_exam && <StrategyCard strategy={stan.trend_exam} />}
+            {stan?.price_action_exam && <StrategyCard strategy={stan.price_action_exam} />}
 
             {exams.length > 0 && <Text style={s.section}>Yearly exams (years he had never seen)</Text>}
             {exams.map((e) => (

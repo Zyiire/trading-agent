@@ -21,6 +21,7 @@ import pandas as pd
 from agent.stan.journal import Journal
 from agent.stan.persona import pct, signed_pct
 from agent.stan import daytrade, qqq_trend
+from agent.stan.price_action.exam import price_action_exam
 from agent.stan.strategies import stress_test
 from agent.stan.study import StudyConfig, build_panel, find_lessons, luck_test, summarize, walk_forward
 
@@ -44,6 +45,7 @@ CURRICULUM = [
     ("stress", "Stress-test the selloff strategy"),
     ("daytrade", "Day-trading exam: opening-range breakout"),
     ("trend", "Day-trading exam: the QQQ trend bot from the reel"),
+    ("priceaction", "Day-trading exam: price action at key levels"),
     ("report", "Write my report card"),
 ]
 
@@ -374,7 +376,44 @@ def run_training(
                           "Whatever makes the reel's bots money, this rebuild of them doesn't have it on my data, "
                           "so it stays out of my trading.", "lesson")
 
-    # 9. report
+    # 9. price action at key levels (Zy's spec)
+    journal.start_task("priceaction", "Mapping structure, levels and candles")
+    if not sessions:
+        journal.finish_task("priceaction", "No 5-minute data, so I skipped this exam", failed=True)
+    else:
+        journal.think(
+            "Zy wrote me a price-action playbook: trade only with the 15-minute structure, wait for price to pull "
+            "back to a key level (yesterday's high or low, a recent swing), and enter only after a pin bar, a "
+            "high-volume engulfing candle or a failed breakout closes there. Stop just past the wick, 2R or the "
+            "next level, break-even at 1R. No indicators, and no peeking at bars that haven't closed.", "milestone")
+        done_p = {"n": 0}
+
+        def on_pa_check(item: dict) -> None:
+            done_p["n"] += 1
+            journal.update_task("priceaction", done_p["n"] / 9, item["name"])
+            journal.think(f"Price-action exam, {'passed' if item['passed'] else 'failed'}: {item['name']}. "
+                          f"{item['detail']}.", "win" if item["passed"] else "fail")
+            pause()
+
+        pexam = price_action_exam(sessions, on_check=on_pa_check, luck_reps=max(100, cfg.luck_reps // 3))
+        journal.set_meta("price_action_exam", pexam)
+        journal.finish_task("priceaction", f"Passed {pexam['checks_passed']} of {pexam['checks_total']} checks")
+        aff = pexam["score"].get("affordable")
+        if aff is not None:
+            journal.think(f"With $50 and a $5 max loss, I could afford at least one share on {pct(aff)} of these "
+                          "trades. The rest need a bigger account.", "thought")
+        if pexam["verdict"] == "real_edge":
+            journal.think("Price action at key levels passed every check. It goes to shadow practice next, then "
+                          "the paper account. Still no real money.", "milestone")
+        elif pexam["verdict"] == "promising":
+            journal.think(f"Price action passed {pexam['checks_passed']} of {pexam['checks_total']} checks. "
+                          "Promising, not proven. I'll study the ones it failed.", "lesson")
+        else:
+            journal.think(f"Price action passed only {pexam['checks_passed']} of {pexam['checks_total']} checks. "
+                          "On these 60 days, the playbook as written doesn't pay. Next I can test its settings "
+                          "one at a time, carefully, without fitting them to this one stretch.", "lesson")
+
+    # 10. report
     journal.start_task("report", "Adding it all up")
     journal.set_meta("summary", summary)
     edge = summary["accuracy"] - summary["baseline_up"]

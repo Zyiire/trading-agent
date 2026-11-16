@@ -23,8 +23,8 @@
   "mode": "demo",
   "state": "finished",
   "current_task": null,
-  "tasks_done": 10,
-  "tasks_total": 10,
+  "tasks_done": 11,
+  "tasks_total": 11,
   "summary": {
    "years_tested": 10,
    "years_passed": 5,
@@ -448,6 +448,128 @@
    "checks_passed": 1,
    "checks_total": 9,
    "verdict": "not_proven"
+  },
+  "price_action_exam": {
+   "name": "Price action at key levels",
+   "rule": "trade only with the 15-minute structure (higher highs and lows for longs, lower for shorts); wait for a pullback to the previous day's high/low or a recent swing level, then enter after a pin bar, a high-volume engulfing candle or a failed breakout closes; stop 2 cents past the candle's wick, target 2R or the next level, stop to break-even at 1R, no entries in the first 15 minutes, flat by 3:45 PM",
+   "source": "from Zy's price-action spec: structure, levels, candles, structural stops",
+   "unit": "R",
+   "cost": 0.0005,
+   "stocks": 43,
+   "sessions": 59,
+   "first_day": "2026-08-25",
+   "last_day": "2026-11-13",
+   "score": {
+    "trades": 4319,
+    "win_rate": 0.2818,
+    "profit_factor": 0.528,
+    "avg": null,
+    "avg_R": -0.3304,
+    "total_R": -1426.83,
+    "longs": 2068,
+    "shorts": 2251,
+    "affordable": 0.3505
+   },
+   "by_pattern": {
+    "pin": {
+     "trades": 476,
+     "win_rate": 0.2458,
+     "profit_factor": 0.373,
+     "avg": null,
+     "avg_R": -0.5519,
+     "total_R": -262.72,
+     "longs": 224,
+     "shorts": 252,
+     "affordable": 0.4286
+    },
+    "engulf": {
+     "trades": 842,
+     "win_rate": 0.2838,
+     "profit_factor": 0.543,
+     "avg": null,
+     "avg_R": -0.3067,
+     "total_R": -258.24,
+     "longs": 410,
+     "shorts": 432,
+     "affordable": 0.4169
+    },
+    "sweep": {
+     "trades": 3001,
+     "win_rate": 0.2869,
+     "profit_factor": 0.555,
+     "avg": null,
+     "avg_R": -0.3019,
+     "total_R": -905.87,
+     "longs": 1434,
+     "shorts": 1567,
+     "affordable": 0.3196
+    }
+   },
+   "luck": {
+    "p_value": 0.9435,
+    "actual_avg_R": -0.3304,
+    "random_avg_R": -0.2541,
+    "reps": 300
+   },
+   "checks": [
+    {
+     "key": "basic",
+     "name": "Makes more than it loses after 0.05% costs (profit factor 1.2+, 60+ trades)",
+     "passed": false,
+     "detail": "4319 trades (2068 long, 2251 short): won 28.2%, average -0.330R, profit factor 0.528"
+    },
+    {
+     "key": "luck",
+     "name": "Profitable, and beats the same trades placed on random days (p under 0.05)",
+     "passed": false,
+     "detail": "its trades averaged -0.330R vs -0.254R at random (p = 0.9435)"
+    },
+    {
+     "key": "costs",
+     "name": "Still ahead at 0.10% costs per side",
+     "passed": false,
+     "detail": "average -0.581R at 0.10% each way"
+    },
+    {
+     "key": "both_sides",
+     "name": "Makes money in downtrends too, not just guessing up",
+     "passed": false,
+     "detail": "longs -0.340R on 2068, shorts -0.322R on 2251"
+    },
+    {
+     "key": "patterns",
+     "name": "Every confirmation candle earns its keep (each with 20+ trades is ahead)",
+     "passed": false,
+     "detail": "pin -0.552R on 476, engulf -0.307R on 842, sweep -0.302R on 3001"
+    },
+    {
+     "key": "targets",
+     "name": "Also ahead with a 1.5R and a 3R target, not one lucky setting",
+     "passed": false,
+     "detail": "1.5R -0.329R, 2R -0.330R, 3R -0.341R"
+    },
+    {
+     "key": "weeks",
+     "name": "Ends at least 55% of weeks ahead",
+     "passed": false,
+     "detail": "ahead in 0 of 12 weeks"
+    },
+    {
+     "key": "breadth",
+     "name": "Ahead on at least 60% of stocks",
+     "passed": false,
+     "detail": "1 of 43 stocks (with 5+ trades) ahead"
+    },
+    {
+     "key": "drawdown",
+     "name": "Its worst losing stretch is smaller than its total gain",
+     "passed": false,
+     "detail": "worst drop 1432.1R, total -1426.8R"
+    }
+   ],
+   "checks_passed": 0,
+   "checks_total": 9,
+   "verdict": "not_proven"
   }
  },
  "/tasks": [
@@ -543,6 +665,16 @@
   },
   {
    "id": 10,
+   "key": "priceaction",
+   "title": "Day-trading exam: price action at key levels",
+   "status": "done",
+   "progress": 1.0,
+   "detail": "Passed 0 of 9 checks",
+   "started_at": "2026-11-15T06:43:00+00:00",
+   "finished_at": "2026-11-15T06:43:00+00:00"
+  },
+  {
+   "id": 11,
    "key": "report",
    "title": "Write my report card",
    "status": "done",

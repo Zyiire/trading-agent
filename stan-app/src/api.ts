@@ -103,6 +103,7 @@ export type StanProfile = {
   strategy?: Strategy | null;
   daytrade_exam?: Strategy | null;
   trend_exam?: Strategy | null;
+  price_action_exam?: Strategy | null;
 };
 
 export type ThoughtKind = 'thought' | 'progress' | 'win' | 'fail' | 'lesson' | 'milestone';
