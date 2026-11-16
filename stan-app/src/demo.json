@@ -23,8 +23,8 @@
   "mode": "demo",
   "state": "finished",
   "current_task": null,
-  "tasks_done": 9,
-  "tasks_total": 9,
+  "tasks_done": 10,
+  "tasks_total": 10,
   "summary": {
    "years_tested": 10,
    "years_passed": 5,
@@ -352,6 +352,102 @@
    "checks_passed": 0,
    "checks_total": 7,
    "verdict": "not_proven"
+  },
+  "trend_exam": {
+   "name": "QQQ trend bot",
+   "rule": "trade with the trend on 5-minute bars: long above VWAP with EMA9 over EMA21 and rising, short on the mirror, only when the last hour moved in a fairly straight line (chop filter); stop 1.5 ATR, stop to break-even at +1R, then a 2 ATR trailing stop; out on a close back across VWAP or at 3:55 PM; 3 trades and -2R a day at most",
+   "source": "rebuilt from the controls in Nick Fischer's QQQ BOTS reel; his exact rules aren't public",
+   "unit": "R",
+   "cost": 0.0003,
+   "stocks": 43,
+   "sessions": 60,
+   "first_day": "2026-08-24",
+   "last_day": "2026-11-13",
+   "score": {
+    "trades": 7196,
+    "win_rate": 0.3444,
+    "profit_factor": 0.766,
+    "avg": null,
+    "avg_R": -0.1213,
+    "total_R": -873.15,
+    "longs": 3559,
+    "shorts": 3637
+   },
+   "focus": {
+    "trades": 168,
+    "win_rate": 0.3929,
+    "profit_factor": 0.975,
+    "avg": null,
+    "avg_R": -0.0119,
+    "total_R": -2.01,
+    "longs": 79,
+    "shorts": 89
+   },
+   "luck": {
+    "p_value": 0.5116,
+    "actual_avg_R": -0.1213,
+    "random_avg_R": -0.1198,
+    "reps": 300
+   },
+   "checks": [
+    {
+     "key": "basic",
+     "name": "Makes more than it loses after 0.03% costs (profit factor 1.2+, 60+ trades)",
+     "passed": false,
+     "detail": "7196 trades (3559 long, 3637 short): won 34.4%, average -0.121R, profit factor 0.766"
+    },
+    {
+     "key": "luck",
+     "name": "Profitable, and beats the same trades taken at random on other days (p under 0.05)",
+     "passed": false,
+     "detail": "its trades averaged -0.121R vs -0.120R at random (p = 0.5116)"
+    },
+    {
+     "key": "costs",
+     "name": "Still ahead at 0.08% costs per side",
+     "passed": false,
+     "detail": "average -0.314R at 0.08% each way"
+    },
+    {
+     "key": "both_sides",
+     "name": "Makes money on the short side too, not just guessing up",
+     "passed": false,
+     "detail": "longs -0.131R on 3559, shorts -0.112R on 3637"
+    },
+    {
+     "key": "risk_levels",
+     "name": "Works at Low, Medium and High risk, not one lucky setting",
+     "passed": false,
+     "detail": "low -0.172R, medium -0.121R, high -0.092R"
+    },
+    {
+     "key": "chop_filter",
+     "name": "The chop filter earns its keep (better with it than without)",
+     "passed": true,
+     "detail": "with it -0.121R on 7196 trades, without it -0.124R on 7652"
+    },
+    {
+     "key": "weeks",
+     "name": "Ends at least 55% of weeks ahead",
+     "passed": false,
+     "detail": "ahead in 0 of 12 weeks"
+    },
+    {
+     "key": "breadth",
+     "name": "Works on QQQ and on at least 60% of the other symbols",
+     "passed": false,
+     "detail": "QQQ -0.012R on 168 trades; 6 of 42 others ahead"
+    },
+    {
+     "key": "drawdown",
+     "name": "Its worst losing stretch is smaller than its total gain",
+     "passed": false,
+     "detail": "QQQ: worst drop 15.8R, total -2.0R"
+    }
+   ],
+   "checks_passed": 1,
+   "checks_total": 9,
+   "verdict": "not_proven"
   }
  },
  "/tasks": [
@@ -437,6 +533,16 @@
   },
   {
    "id": 9,
+   "key": "trend",
+   "title": "Day-trading exam: the QQQ trend bot from the reel",
+   "status": "done",
+   "progress": 1.0,
+   "detail": "Passed 1 of 9 checks",
+   "started_at": "2026-11-15T06:43:00+00:00",
+   "finished_at": "2026-11-15T06:43:00+00:00"
+  },
+  {
+   "id": 10,
    "key": "report",
    "title": "Write my report card",
    "status": "done",

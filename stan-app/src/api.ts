@@ -66,6 +66,7 @@ export type StrategyCheck = { key: string; name: string; passed: boolean; detail
 
 export type Strategy = {
   name: string;
+  source?: string;
   unit?: 'R';
   sessions?: number;
   first_day?: string | null;
@@ -101,6 +102,7 @@ export type StanProfile = {
   summary: Summary | null;
   strategy?: Strategy | null;
   daytrade_exam?: Strategy | null;
+  trend_exam?: Strategy | null;
 };
 
 export type ThoughtKind = 'thought' | 'progress' | 'win' | 'fail' | 'lesson' | 'milestone';

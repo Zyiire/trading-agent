@@ -57,6 +57,7 @@ def create_app(journal_path: str | Path = "data/stan.db", token: str | None = No
             "summary": meta.get("summary"),
             "strategy": meta.get("strategy"),
             "daytrade_exam": meta.get("daytrade_exam"),
+            "trend_exam": meta.get("trend_exam"),
         }
 
     @app.get("/tasks", dependencies=[Depends(auth)])
