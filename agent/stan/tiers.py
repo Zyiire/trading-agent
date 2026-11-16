@@ -98,25 +98,42 @@ def orders_for(p: TierPlan, equity: float, held: dict[str, float], prices: dict[
     return sorted(out, key=lambda o: o[1] != "sell")
 
 
-def tier_order_id(sym: str, day: str, side: str) -> str:
-    return f"stan-tier-{sym}-{day.replace('-', '')}-{side}"
+def tier_order_id(sym: str, day: str, side: str, tier: str = "") -> str:
+    return f"stan-tier{tier[:1]}-{sym}-{day.replace('-', '')}-{side}"
 
 
 def run_tier(broker: Broker, book, history: dict[str, pd.DataFrame], tier: str, day: str, equity: float,
-             prices: dict[str, float], say, dry_run: bool = False, low_fraction: float = DEFAULT_LOW_FRACTION) -> None:
-    """One evening for a tier: plan, compare, and send the orders (once per day)."""
+             prices: dict[str, float], say, dry_run: bool = False, low_fraction: float = DEFAULT_LOW_FRACTION,
+             cash: float | None = None) -> None:
+    """One evening for a tier: plan, compare, and send the orders (once per day).
+
+    Buys never exceed 98% of the cash on hand: money from a sale sent in the same run isn't
+    spendable until that sale fills, so the rest of a switch is bought on the next run."""
     p = plan(tier, history, low_fraction)
     held = {pos.symbol: pos.qty for pos in broker.get_positions() if pos.symbol in TIER_SYMBOLS}
     say("thought", f"{tier.capitalize()}-risk plan: {p.reason}.")
     if book.get("tier_orders_day") == day:
+        say("thought", "I already placed today's orders for this plan, so nothing new.")
         return
     todo = orders_for(p, equity, held, prices)
     if not todo:
         say("thought", "Holdings are within 5% of the plan, so no trade tonight.")
+    spendable = None if cash is None else max(0.0, cash) * 0.98
     for sym, side, qty in todo:
-        oid = tier_order_id(sym, day, side)
+        short = False
+        if side == "buy" and spendable is not None:
+            afford = round(spendable / prices[sym], 6)
+            if afford < qty:
+                qty, short = afford, True
+            if qty * prices[sym] < 1:   # Alpaca's minimum order is $1
+                say("thought", f"I want more {sym}, but the cash from tonight's sale isn't free until it fills. "
+                               "I'll buy it on the next run.")
+                continue
+            spendable -= qty * prices[sym]
+        oid = tier_order_id(sym, day, side, tier)
+        tail = " The rest follows on the next run, once tonight's sale has filled." if short else ""
         if dry_run:
-            say("thought", f"Would {side} {qty:g} {sym} at the next open (about ${qty * prices[sym]:,.0f}).")
+            say("thought", f"Would {side} {qty:g} {sym} (about ${qty * prices[sym]:,.0f}).{tail}")
             continue
         try:
             broker.submit_fractional_order(sym, qty, side, oid)
@@ -128,7 +145,7 @@ def run_tier(broker: Broker, book, history: dict[str, pd.DataFrame], tier: str, 
             if not taken:
                 say("fail", f"Couldn't send the {sym} {side} order: {type(err).__name__}: {err}")
                 continue
-        say("progress", f"{side.capitalize()} {qty:g} {sym} at the next open (about ${qty * prices[sym]:,.0f}).")
+        say("progress", f"{side.capitalize()} {qty:g} {sym} (about ${qty * prices[sym]:,.0f}).{tail}")
     if not dry_run:
         book.set("tier_orders_day", day)
         book.set("tier_plan", {"tier": tier, "weights": p.weights, "reason": p.reason, "day": day})

@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stan</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cellipse cx='15' cy='21' rx='11' ry='7.5' fill='%23f6c945'/%3E%3Ccircle cx='21' cy='11.5' r='6' fill='%23f6c945'/%3E%3Cpath d='M26 10.5l5 1.6-5 2z' fill='%23f08c2e'/%3E%3Ccircle cx='22.4' cy='10.4' r='1' fill='%231a1505'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #0a0e13; --panel: #111720; --panel2: #161d28; --line: #212b3a; --text: #e8edf4; --dim: #8b97a9;
+    --faint: #5b6779; --good: #34d399; --bad: #f87171; --warn: #fbbf24; --duck: #f6c945; --blue: #7aa2f7;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body { font: 15px/1.45 "Inter", "Segoe UI", system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+  .num { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 20px 24px 48px; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--duck); outline-offset: 2px; }
+
+  /* top bar */
+  .top { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; letter-spacing: -0.01em; }
+  .brand .duckmark { width: 26px; height: 26px; }
+  .brand small { font-weight: 500; color: var(--dim); font-size: 13px; margin-left: 2px; }
+  .spacer { flex: 1; }
+  .pill { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line);
+          background: var(--panel); font-size: 12.5px; color: var(--dim); white-space: nowrap; }
+  .pill b { color: var(--text); font-weight: 600; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
+  .dot.on { background: var(--good); box-shadow: 0 0 0 3px rgba(52, 211, 153, .15); }
+  .pill.paper { color: var(--duck); border-color: rgba(246, 201, 69, .35); }
+  .pill.demo { color: var(--blue); border-color: rgba(122, 162, 247, .35); }
+
+  .grid { display: grid; gap: 16px; }
+  .row1 { grid-template-columns: minmax(380px, 1.1fr) 1.4fr; }
+  .row2 { grid-template-columns: 1fr; margin-top: 16px; }
+  .row3 { grid-template-columns: 2fr 1fr; margin-top: 16px; }
+  .row4 { grid-template-columns: 1fr 1fr; margin-top: 16px; }
+  @media (max-width: 1000px) { .row1, .row3, .row4 { grid-template-columns: 1fr; } }
+
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; min-width: 0; }
+  .label { font-size: 11px; font-weight: 700; letter-spacing: .09em; color: var(--dim); text-transform: uppercase; }
+  .dim { color: var(--dim); } .small { font-size: 12.5px; }
+  .good { color: var(--good); } .bad { color: var(--bad); } .warn { color: var(--warn); }
+
+  /* Stan */
+  .stan { display: flex; gap: 18px; align-items: center; }
+  .portrait { width: 148px; height: 164px; flex: none; }
+  .portrait .breath { animation: breath 5s ease-in-out infinite; transform-origin: 100px 200px; }
+  .portrait .lid { transform-origin: center; transform-box: fill-box; animation: blink 5.5s infinite; }
+  @keyframes breath { 50% { transform: scale(1.012) translateY(-0.6px); } }
+  @keyframes blink { 0%, 94%, 100% { transform: scaleY(0.05); } 96%, 98% { transform: scaleY(1); } }
+  .portrait .iris { transition: transform .25s ease-out; }
+  .mouth { display: none; } .mood-up .mouth.up, .mood-flat .mouth.flat, .mood-down .mouth.down { display: block; }
+  .mood-rest .mouth.flat { display: block; } .mood-rest .lid { animation: none; transform: scaleY(1); }
+  .says { min-width: 0; }
+  .says h1 { margin: 0 0 2px; font-size: 20px; letter-spacing: -0.01em; }
+  .bubble { position: relative; margin-top: 10px; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px;
+            padding: 11px 14px; font-size: 14.5px; }
+  .bubble::before { content: ""; position: absolute; left: -7px; top: 18px; width: 12px; height: 12px; background: var(--panel2);
+            border-left: 1px solid var(--line); border-bottom: 1px solid var(--line); transform: rotate(45deg); }
+
+  /* money */
+  .money { display: flex; flex-direction: column; gap: 14px; }
+  .big { font-size: 46px; font-weight: 700; line-height: 1.05; letter-spacing: -0.03em; }
+  .change { font-size: 16px; font-weight: 600; }
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  @media (max-width: 700px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+  .tile { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  .tile .v { font-size: 17px; font-weight: 650; margin-top: 3px; }
+  .bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; margin-top: 8px; }
+  .bar i { display: block; height: 100%; background: var(--good); border-radius: 3px; }
+
+  /* tiers */
+  .tiers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 12px; }
+  @media (max-width: 1000px) { .tiers { grid-template-columns: repeat(2, 1fr); } }
+  .tier { text-align: left; background: var(--panel2); border: 1px solid var(--line); border-radius: 12px; padding: 14px; position: relative;
+          transition: border-color .15s, background .15s; }
+  .tier:hover { border-color: #33415a; }
+  .tier[aria-pressed="true"] { border-color: var(--duck); background: #1b2230; box-shadow: inset 0 0 0 1px var(--duck); }
+  .tier .tag { font-size: 11px; font-weight: 700; letter-spacing: .09em; }
+  .tier h3 { margin: 4px 0 4px; font-size: 16px; }
+  .tier p { margin: 0; font-size: 12.5px; color: var(--dim); min-height: 36px; }
+  .tier .stats { display: flex; gap: 14px; margin-top: 10px; font-size: 12.5px; color: var(--dim); }
+  .tier .stats b { display: block; color: var(--text); font-size: 15px; }
+  .tier .on { position: absolute; top: 12px; right: 12px; font-size: 11px; font-weight: 700; color: var(--duck); display: none; }
+  .tier[aria-pressed="true"] .on { display: block; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
+  .btn { border: 1px solid var(--line); background: var(--panel2); border-radius: 10px; padding: 10px 16px; font-weight: 600; }
+  .btn:hover { border-color: #3a4960; }
+  .btn.primary { background: var(--duck); border-color: var(--duck); color: #1a1505; }
+  .btn.primary:hover { filter: brightness(1.06); }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .switch { display: inline-flex; align-items: center; gap: 10px; background: none; border: 0; padding: 0; font-weight: 600; }
+  .switch .track { width: 40px; height: 22px; border-radius: 11px; background: var(--line); position: relative; transition: background .15s; }
+  .switch .track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #cfd6e0; transition: left .15s; }
+  .switch[aria-checked="true"] .track { background: var(--good); }
+  .switch[aria-checked="true"] .track::after { left: 21px; background: #fff; }
+  .preview { margin-top: 14px; border: 1px dashed #34425a; border-radius: 12px; padding: 12px 14px; background: #0e141c; display: none; }
+  .preview.show { display: block; }
+  .preview ul { margin: 8px 0 0; padding-left: 18px; } .preview li { margin: 3px 0; }
+  .spin { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--faint); border-top-color: var(--duck); border-radius: 50%;
+          animation: spin .8s linear infinite; vertical-align: -2px; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* chart */
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tab { border: 1px solid transparent; background: none; color: var(--dim); padding: 6px 12px; border-radius: 8px; font-weight: 600; font-size: 13.5px; }
+  .tab[aria-selected="true"] { background: var(--panel2); border-color: var(--line); color: var(--text); }
+  .charthead { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+  .chartval { font-size: 22px; font-weight: 700; }
+  #chart { width: 100%; height: 320px; display: block; }
+  .livebadge { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--good); display: inline-flex; gap: 6px; align-items: center; }
+  .livebadge .dot { animation: pulse 1.6s infinite; background: var(--good); }
+  @keyframes pulse { 50% { opacity: .35; } }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: right; font-size: 11px; letter-spacing: .08em; color: var(--dim); font-weight: 700; padding: 6px 0; text-transform: uppercase; }
+  th:first-child, td:first-child { text-align: left; }
+  td { text-align: right; padding: 10px 0; border-top: 1px solid var(--line); }
+  td .sub { display: block; font-size: 12px; color: var(--dim); }
+  tr.pos { cursor: pointer; } tr.pos:hover td { background: rgba(255, 255, 255, .02); }
+  .empty { color: var(--dim); padding: 18px 0 6px; font-size: 14px; }
+
+  /* log + calendar */
+  .log { max-height: 330px; overflow: auto; margin-top: 8px; }
+  .entry { display: flex; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .entry:first-child { border-top: 0; }
+  .entry .k { flex: none; width: 8px; height: 8px; border-radius: 50%; margin-top: 7px; background: var(--faint); }
+  .entry .k.win, .entry .k.progress { background: var(--good); } .entry .k.fail { background: var(--bad); }
+  .entry .k.milestone { background: var(--duck); } .entry .k.lesson { background: var(--blue); }
+  .entry time { display: block; font-size: 11.5px; color: var(--faint); }
+  .cal { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 10px; }
+  .cal .h { font-size: 11px; color: var(--faint); text-align: center; font-weight: 700; letter-spacing: .06em; }
+  .day { border-radius: 8px; padding: 7px 8px; background: var(--panel2); border: 1px solid var(--line); min-height: 50px; }
+  .day .d { font-size: 11px; color: var(--dim); } .day .p { font-size: 13px; font-weight: 650; margin-top: 2px; }
+  .day.up { background: rgba(52, 211, 153, .10); border-color: rgba(52, 211, 153, .28); }
+  .day.dn { background: rgba(248, 113, 113, .10); border-color: rgba(248, 113, 113, .28); }
+  .day.blank { visibility: hidden; }
+  .toast { position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); background: #1d2634; border: 1px solid #34425a; padding: 10px 16px;
+           border-radius: 10px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 80vw; }
+  .toast.show { opacity: 1; }
+  .banner { display: none; background: rgba(248, 113, 113, .1); border: 1px solid rgba(248, 113, 113, .35); color: #fecaca; border-radius: 10px;
+            padding: 10px 14px; margin-bottom: 14px; font-size: 14px; }
+  .banner.show { display: block; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg class="duckmark" viewBox="0 0 32 32" aria-hidden="true"><ellipse cx="15" cy="21" rx="11" ry="7.5" fill="#f6c945"/><circle cx="21" cy="11.5" r="6" fill="#f6c945"/><path d="M26 10.5l5 1.6-5 2z" fill="#f08c2e"/><circle cx="22.4" cy="10.4" r="1" fill="#1a1505"/><path d="M8 20c3 3 8 3 11 0" stroke="#d9a91f" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>
+      Stan <small id="rank">trader in training</small>
+    </div>
+    <div class="spacer"></div>
+    <span class="pill" id="market"><span class="dot"></span><span>Market…</span></span>
+    <span class="pill paper">PAPER MONEY</span>
+    <span class="pill demo" id="demoPill" hidden>DEMO · made-up prices</span>
+  </header>
+
+  <div class="banner" id="banner" role="alert"></div>
+
+  <section class="grid row1">
+    <div class="card stan">
+      <svg class="portrait mood-flat" id="portrait" viewBox="0 0 200 222" role="img" aria-label="Stan, wearing a duck t-shirt">
+        <defs>
+          <radialGradient id="bgG" cx="50%" cy="35%" r="75%"><stop offset="0" stop-color="#24364a"/><stop offset="1" stop-color="#131c28"/></radialGradient>
+          <linearGradient id="skinG" x1="0" x2="1"><stop offset="0" stop-color="#e9b592"/><stop offset=".7" stop-color="#dfa581"/><stop offset="1" stop-color="#c98d6a"/></linearGradient>
+          <linearGradient id="shirtG" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#f1ece0"/><stop offset="1" stop-color="#d9d2c2"/></linearGradient>
+          <linearGradient id="hairG" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3b2a22"/><stop offset="1" stop-color="#241812"/></linearGradient>
+          <clipPath id="frame"><rect width="200" height="222" rx="22"/></clipPath>
+        </defs>
+        <g clip-path="url(#frame)">
+          <rect width="200" height="222" fill="url(#bgG)"/>
+          <g class="breath">
+            <!-- shirt -->
+            <path d="M18 222c2-34 22-50 52-56l14-4h32l14 4c30 6 50 22 52 56z" fill="url(#shirtG)"/>
+            <path d="M82 163c4 12 32 12 36 0l-6-3H88z" fill="#c9c1b0"/>
+            <path d="M18 222c2-30 16-44 34-51-6 16-9 33-9 51z" fill="#000" opacity=".07"/>
+            <!-- the duck -->
+            <g transform="translate(100 196)">
+              <ellipse cx="-3" cy="6" rx="17" ry="11" fill="#f6c945"/>
+              <circle cx="8" cy="-8" r="9" fill="#f6c945"/>
+              <path d="M16-10l9 2.6-9 3.4z" fill="#f08c2e"/>
+              <circle cx="10.4" cy="-10" r="1.5" fill="#1a1505"/>
+              <path d="M-13 4c4 5 12 5 17 0" stroke="#d9a91f" stroke-width="2" fill="none" stroke-linecap="round"/>
+              <path d="M-24 17c7 3 12-3 19 0s12-3 19 0 9-2 12-1" stroke="#7aa2f7" stroke-width="2" fill="none" stroke-linecap="round" opacity=".8"/>
+            </g>
+            <!-- neck -->
+            <path d="M84 138h32v26c-6 9-26 9-32 0z" fill="#d49a76"/>
+            <path d="M84 146c10 9 22 9 32 0v-8H84z" fill="#000" opacity=".13"/>
+            <!-- ears -->
+            <ellipse cx="57" cy="98" rx="7" ry="11" fill="#d9a07c"/><ellipse cx="143" cy="98" rx="7" ry="11" fill="#c98d6a"/>
+            <!-- head -->
+            <path d="M60 86c0-30 18-46 40-46s40 16 40 46v14c0 28-18 48-40 48s-40-20-40-48z" fill="url(#skinG)"/>
+            <!-- hair -->
+            <path d="M56 92c-4-34 14-58 44-58s50 22 44 58c-3-14-8-24-16-30-14 6-40 6-54-2-9 6-15 17-18 32z" fill="url(#hairG)"/>
+            <path d="M74 48c10-8 30-10 44-4" stroke="#5a4236" stroke-width="2" fill="none" opacity=".5" stroke-linecap="round"/>
+            <!-- brows -->
+            <path d="M70 84c6-4 14-4 20-1" stroke="#2c1f18" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+            <path d="M110 83c6-3 14-3 20 1" stroke="#2c1f18" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+            <!-- eyes -->
+            <g>
+              <ellipse cx="81" cy="96" rx="8" ry="5.6" fill="#fbfaf7"/><g class="iris"><circle cx="82" cy="96" r="4.1" fill="#4a3526"/><circle cx="82" cy="96" r="1.9" fill="#120c08"/><circle cx="83.6" cy="94.4" r="1.1" fill="#fff"/></g>
+              <ellipse cx="119" cy="96" rx="8" ry="5.6" fill="#fbfaf7"/><g class="iris"><circle cx="120" cy="96" r="4.1" fill="#4a3526"/><circle cx="120" cy="96" r="1.9" fill="#120c08"/><circle cx="121.6" cy="94.4" r="1.1" fill="#fff"/></g>
+              <ellipse class="lid" cx="81" cy="96" rx="8.6" ry="6.2" fill="#dfa581"/><ellipse class="lid" cx="119" cy="96" rx="8.6" ry="6.2" fill="#d79c78"/>
+              <path d="M72.5 93.5c5-4.5 12-4.5 17 0" stroke="#3a2a20" stroke-width="1.4" fill="none" stroke-linecap="round" opacity=".7"/>
+              <path d="M110.5 93.5c5-4.5 12-4.5 17 0" stroke="#3a2a20" stroke-width="1.4" fill="none" stroke-linecap="round" opacity=".7"/>
+            </g>
+            <!-- nose -->
+            <path d="M100 98c-1 9-5 14-5 18 3 3 8 3 11 0" stroke="#b97d5c" stroke-width="2" fill="none" stroke-linecap="round" opacity=".8"/>
+            <!-- mouths -->
+            <path class="mouth up" d="M84 127c9 9 23 9 32 0" stroke="#8a4b3a" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <path class="mouth flat" d="M87 129c8 3 18 3 26 0" stroke="#8a4b3a" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <path class="mouth down" d="M88 131c7-3 17-3 24 0" stroke="#8a4b3a" stroke-width="3" fill="none" stroke-linecap="round"/>
+            <path d="M60 104c2 20 12 36 26 42-12-10-18-24-20-42z" fill="#000" opacity=".06"/>
+          </g>
+        </g>
+      </svg>
+      <div class="says">
+        <div class="label">Your trader</div>
+        <h1>Stan</h1>
+        <div class="dim small" id="stanSub">Trading the paper account</div>
+        <div class="bubble" id="bubble" aria-live="polite">Give me a second to check the account.</div>
+      </div>
+    </div>
+
+    <div class="card money">
+      <div>
+        <div class="label">Paper account</div>
+        <div class="big num" id="equity">$—</div>
+        <div class="change num" id="dayChange">&nbsp;</div>
+      </div>
+      <div class="tiles">
+        <div class="tile"><div class="label">Since start</div><div class="v num" id="sinceStart">—</div></div>
+        <div class="tile"><div class="label">Cash</div><div class="v num" id="cash">—</div></div>
+        <div class="tile"><div class="label">Invested</div><div class="v num" id="invested">—</div></div>
+        <div class="tile"><div class="label">Kill switch</div><div class="v num" id="kill">—</div><div class="bar"><i id="killBar" style="width:0"></i></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid row2">
+    <div class="card">
+      <div class="charthead">
+        <div><div class="label">Stan's trade</div><div class="dim small" id="runHint">Pick a risk level, preview what Stan would do, then send it.</div></div>
+        <div class="spacer"></div>
+        <button class="switch" id="autoSwitch" role="switch" aria-checked="true"><span class="track"></span><span id="autoLabel">Trading on</span></button>
+      </div>
+      <div class="tiers" id="tiers" role="group" aria-label="Risk level"></div>
+      <div class="actions">
+        <button class="btn" id="previewBtn">Preview Stan's trade</button>
+        <button class="btn primary" id="sendBtn" disabled>Send these orders</button>
+        <span class="dim small" id="marketHint"></span>
+      </div>
+      <div class="preview" id="preview"></div>
+    </div>
+  </section>
+
+  <section class="grid row3">
+    <div class="card">
+      <div class="charthead">
+        <div class="tabs" id="chartTabs" role="tablist"></div>
+        <div class="spacer"></div>
+        <span class="livebadge"><span class="dot"></span>LIVE</span>
+      </div>
+      <div class="charthead"><span class="chartval num" id="chartVal">—</span><span class="small dim num" id="chartSub"></span></div>
+      <svg id="chart" role="img" aria-label="Live chart"></svg>
+    </div>
+    <div class="card">
+      <div class="label">Positions</div>
+      <div id="positions"></div>
+    </div>
+  </section>
+
+  <section class="grid row4">
+    <div class="card">
+      <div class="label">Stan's notes</div>
+      <div class="log" id="log"></div>
+    </div>
+    <div class="card">
+      <div class="label">Daily results</div>
+      <div class="cal" id="cal"></div>
+      <div class="dim small" style="margin-top:10px" id="calNote"></div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+  const money = (x, d = 2) => x == null ? "—" : (x < 0 ? "-" : "") + "$" + Math.abs(x).toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+  const pct = (x, d = 2) => x == null ? "—" : (x >= 0 ? "+" : "") + (x * 100).toFixed(d) + "%";
+  const plainPct = (x, d = 1) => x == null ? "—" : (x * 100).toFixed(d) + "%";
+  const cls = (x) => x == null ? "" : x >= 0 ? "good" : "bad";
+  const get = (u) => fetch(u).then((r) => r.ok ? r.json() : r.json().then((j) => Promise.reject(new Error(j.detail || r.statusText))));
+  const post = (u, body) => fetch(u, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) })
+    .then((r) => r.ok ? r.json() : r.json().then((j) => Promise.reject(new Error(j.detail || r.statusText))));
+  let toastTimer;
+  const toast = (t) => { $("toast").textContent = t; $("toast").classList.add("show"); clearTimeout(toastTimer); toastTimer = setTimeout(() => $("toast").classList.remove("show"), 3600); };
+
+  const TIERS = [
+    { key: "low", tag: "LOW RISK", color: "var(--good)", name: "Steady", how: "SPY, sized down when markets get wild, with part kept in cash.", arena: (a) => a.find((x) => x.base === "vol_target") },
+    { key: "medium", tag: "MEDIUM RISK", color: "var(--warn)", name: "Balanced", how: "SPY, sized to a steady 15% volatility. Adjusted monthly.", arena: (a) => a.find((x) => x.key === "vol_target") },
+    { key: "high", tag: "HIGH RISK", color: "var(--bad)", name: "Aggressive", how: "3x Nasdaq (TQQQ) while QQQ is above its 200-day average, else cash.", arena: (a) => a.find((x) => x.key === "lev_trend") },
+    { key: "selloff", tag: "STOCK PICKS", color: "var(--blue)", name: "Selloff bounce", how: "Buys stocks after sharp selloffs, 10% each. Best run after 4:30 PM ET.", arena: (a) => a.find((x) => x.key === "selloff") },
+  ];
+  const state = { live: null, paper: null, arena: [], tab: "account", series: {}, previewFor: null, busy: false };
+
+  // ---------- tiers
+  function renderTiers() {
+    const box = $("tiers"); box.textContent = "";
+    const current = state.live ? state.live.strategy : null;
+    for (const t of TIERS) {
+      const b = el("button", "tier"); b.setAttribute("aria-pressed", String(current === t.key));
+      const tag = el("div", "tag", t.tag); tag.style.color = t.color; b.append(tag, el("span", "on", "SELECTED"), el("h3", "", t.name), el("p", "", t.how));
+      const a = t.arena(state.arena);
+      const stats = el("div", "stats");
+      let a2 = a, est = false;
+      if (!a2 && t.key === "low") { const m = state.arena.find((x) => x.key === "vol_target"), f = (state.live && state.live.low_fraction) || 0.73;
+        if (m && m.cagr != null) { a2 = { cagr: m.cagr * f, max_dd: m.max_dd * f }; est = true; } }
+      if (a2 && a2.cagr != null) {
+        const s1 = el("div"); s1.append(el("b", "num", plainPct(a2.cagr)), document.createTextNode(est ? "a year, estimate" : "a year, tested"));
+        const s2 = el("div"); s2.append(el("b", "num", plainPct(a2.max_dd)), document.createTextNode("worst drop"));
+        stats.append(s1, s2);
+      } else stats.append(el("div", "", "Run the arena to see tested numbers."));
+      b.append(stats);
+      b.onclick = () => chooseTier(t.key);
+      box.append(b);
+    }
+  }
+  async function chooseTier(key) {
+    if (state.busy || (state.live && state.live.strategy === key)) return;
+    try {
+      const r = await post("/paper/use", { strategy: key });
+      toast(r.message); clearPreview(); await refreshLive(); refreshPaper();
+    } catch (e) { toast(e.message); }
+  }
+
+  // ---------- preview and send
+  function clearPreview() { state.previewFor = null; $("preview").classList.remove("show"); $("sendBtn").disabled = true; }
+  function showJob(job, title) {
+    const box = $("preview"); box.textContent = ""; box.classList.add("show");
+    box.append(el("div", "label", title));
+    if (job.error) { box.append(el("div", "bad", job.error)); return; }
+    const ul = el("ul"); for (const a of job.actions) ul.append(el("li", "", a)); box.append(ul);
+    if (job.halted) box.append(el("div", "warn", "Stan is stopped: " + (job.reason || "paused") + "."));
+  }
+  async function runJob(dry) {
+    if (state.busy) return;
+    state.busy = true; $("previewBtn").disabled = true; $("sendBtn").disabled = true;
+    const box = $("preview"); box.textContent = ""; box.classList.add("show");
+    const wait = el("div"); wait.append(el("span", "spin"), document.createTextNode(dry ? "Stan is working out his trade…" : "Sending the orders…")); box.append(wait);
+    setBubble(dry ? "Checking the numbers. One moment." : "Sending the orders now.");
+    try {
+      await post("/paper/run", { dry_run: dry });
+      let job;
+      do { await new Promise((r) => setTimeout(r, 900)); job = await get("/paper/job"); } while (job.running);
+      showJob(job, dry ? "Preview: nothing has been sent" : "Done");
+      const hasOrder = !job.error && !job.halted && job.actions.some((a) => /^Would |^Buying |^Selling /.test(a));
+      if (dry && hasOrder) { state.previewFor = state.live && state.live.strategy; $("sendBtn").disabled = false; }
+      if (!dry) { toast("Orders sent."); await refreshLive(); refreshPaper(); }
+    } catch (e) { box.textContent = ""; box.append(el("div", "bad", e.message)); }
+    state.busy = false; $("previewBtn").disabled = false; bubbleFromState();
+  }
+  $("previewBtn").onclick = () => runJob(true);
+  $("sendBtn").onclick = () => { if (state.previewFor && state.live && state.previewFor === state.live.strategy) runJob(false); };
+  $("autoSwitch").onclick = async () => {
+    const on = $("autoSwitch").getAttribute("aria-checked") === "true";
+    try { await post(on ? "/paper/pause" : "/paper/resume"); toast(on ? "Trading paused. Stan won't place orders." : "Trading is back on."); clearPreview(); await refreshLive(); refreshPaper(); }
+    catch (e) { toast(e.message); }
+  };
+
+  // ---------- Stan
+  function setBubble(t) { $("bubble").textContent = t; }
+  function bubbleFromState() {
+    const L = state.live; if (!L) return;
+    const p = $("portrait"); let mood = "flat", line;
+    const tierName = (TIERS.find((t) => t.key === L.strategy) || {}).name || L.strategy;
+    if (L.halted) { mood = "rest"; line = "I'm stopped: " + (L.halt_reason || "paused") + ". Flip the switch when you want me back."; }
+    else {
+      const dc = L.day_change;
+      if (dc != null && dc > 0.0015) mood = "up"; else if (dc != null && dc < -0.0015) mood = "down";
+      const feel = dc == null ? "" : dc > 0.0015 ? "We're up " + pct(dc) + " today. " : dc < -0.0015 ? "We're down " + pct(dc) + " today. I'm sticking to the rules. " : "Flat day so far. ";
+      const plan = L.tier_plan && L.tier_plan.tier === L.strategy ? "My plan: " + L.tier_plan.reason + "." : "I'm on " + tierName + ". Preview my trade to see what I'd do.";
+      line = feel + plan;
+    }
+    p.setAttribute("class", "portrait mood-" + mood);
+    $("stanSub").textContent = L.halted ? "Paused" : "Trading " + tierName + " on the paper account";
+    if (!state.busy) setBubble(line);
+  }
+
+  // ---------- live
+  async function refreshLive() {
+    try {
+      const L = await get("/live"); state.live = L; $("banner").classList.remove("show");
+      $("demoPill").hidden = !L.demo;
+      $("equity").textContent = money(L.equity);
+      const dc = $("dayChange"); dc.className = "change num " + cls(L.day_change);
+      dc.textContent = L.day_change == null ? "" : pct(L.day_change) + "  (" + money(L.equity - L.last_equity) + ") today";
+      const ss = $("sinceStart"); ss.textContent = pct(L.since_start); ss.className = "v num " + cls(L.since_start);
+      $("cash").textContent = money(L.cash, 0);
+      $("invested").textContent = L.equity ? plainPct(Math.max(0, 1 - L.cash / L.equity), 0) : "—";
+      if (L.kill_floor) {
+        const room = L.equity / L.kill_floor - 1; $("kill").textContent = money(L.kill_floor, 0);
+        $("killBar").style.width = Math.max(0, Math.min(100, room / 0.25 * 100)) + "%";
+        $("killBar").style.background = room < 0.05 ? "var(--bad)" : room < 0.12 ? "var(--warn)" : "var(--good)";
+      } else $("kill").textContent = "20% below start";
+      const m = $("market"); m.textContent = ""; const d = el("span", "dot" + (L.market.is_open ? " on" : ""));
+      const when = new Date(L.market.is_open ? L.market.next_close : L.market.next_open).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" });
+      const s = el("span"); s.append(el("b", "", L.market.is_open ? "Market open" : "Market closed"), document.createTextNode(L.market.is_open ? " · closes " + when : " · opens " + when));
+      m.append(d, s);
+      $("marketHint").textContent = L.market.is_open ? "The market is open, so these orders fill right away." : "The market is closed, so orders fill at the next open.";
+      const sw = $("autoSwitch"); sw.setAttribute("aria-checked", String(!L.halted)); $("autoLabel").textContent = L.halted ? "Trading paused" : "Trading on";
+      if (state.previewFor && state.previewFor !== L.strategy) clearPreview();
+      renderTiers(); renderPositions(); renderTabs(); bubbleFromState(); drawChart();
+    } catch (e) { const b = $("banner"); b.textContent = "Can't reach the account right now: " + e.message; b.classList.add("show"); }
+  }
+  function renderPositions() {
+    const box = $("positions"); box.textContent = ""; const P = state.live.positions;
+    if (!P.length) { box.append(el("div", "empty", "No positions. Stan is in cash.")); renderPlan(box); return; }
+    const tb = el("table"), hr = el("tr"); for (const h of ["Holding", "Value", "Gain"]) hr.append(el("th", "", h)); tb.append(hr);
+    for (const p of P) {
+      const tr = el("tr", "pos"); tr.tabIndex = 0;
+      const a = el("td"); a.append(el("b", "", p.symbol), el("span", "sub num", (+p.qty.toFixed(4)) + " sh · avg " + money(p.avg_entry)));
+      const b = el("td", "num"); b.append(document.createTextNode(money(p.value)), el("span", "sub num", "at " + money(p.price)));
+      const c = el("td", "num " + cls(p.pl)); c.append(document.createTextNode(money(p.pl)), el("span", "sub num " + cls(p.pl), pct(p.pl_pct)));
+      tr.append(a, b, c); tr.onclick = () => selectTab(p.symbol); tr.onkeydown = (e) => { if (e.key === "Enter") selectTab(p.symbol); };
+      tb.append(tr);
+    }
+    box.append(tb);
+    renderPlan(box);
+  }
+  function renderPlan(box) {
+    const L = state.live, plan = L.tier_plan;
+    if (!plan || plan.tier !== L.strategy) return;
+    const wrap = el("div"); wrap.style.marginTop = "18px"; wrap.append(el("div", "label", "Plan vs. now"));
+    for (const sym of Object.keys(plan.weights)) {
+      const target = plan.weights[sym], pos = L.positions.find((p) => p.symbol === sym), now = pos && L.equity ? pos.value / L.equity : 0;
+      if (!target && !now) continue;
+      const row = el("div", "small dim num"); row.style.marginTop = "10px";
+      row.textContent = sym + ": holding " + plainPct(now, 0) + " of the account, plan is " + plainPct(target, 0);
+      const bar = el("div", "bar"), fill = el("i"); fill.style.width = Math.min(100, now * 100) + "%"; fill.style.background = "var(--duck)"; bar.append(fill);
+      wrap.append(row, bar);
+    }
+    box.append(wrap);
+  }
+
+  // ---------- chart
+  function renderTabs() {
+    const names = ["account", "history", ...state.live.positions.map((p) => p.symbol)];
+    if (!names.includes(state.tab)) state.tab = "account";
+    const box = $("chartTabs"); if (box.dataset.k === names.join()) { for (const b of box.children) b.setAttribute("aria-selected", String(b.dataset.t === state.tab)); return; }
+    box.dataset.k = names.join(); box.textContent = "";
+    for (const n of names) {
+      const b = el("button", "tab", n === "account" ? "Account · now" : n === "history" ? "Account · all days" : n);
+      b.dataset.t = n; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", String(n === state.tab)); b.onclick = () => selectTab(n); box.append(b);
+    }
+  }
+  function selectTab(n) { state.tab = n; renderTabs(); if (n !== "account" && n !== "history") loadSeries(n); drawChart(); }
+  async function loadSeries(sym) { try { const r = await get("/live/chart?symbol=" + encodeURIComponent(sym)); state.series[sym] = r.points; if (state.tab === sym) drawChart(); } catch (e) { /* keep the old one */ } }
+  function chartData() {
+    const L = state.live, t = state.tab;
+    if (t === "account") return { pts: L.ticks.map((k) => ({ t: k.t, v: k.equity })), fmt: money, ref: L.last_equity, refLabel: "yesterday's close", sub: "updates every few seconds while this page is open" };
+    if (t === "history") {
+      const pts = ((state.paper && state.paper.equity_history) || []).map((d) => ({ t: Date.parse(d.day + "T16:00:00"), v: d.equity }));
+      pts.push({ t: L.now, v: L.equity });
+      return { pts, fmt: money, ref: L.start_equity, refLabel: "start", sub: "one point per day Stan ran, plus right now", days: true };
+    }
+    const pos = L.positions.find((p) => p.symbol === t); const base = (state.series[t] || []).map((p) => ({ t: p.t, v: p.c }));
+    const last = base.length ? base[base.length - 1].t : 0;
+    for (const k of L.ticks) if (k.prices[t] && k.t > last) base.push({ t: k.t, v: k.prices[t] });
+    return { pts: base, fmt: money, ref: pos ? pos.avg_entry : null, refLabel: "Stan's average entry", sub: "5-minute prices, then live" };
+  }
+  function drawChart() {
+    if (!state.live) return;
+    const svg = $("chart"), W = svg.clientWidth || 800, H = 320, padL = 8, padR = 64, padT = 12, padB = 26;
+    const { pts, fmt, ref, refLabel, sub, days } = chartData();
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.textContent = "";
+    const ns = "http://www.w3.org/2000/svg", S = (tag, attrs) => { const e = document.createElementNS(ns, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); svg.append(e); return e; };
+    const lastV = pts.length ? pts[pts.length - 1].v : null;
+    $("chartVal").textContent = lastV == null ? "—" : fmt(lastV);
+    const chg = lastV != null && ref ? lastV / ref - 1 : null;
+    const subEl = $("chartSub"); subEl.textContent = (chg == null ? "" : pct(chg) + " vs " + refLabel + " · ") + sub; subEl.className = "small num " + (chg == null ? "dim" : cls(chg));
+    if (pts.length < 2) { const t = S("text", { x: W / 2, y: H / 2, fill: "#8b97a9", "text-anchor": "middle", "font-size": 14 }); t.textContent = "Collecting data… the line appears in a few seconds."; return; }
+    let lo = Math.min(...pts.map((p) => p.v)), hi = Math.max(...pts.map((p) => p.v));
+    if (ref && ref > lo * 0.97 && ref < hi * 1.03) { lo = Math.min(lo, ref); hi = Math.max(hi, ref); }
+    const padV = (hi - lo || hi * 0.002) * 0.12; lo -= padV; hi += padV;
+    const t0 = pts[0].t, t1 = pts[pts.length - 1].t;
+    // even spacing by index keeps overnight gaps from flattening the line
+    const X = (i) => padL + (W - padL - padR) * (i / (pts.length - 1)), Y = (v) => padT + (H - padT - padB) * (1 - (v - lo) / (hi - lo));
+    const up = ref ? lastV >= ref : lastV >= pts[0].v, col = up ? "#34d399" : "#f87171";
+    const defs = S("defs", {}); const g = document.createElementNS(ns, "linearGradient"); g.setAttribute("id", "area"); g.setAttribute("x1", 0); g.setAttribute("x2", 0); g.setAttribute("y1", 0); g.setAttribute("y2", 1);
+    for (const [o, a] of [[0, .28], [1, 0]]) { const s = document.createElementNS(ns, "stop"); s.setAttribute("offset", o); s.setAttribute("stop-color", col); s.setAttribute("stop-opacity", a); g.append(s); } defs.append(g);
+    for (let i = 0; i <= 4; i++) { const v = lo + (hi - lo) * i / 4, y = Y(v); S("line", { x1: padL, x2: W - padR, y1: y, y2: y, stroke: "#1c2633", "stroke-width": 1 }); const t = S("text", { x: W - padR + 8, y: y + 4, fill: "#8b97a9", "font-size": 11.5 }); t.textContent = fmt(v, v > 5000 ? 0 : 2); }
+    const fmtT = (ms) => days ? new Date(ms).toLocaleDateString([], { month: "short", day: "numeric" }) : new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    for (const i of [0, Math.floor((pts.length - 1) / 2), pts.length - 1]) { const t = S("text", { x: X(i), y: H - 8, fill: "#5b6779", "font-size": 11.5, "text-anchor": i === 0 ? "start" : i === pts.length - 1 ? "end" : "middle" }); t.textContent = fmtT(pts[i].t); }
+    const d = pts.map((p, i) => (i ? "L" : "M") + X(i).toFixed(1) + " " + Y(p.v).toFixed(1)).join(" ");
+    S("path", { d: d + ` L${X(pts.length - 1)} ${H - padB} L${X(0)} ${H - padB} Z`, fill: "url(#area)" });
+    if (ref && ref > lo && ref < hi) { S("line", { x1: padL, x2: W - padR, y1: Y(ref), y2: Y(ref), stroke: "#f6c945", "stroke-width": 1, "stroke-dasharray": "4 5", opacity: .8 }); const t = S("text", { x: padL + 4, y: Y(ref) - 6, fill: "#f6c945", "font-size": 11.5 }); t.textContent = refLabel + " " + fmt(ref); }
+    S("path", { d, fill: "none", stroke: col, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" });
+    const lx = X(pts.length - 1), ly = Y(lastV); S("circle", { cx: lx, cy: ly, r: 7, fill: col, opacity: .2 }); S("circle", { cx: lx, cy: ly, r: 3.5, fill: col });
+    // hover
+    const cross = S("line", { y1: padT, y2: H - padB, stroke: "#3a4960", "stroke-width": 1, visibility: "hidden" }), dot = S("circle", { r: 4, fill: "#e8edf4", visibility: "hidden" });
+    const tip = S("text", { fill: "#e8edf4", "font-size": 12.5, "font-weight": 600, visibility: "hidden" });
+    const hit = S("rect", { x: padL, y: padT, width: W - padL - padR, height: H - padT - padB, fill: "transparent" });
+    hit.onmousemove = (e) => { const r = svg.getBoundingClientRect(); const x = (e.clientX - r.left) * (W / r.width); const i = Math.max(0, Math.min(pts.length - 1, Math.round((x - padL) / (W - padL - padR) * (pts.length - 1))));
+      for (const o of [cross, dot, tip]) o.setAttribute("visibility", "visible"); cross.setAttribute("x1", X(i)); cross.setAttribute("x2", X(i)); dot.setAttribute("cx", X(i)); dot.setAttribute("cy", Y(pts[i].v));
+      tip.textContent = fmt(pts[i].v) + "  ·  " + fmtT(pts[i].t); const right = X(i) > W * 0.6; tip.setAttribute("text-anchor", right ? "end" : "start"); tip.setAttribute("x", X(i) + (right ? -10 : 10)); tip.setAttribute("y", padT + 12); };
+    hit.onmouseleave = () => { for (const o of [cross, dot, tip]) o.setAttribute("visibility", "hidden"); };
+  }
+
+  // ---------- paper book: notes and calendar
+  async function refreshPaper() {
+    try { state.paper = await get("/paper"); } catch (e) { return; }
+    const log = $("log"); log.textContent = "";
+    const rows = state.paper.log || [];
+    if (!rows.length) log.append(el("div", "empty", "Nothing yet. Stan writes here whenever he runs."));
+    for (const r of rows.slice(0, 40)) { const e = el("div", "entry"); e.append(el("span", "k " + r.kind)); const b = el("div"); b.append(document.createTextNode(r.text), el("time", "", r.day)); e.append(b); log.append(e); }
+    const cal = $("cal"); cal.textContent = ""; for (const h of ["MON", "TUE", "WED", "THU", "FRI"]) cal.append(el("div", "h", h));
+    const hist = (state.paper.equity_history || []).slice(-26); let ups = 0, total = 0;
+    const cells = []; for (let i = 1; i < hist.length; i++) cells.push({ day: hist[i].day, pl: hist[i].equity - hist[i - 1].equity });
+    if (!cells.length) { $("calNote").textContent = "Daily results show up here after Stan has run on two different days."; return; }
+    const first = new Date(cells[0].day + "T12:00:00").getDay(); for (let i = 1; i < first; i++) cal.append(el("div", "day blank"));
+    let prev = first - 1;
+    for (const c of cells) {
+      const dow = new Date(c.day + "T12:00:00").getDay(); if (dow < 1 || dow > 5) continue;
+      let gap = (dow - prev - 1 + 5) % 5; while (gap-- > 0) cal.append(el("div", "day blank")); prev = dow;
+      const d = el("div", "day " + (c.pl >= 0 ? "up" : "dn")); d.append(el("div", "d", new Date(c.day + "T12:00:00").toLocaleDateString([], { month: "short", day: "numeric" })), el("div", "p num " + cls(c.pl), money(c.pl, 0)));
+      cal.append(d); total++; if (c.pl >= 0) ups++;
+    }
+    $("calNote").textContent = ups + " of " + total + " days ended ahead.";
+    if (state.tab === "history") drawChart();
+  }
+
+  async function boot() {
+    try { const s = await get("/stan"); state.arena = (s.arena && s.arena.strategies) || []; if (s.rank && s.rank.name) $("rank").textContent = s.rank.name.toLowerCase() + " · level " + s.rank.level + " of " + s.rank.of; } catch (e) { /* tier cards still work without numbers */ }
+    await refreshLive(); refreshPaper();
+    setInterval(refreshLive, 5000); setInterval(refreshPaper, 20000);
+    setInterval(() => { const t = state.tab; if (t !== "account" && t !== "history") loadSeries(t); }, 60000);
+    addEventListener("resize", drawChart);
+    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) addEventListener("mousemove", (e) => {   // Stan glances at the cursor
+      const r = $("portrait").getBoundingClientRect(), dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height * 0.43), d = Math.hypot(dx, dy) || 1;
+      const k = Math.min(1, d / 300); for (const g of document.querySelectorAll("#portrait .iris")) g.style.transform = `translate(${(dx / d * 2 * k).toFixed(2)}px, ${(dy / d * 1.3 * k).toFixed(2)}px)`;
+    });
+  }
+  boot();
+})();
+</script>
+</body>
+</html>

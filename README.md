@@ -8,6 +8,24 @@ his thinking and task progress live.
 **Nothing here can trade.** There is no order code yet, the Alpaca connection is
 read-only, and live mode is locked in `agent/config.py`.
 
+## Stan on your PC (the web app)
+
+Double-click `stan.bat` (or run `python -m agent.web`). Your browser opens http://127.0.0.1:8000:
+
+- **Stan** (in his duck shirt) tells you his plan and how the day is going.
+- **The paper account**, live from Alpaca: equity, today's change, cash, and the kill-switch level.
+- **Stan's trade:** pick Low, Medium, High or Selloff bounce, press **Preview** to see exactly what
+  he would do, then **Send these orders**. Nothing is sent until you press Send.
+- **Trading on/off** switch: off pauses everything, including the nightly scheduled run.
+- **Live chart** of the account or any holding, with Stan's average entry marked.
+- **Positions**, his notes, and a calendar of daily results.
+
+`python -m agent.web --demo` (or `stan.bat --demo`) opens the same page with a made-up account
+and prices, so you can click around safely.
+
+Paper account only. The buttons that change anything answer only requests from this computer.
+When switching tiers, buys are capped at the cash on hand; the rest follows on the next run.
+
 ## Watch Stan study (start here)
 
 Do the Python setup in the next section first (the Alpaca keys are only needed for the Alpaca commands, not for Stan's school).
