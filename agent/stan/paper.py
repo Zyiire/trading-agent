@@ -147,6 +147,11 @@ def signals_today(history: dict[str, pd.DataFrame], day: date, rule: SelloffRule
     return sorted(out, key=lambda x: x["rsi"])  # most oversold first
 
 
+def _default_level_bars():
+    from agent.stan.intraday import yahoo_bars   # noqa: PLC0415
+    return yahoo_bars
+
+
 def exit_due(df: pd.DataFrame, signal_date: str, day: date, rule: SelloffRule) -> str | None:
     """Same exit as the backtest: RSI closes at 50+, or 10 trading days since the signal."""
     idx = df.index
@@ -169,7 +174,8 @@ def exit_due(df: pd.DataFrame, signal_date: str, day: date, rule: SelloffRule) -
 
 # ---------------------------------------------------------------- one evening
 def run_evening(broker: Broker, book: PaperBook, history: dict[str, pd.DataFrame],
-                now: datetime | None = None, cfg: PaperConfig = PaperConfig(), dry_run: bool = False) -> dict:
+                now: datetime | None = None, cfg: PaperConfig = PaperConfig(), dry_run: bool = False,
+                level_bars=None) -> dict:
     now = now or datetime.now(ET)
     history = complete_bars(history, now)
     day = latest_day(history)
@@ -250,6 +256,16 @@ def run_evening(broker: Broker, book: PaperBook, history: dict[str, pd.DataFrame
         if not dry_run:
             broker.cancel_open_orders()
         tiers.sell_all(broker, d, say, dry_run)
+        pos = book.get("levels_pos")
+        if pos:
+            if not dry_run:
+                try:
+                    broker.submit_fractional_order("QQQ", pos["qty"], "sell" if pos["side"] > 0 else "buy",
+                                                   f"stan-lv-{d.replace('-', '')}-kill")
+                    book.set("levels_pos", None)
+                except Exception as err:
+                    say("fail", f"Couldn't close the QQQ level-play position: {err}")
+            say("fail", f"Closing the {pos['qty']}-share QQQ level-play position.")
         if not dry_run:
             for t in book.trades(["open"]):
                 oid = order_id(t["symbol"], t["signal_date"], "sell" + d.replace("-", ""))
@@ -287,12 +303,47 @@ def run_evening(broker: Broker, book: PaperBook, history: dict[str, pd.DataFrame
     strategy = book.get("strategy", "selloff")
     open_selloff = book.trades(["pending_entry", "open", "pending_exit"])
 
-    # 5a. a tier strategy (once the selloff trades have closed)
+    # 5a. level play trades during the session (agent.stan.intraday); here it only reports its plan
+    if strategy == "levels":
+        if open_selloff:
+            say("thought", f"Switching to level play: waiting for {len(open_selloff)} selloff trade(s) to finish "
+                           "first. No new selloff trades.")
+        else:
+            from agent.stan.intraday import HEARTBEAT_S, LiveLevels   # noqa: PLC0415
+            if any(p.symbol in tiers.TIER_SYMBOLS and p.qty > 0 for p in broker.get_positions()):
+                say("thought", "Switching to level play: first I sell what the old plan held.")
+                tiers.sell_all(broker, d, say, dry_run)
+            actions.extend(LiveLevels(broker, book, bars=level_bars or _default_level_bars()).describe(now))
+            hb = book.get("levels_heartbeat")
+            live = bool(hb and now.timestamp() - hb.get("at", 0) < HEARTBEAT_S)
+            if dry_run and not live and not book.get("halted", False):
+                try:
+                    is_open = broker.get_clock().is_open
+                except Exception:
+                    is_open = False
+                if is_open:
+                    say("thought", "Would start watching QQQ now and trade it until 3:45 PM.")
+        if not dry_run:
+            book.set("last_day", d)
+        return {"day": d, "halted": False, "equity": account.equity, "start": start, "floor": floor,
+                "actions": actions, "strategy": strategy}
+
+    # 5b. a tier strategy (once the selloff trades have closed)
     if strategy in ("low", "medium", "high"):
         if open_selloff:
             say("thought", f"Switching to the {strategy}-risk strategy: waiting for {len(open_selloff)} selloff "
                            "trade(s) to finish first. No new selloff trades.")
         else:
+            lpos = book.get("levels_pos")
+            if lpos:   # a level-play trade left over from before the switch
+                say("thought", f"Switching away from level play: closing the {lpos['qty']}-share QQQ position first.")
+                if not dry_run:
+                    try:
+                        broker.submit_fractional_order("QQQ", lpos["qty"], "sell" if lpos["side"] > 0 else "buy",
+                                                       f"stan-lv-{d.replace('-', '')}-switch")
+                        book.set("levels_pos", None)
+                    except Exception as err:
+                        say("fail", f"Couldn't close the QQQ position: {err}")
             prices = {s: float(df["close"].iloc[-1]) for s, df in history.items() if s in tiers.TIER_SYMBOLS}
             tiers.run_tier(broker, book, history, strategy, d, account.equity, prices, say, dry_run,
                            low_fraction=book.get("low_fraction", tiers.DEFAULT_LOW_FRACTION), cash=account.cash)
@@ -301,7 +352,7 @@ def run_evening(broker: Broker, book: PaperBook, history: dict[str, pd.DataFrame
         return {"day": d, "halted": False, "equity": account.equity, "start": start, "floor": floor,
                 "actions": actions, "strategy": strategy}
 
-    # 5b. selloff entries
+    # 5c. selloff entries
     if book.get("last_entries_day") != d:
         active = book.trades(["pending_entry", "open", "pending_exit"])
         busy = {t["symbol"] for t in active}
@@ -394,7 +445,7 @@ def _low_fraction_from_arena(journal_path: str) -> float | None:
 
 def set_strategy(book: PaperBook, journal_path: str, name: str) -> str:
     """Choose what the paper account trades from the next run on. Returns a one-line confirmation."""
-    if name not in ("selloff", "low", "medium", "high"):
+    if name not in ("selloff", "low", "medium", "high", "levels"):
         raise ValueError(f"unknown strategy {name}")
     frac = tiers.DEFAULT_LOW_FRACTION
     if name == "low":
@@ -422,7 +473,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--dry-run", action="store_true", help="show what Stan would do; send no orders")
     parser.add_argument("--status", action="store_true", help="print the paper account and Stan's positions")
     parser.add_argument("--resume", action="store_true", help="restart after the kill switch or a mismatch")
-    parser.add_argument("--use", choices=["selloff", "low", "medium", "high"],
+    parser.add_argument("--use", choices=["selloff", "low", "medium", "high", "levels"],
                         help="choose what the paper account trades from now on (your call)")
     args = parser.parse_args(argv)
 
@@ -469,6 +520,16 @@ def main(argv: Sequence[str] | None = None) -> int:
             print("  " + line)
         if result["halted"]:
             print(f"  Halted: {result['reason']}. Run --resume once you've checked.")
+            return 0
+        waiting = any("waiting for" in a for a in result["actions"])
+        if book.get("strategy") == "levels" and not args.dry_run and not book.get("halted", False) and not waiting:
+            from agent.stan.intraday import run_session   # noqa: PLC0415
+            clock = broker.get_clock()
+            if clock.is_open:
+                print("  Level play: watching QQQ until 3:50 PM ET. Keep this window open.")
+                run_session(broker, book, me="scheduled", say=lambda k, t: print("  " + t, flush=True))
+            else:
+                print("  Level play: the market is closed, so there's nothing to watch right now.")
         return 0
     finally:
         book.close()

@@ -139,7 +139,7 @@
   .thought time { display: block; font-family: var(--mono); font-size: 10.5px; color: var(--faint); margin-top: 2px; }
   .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
   .tile { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; background: #fbfaf6; } .tile b { display: block; font: 500 18px var(--sans); margin-top: 4px; }
-  .tiers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .tiers { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
   .tier { border: 1px solid var(--line); border-radius: 8px; padding: 16px; background: #fbfaf6; position: relative; display: block; width: 100%; }
   .tier:hover { border-color: #c4c3b6; }
   .tier[aria-pressed="true"] { border-color: var(--green); background: var(--wash); box-shadow: inset 0 0 0 1px var(--green); }
@@ -168,7 +168,7 @@
   body.viewonly [data-switch], body.viewonly .actions, body.viewonly #termBtn, body.viewonly #preview { display: none !important; }
   body.viewonly .tier { pointer-events: none; }
   .mtop, .mnav, .sheet { display: none; }
-  @media (max-width: 1080px) { .g-main, .g-half, .hero { grid-template-columns: 1fr; } .tiers { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 1080px) { .g-main, .g-half, .hero { grid-template-columns: 1fr; } }
   @media (max-width: 760px) {
     .shell { grid-template-columns: 1fr; } .side { display: none; } .topbar { display: none; }
     .main { padding: 0 20px 100px; }
@@ -371,6 +371,7 @@
     { key: "medium", risk: "Medium risk", name: "Balanced", how: "SPY, sized to a steady 15% volatility. Adjusted once a month.", pick: (a) => a.find((x) => x.key === "vol_target") },
     { key: "high", risk: "High risk", name: "Aggressive", how: "3x Nasdaq (TQQQ) while QQQ is above its 200-day average, otherwise cash.", pick: (a) => a.find((x) => x.key === "lev_trend") },
     { key: "selloff", risk: "Stock picks", name: "Selloff bounce", how: "Buys stocks after sharp selloffs, 10% each. Run it after 4:30 PM ET.", pick: (a) => a.find((x) => x.key === "selloff") },
+    { key: "levels", risk: "Day trading", name: "Level play", how: "TZ’s idea: QQQ through a volume-profile level with a fair value gap. Watches all day, flat by 3:45 PM.", pick: () => null },
   ];
   const tierOf = (k) => TIERS.find((t) => t.key === k) || TIERS[1];
   const can = () => !!(S.live && S.live.can_control);   // only the PC that runs Stan may change anything
@@ -491,17 +492,21 @@
   }
   function renderTiers() {
     const box = $("tiers"), L = S.live, arena = (S.stan && S.stan.arena && S.stan.arena.strategies) || [];
-    if (!changed("tiers", [L.strategy, L.low_fraction, arena.length, S.stan && S.stan.run_id])) return; box.textContent = "";
+    $("sendBtn").textContent = L.strategy === "levels" ? "Start level play" : "Send these orders";
+    if (!changed("tiers", [L.strategy, L.low_fraction, arena.length, S.stan && S.stan.run_id, !!(S.stan && S.stan.levels_exam)])) return; box.textContent = "";
     for (const t of TIERS) { const b = el("button", "tier"); b.setAttribute("aria-pressed", String(L.strategy === t.key));
       b.append(el("span", "mono", t.risk), el("span", "sel", "SELECTED"), el("span", "serif", t.name), el("p", "", t.how));
       let a = t.pick(arena), est = false; if (!a && t.key === "low") { const m = arena.find((x) => x.key === "vol_target"); if (m && m.cagr != null) { a = { cagr: m.cagr * L.low_fraction, max_dd: m.max_dd * L.low_fraction }; est = true; } }
-      const st = el("div", "stats"); if (a && a.cagr != null) { const x = el("div"), y = el("div"); x.append(el("b", "num", plain(a.cagr, 1)), document.createTextNode(est ? "a year, estimate" : "a year, tested")); y.append(el("b", "num", plain(a.max_dd, 1)), document.createTextNode("worst drop")); st.append(x, y); } else st.append(el("div", "", "Run a term in the classroom to see tested numbers."));
+      const st = el("div", "stats"); const lx = t.key === "levels" && S.stan && S.stan.levels_exam;
+      if (lx) { const x = el("div"), y = el("div"); x.append(el("b", "num", lx.checks_passed + " of " + lx.checks_total), document.createTextNode("checks passed")); y.append(el("b", "num " + tone(lx.score.avg_R), lx.score.avg_R == null ? "—" : (lx.score.avg_R >= 0 ? "+" : "") + lx.score.avg_R.toFixed(2) + "R"), document.createTextNode("per trade, tested")); st.append(x, y); }
+      else if (t.key === "levels") st.append(el("div", "", "Run a term in the classroom to test it."));
+      else if (a && a.cagr != null) { const x = el("div"), y = el("div"); x.append(el("b", "num", plain(a.cagr, 1)), document.createTextNode(est ? "a year, estimate" : "a year, tested")); y.append(el("b", "num", plain(a.max_dd, 1)), document.createTextNode("worst drop")); st.append(x, y); } else st.append(el("div", "", "Run a term in the classroom to see tested numbers."));
       b.append(st); b.onclick = () => chooseTier(t.key); box.append(b); }
   }
   async function chooseTier(k) { if (!can() || S.busy || S.live.strategy === k) return; try { const r = await post("/paper/use", { strategy: k }); toast(r.message); clearPreview(); S.job = null; await refreshLive(); refreshPaper(); runJob(true, true); } catch (e) { toast(e.message); } }
 
   // ---------------- preview, send, pause
-  const ORDER = /^Would |^Buying |^Selling /;
+  const ORDER = /^Would |^Buying |^Selling |^Bought |^Sold short /;
   const hasOrders = (job) => job && !job.error && !job.halted && job.actions.some((a) => ORDER.test(a));
   function clearPreview() { S.previewFor = null; $("preview").hidden = true; $("sendBtn").disabled = true; }
   function showJob(job, title) { const box = $("preview"); box.textContent = ""; box.hidden = false; box.append(el("div", "mono", title));
@@ -534,7 +539,8 @@
     else if (!job) { q = "“First, I check the plan.”"; why = S.busy ? "I’m comparing what the account holds with what my plan says it should hold." : "I haven’t worked out the next trade yet."; tag = S.busy ? "Checking" : "Next"; text = S.busy ? "Working out the next trade…" : "Preview Stan’s next trade"; }
     else if (job.error) { q = "“I’d rather wait than guess.”"; why = "I couldn’t finish checking the plan: " + job.error; tag = "Try again"; text = "Preview Stan’s next trade"; act.classList.add("red"); }
     else { const plan = job.actions.find((a) => /plan:/i.test(a)) || job.actions[0] || "", n = job.actions.filter((a) => ORDER.test(a)).length;
-      if (n) { q = "“The plan says move, so I move.”"; why = plan + " The account isn’t there yet, so I have " + n + " order" + (n > 1 ? "s" : "") + " ready for you to review."; tag = "Trade"; text = n + " order" + (n > 1 ? "s" : "") + " ready to review"; }
+      if (n && S.live.strategy === "levels") { q = "“Wait for the level, then act.”"; why = job.actions.filter((a) => !ORDER.test(a)).slice(0, 2).join(" "); tag = "Ready"; text = "Ready to start watching QQQ"; }
+      else if (n) { q = "“The plan says move, so I move.”"; why = plan + " The account isn’t there yet, so I have " + n + " order" + (n > 1 ? "s" : "") + " ready for you to review."; tag = "Trade"; text = n + " order" + (n > 1 ? "s" : "") + " ready to review"; }
       else { q = "“Doing nothing is a decision, too.”"; const more = job.actions.find((a) => a !== plan && /within 5%|already placed|waiting|next run|Nothing to do/.test(a)); why = plan + " " + (more || "Nothing needs to change right now."); tag = "Hold"; text = "No orders needed right now"; } }
     $("thinkQuote").textContent = q; $("thinkWhy").textContent = why; $("thinkTag").textContent = tag; $("thinkText").textContent = text;
     $("thinkTime").textContent = (S.jobAt || new Date()).toLocaleTimeString([], { hour12: false });
@@ -549,7 +555,7 @@
   }
 
   // ---------------- classroom
-  const GROUPS = [["Study", ["collect", "features", "regimes"]], ["Test", ["exams", "selloff", "stress", "daytrade", "trend", "priceaction", "portfolio", "arena"]], ["Reflect", ["review", "report"]]];
+  const GROUPS = [["Study", ["collect", "features", "regimes"]], ["Test", ["exams", "selloff", "stress", "daytrade", "trend", "priceaction", "levels", "portfolio", "arena"]], ["Reflect", ["review", "report"]]];
   function renderHero() {
     const st = S.stan, tasks = S.tasks; if (!st) return; const training = st.state === "training", done = tasks.filter((t) => t.status === "done").length, total = tasks.length || 1;
     const cur = st.current_task, frac = training ? Math.min(1, (done + (cur ? cur.progress : 0)) / total) : done / total, sum = st.summary;
@@ -580,7 +586,7 @@
         r.append(el("div", "n", String(i + 1).padStart(2, "0")), mid, t.status === "done" ? el("div", "mark done", "✓") : t.status === "failed" ? el("div", "down", "✕") : el("div", "mark" + (t.status === "active" ? " now" : ""))); tb.append(r); }); }
     if (changed("thoughts", [S.thoughts.length, S.thoughts.length && S.thoughts[S.thoughts.length - 1].id])) { const th = $("thoughts"); th.textContent = ""; if (!S.thoughts.length) th.append(el("div", "empty", "Stan’s notes appear here while he studies."));
       for (const x of S.thoughts.slice().reverse().slice(0, 60)) { const r = el("div", "thought"), b = el("div"); b.append(document.createTextNode(x.text), el("time", "", new Date(x.ts).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }))); r.append(el("i", x.kind), b); th.append(r); } }
-    if (changed("classdata", [st.run_id, st.state, !!st.arena, S.exams.length, [st.strategy, st.portfolio, st.daytrade_exam, st.trend_exam, st.price_action_exam].map((x) => x && x.checks_passed)])) {
+    if (changed("classdata", [st.run_id, st.state, !!st.arena, S.exams.length, [st.strategy, st.portfolio, st.daytrade_exam, st.trend_exam, st.price_action_exam, st.levels_exam].map((x) => x && x.checks_passed)])) {
       const ar = $("arena"); ar.textContent = ""; const A = st.arena;
       if (!A) { ar.append(el("div", "empty", "The rankings appear after Stan finishes a term.")); $("arenaSpan").textContent = ""; }
       else { $("arenaSpan").textContent = A.first_day + " to " + A.last_day; const tb2 = el("table"), hr = el("tr"); ["Strategy", "A year", "Worst drop", "Return for risk", "Risk"].forEach((h) => hr.append(el("th", "", h))); tb2.append(hr);
@@ -589,7 +595,7 @@
           tr.append(a, el("td", "num " + tone(x.cagr), plain(x.cagr, 1)), el("td", "num", plain(x.max_dd, 1)), el("td", "num", x.sharpe == null ? "—" : x.sharpe.toFixed(2)), el("td", "", x.tier)); tb2.append(tr); }
         ar.append(tb2); }
       const vd = $("verdicts"); vd.textContent = ""; const VT = { real_edge: ["Real edge", "green"], promising: ["Promising", "tan"], not_proven: ["No edge", "red"] };
-      const list = [st.strategy, st.portfolio, st.daytrade_exam, st.trend_exam, st.price_action_exam].filter(Boolean);
+      const list = [st.strategy, st.portfolio, st.daytrade_exam, st.trend_exam, st.price_action_exam, st.levels_exam].filter(Boolean);
       if (!list.length) vd.append(el("div", "empty", "Each strategy Stan tests gets a verdict here."));
       for (const x of list) { const r = el("div", "task"); r.style.gridTemplateColumns = "1fr auto"; r.style.alignItems = "center"; const mid = el("div"); mid.append(el("b", "", x.name), el("span", "", "Passed " + x.checks_passed + " of " + x.checks_total + " checks")); const v = VT[x.verdict] || ["—", "plain"]; r.append(mid, el("span", "pill " + v[1], v[0])); vd.append(r); }
       const ex = $("exams"); ex.textContent = ""; if (!S.exams.length) ex.append(el("div", "empty", "Yearly exam results appear after a term."));
@@ -621,7 +627,7 @@
       for (const c of cells) { const d = new Date(c.day + "T12:00:00"), dow = d.getDay(); if (dow < 1 || dow > 5) continue; let gap = n === 0 ? dow - 1 : (dow - prev - 1 + 5) % 5; while (gap-- > 0) cal.append(el("div", "day blank")); prev = dow;
         const cell = el("div", "day " + (c.pl >= 0 ? "up" : "dn")); cell.append(el("small", "", d.toLocaleDateString([], { month: "short", day: "numeric" })), el("b", "num " + tone(c.pl), money(c.pl, 0))); cal.append(cell); n++; if (c.pl >= 0) ups++; }
       $("calNote").textContent = ups + " of " + n + " days ended ahead."; }
-    const cl = $("closed"); cl.textContent = ""; if (!(P.closed || []).length) cl.append(el("div", "empty", "No finished trades yet. The Steady, Balanced and Aggressive plans hold one position and adjust it, so their results show on the chart and under Daily results."));
+    const cl = $("closed"); cl.textContent = ""; if (!(P.closed || []).length) cl.append(el("div", "empty", "No finished trades yet. The Steady, Balanced and Aggressive plans hold one position and adjust it, and level play’s trades are listed in Trading notes, so their results show on the chart and under Daily results."));
     else { const t = el("table"), hr = el("tr"); ["Stock", "Bought", "Sold", "Result"].forEach((h) => hr.append(el("th", "", h))); t.append(hr);
       for (const x of P.closed.slice(0, 30)) { const tr = el("tr"), a = el("td"); a.append(el("b", "", x.symbol), el("span", "sub", x.exit_reason || "")); tr.append(a, el("td", "num", x.entry_date || "—"), el("td", "num", x.exit_date || "—"), el("td", "num " + tone(x.ret), pct(x.ret) + (x.pnl != null ? " · " + money(x.pnl) : ""))); t.append(tr); } cl.append(t); }
   }

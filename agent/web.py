@@ -129,6 +129,28 @@ class DemoBroker:
         return 0
 
 
+def demo_level_bars(broker: "DemoBroker"):
+    """Made-up QQQ 5-minute bars for the last 4 sessions, ending at the demo broker's current price."""
+    def bars(symbol: str) -> pd.DataFrame:
+        rng = np.random.default_rng(11)
+        now = datetime.now(ET)
+        days = [d for d in pd.bdate_range(end=now.date(), periods=5)][-4:]
+        rows, idx = [], []
+        px = broker.prices.get(symbol, 500.0) * 0.99
+        for d in days:
+            for slot in range(78):
+                ts = pd.Timestamp(d.date().isoformat() + " 09:30", tz=ET) + pd.Timedelta(minutes=5 * slot)
+                if ts + pd.Timedelta(minutes=5) > now:
+                    break
+                o = px
+                px *= 1 + rng.normal(0, 0.0012)
+                rows.append({"open": o, "high": max(o, px) * 1.0006, "low": min(o, px) * 0.9994, "close": px,
+                             "volume": float(rng.integers(20_000, 90_000))})
+                idx.append(ts.tz_convert("UTC"))
+        return pd.DataFrame(rows, index=pd.DatetimeIndex(idx))
+    return bars
+
+
 def demo_setup(journal_path: str) -> tuple[DemoBroker, Callable[[list[str]], dict]]:
     """A demo broker, a history loader that agrees with its prices, and a journal with some past."""
     from agent.stan.train import demo_history
@@ -180,9 +202,30 @@ def _seed_demo_arena(journal_path: str) -> None:
 def create_web_app(journal_path: str | Path, broker, history_loader: Callable[[list[str]], dict],
                    demo: bool = False, token: str | None = None,
                    chart_loader: Callable[[str], list[dict]] | None = None,
-                   train_starter: Callable[[], object] | None = None) -> FastAPI:
+                   train_starter: Callable[[], object] | None = None,
+                   level_bars: Callable[[str], pd.DataFrame] | None = None) -> FastAPI:
     app = create_app(journal_path, token)
     journal_path = str(journal_path)
+    if level_bars is None:
+        level_bars = demo_level_bars(broker) if isinstance(broker, DemoBroker) else None
+    session = {"thread": None}
+
+    def _start_level_session() -> str:
+        from agent.stan.intraday import run_session, yahoo_bars
+
+        if session["thread"] is not None and session["thread"].is_alive():
+            return "I'm already watching QQQ."
+
+        def go():
+            b = PaperBook(journal_path)
+            try:
+                run_session(broker, b, level_bars or yahoo_bars, me="web")
+            finally:
+                b.close()
+                cache["live"] = None
+        session["thread"] = threading.Thread(target=go, daemon=True)
+        session["thread"].start()
+        return "Started watching QQQ. I'll trade until 3:45 PM while this app stays open."
     ticks: deque = deque(maxlen=3000)
     cache = {"at": 0.0, "live": None}
     job = {"running": False, "dry_run": True, "started": None, "finished": None, "actions": [], "error": None,
@@ -326,8 +369,16 @@ def create_web_app(journal_path: str | Path, broker, history_loader: Callable[[l
             history = history_loader(symbols)
             if "SPY" not in history:
                 raise RuntimeError("Couldn't load prices, so nothing was done.")
-            result = run_evening(broker, b, history, dry_run=dry_run)
-            job.update(actions=result.get("actions") or ["Nothing to do right now."], halted=result.get("halted", False),
+            result = run_evening(broker, b, history, dry_run=dry_run, level_bars=level_bars)
+            actions = list(result.get("actions") or [])
+            if (strategy == "levels" and not dry_run and not result.get("halted")
+                    and not any("waiting for" in a for a in actions)):
+                if broker.get_clock().is_open:
+                    actions = [a for a in actions if not a.startswith("I'm not watching yet")]
+                    actions.append(_start_level_session())
+                else:
+                    actions.append("The market is closed. Level play starts at 9:35 AM on the next trading day.")
+            job.update(actions=actions or ["Nothing to do right now."], halted=result.get("halted", False),
                        reason=result.get("reason"), day=result.get("day"))
         except Exception as err:
             job.update(error=f"{type(err).__name__}: {err}")
