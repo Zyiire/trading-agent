@@ -8,6 +8,16 @@ his thinking and task progress live.
 **Nothing here can trade.** There is no order code yet, the Alpaca connection is
 read-only, and live mode is locked in `agent/config.py`.
 
+## Automatic trading, Monday to Friday
+
+Double-click `schedule_trading.bat` once. It creates a Windows scheduled task that runs Stan's
+paper trade at 9:35 AM every weekday, with no end date, using the same Python as your terminal.
+
+- The PC must be on and awake at 9:35 AM.
+- To pause Stan, flip **Trading** off in the web app. The scheduled run then places no orders.
+- To remove the schedule: `schtasks /Delete /TN "Stan open run" /F`
+- Each run is logged in `data/open.log`, including which Python ran and its exit code.
+
 ## Stan on your PC (the web app)
 
 Double-click `stan.bat` (or run `python -m agent.web`). Your browser opens http://127.0.0.1:8000.
