@@ -2,7 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { Exam, Lesson, Paper, Shadow, SkillLibrary, StanProfile, Strategy, Task, Thought, ThoughtKind, getJson, pct, signedPct } from './src/api';
+import { Exam, Lesson, Paper, Portfolio, PortfolioStats, Shadow, SkillLibrary, StanProfile, Strategy, Task, Thought, ThoughtKind, getJson, pct, signedPct } from './src/api';
 
 // Set EXPO_PUBLIC_STAN_URL in stan-app/.env to your computer's address, e.g. http://192.168.1.20:8000
 // With no address set, the app shows a saved practice run ("demo").
@@ -234,6 +234,7 @@ export default function App() {
               <Text style={s.dim}>The report card appears when Stan finishes his exams.</Text>
             )}
 
+            {stan?.portfolio && <PortfolioCard p={stan.portfolio} />}
             {stan?.strategy && <StrategyCard strategy={stan.strategy} />}
             {stan?.daytrade_exam && <StrategyCard strategy={stan.daytrade_exam} />}
             {stan?.trend_exam && <StrategyCard strategy={stan.trend_exam} />}
@@ -593,6 +594,61 @@ const VERDICT: Record<Strategy['verdict'], { text: string; color: string }> = {
   promising: { text: 'Promising, not proven', color: C.warn },
   not_proven: { text: 'Not a real edge yet', color: C.bad },
 };
+
+const PORT_VERDICT: Record<Portfolio['verdict'], { text: string; color: string }> = {
+  real_edge: { text: 'Beats holding SPY on risk', color: C.good },
+  promising: { text: 'Half way: passed 1 of 2 tests vs SPY', color: C.warn },
+  not_proven: { text: "Doesn't beat holding SPY yet", color: C.bad },
+};
+
+function PortfolioCard({ p }: { p: Portfolio }) {
+  const v = PORT_VERDICT[p.verdict];
+  const row = (label: string, st: PortfolioStats, note?: string, color?: string) => (
+    <View key={label} style={[s.row, s.listRow]}>
+      <Text style={[s.text, { flex: 1.6, color: color ?? C.text }]}>{label}</Text>
+      <Text style={[s.small, { flex: 1, textAlign: 'right' }]}>{pct(st.cagr)}</Text>
+      <Text style={[s.small, { flex: 1, textAlign: 'right' }]}>{st.sharpe === null ? 'n/a' : st.sharpe.toFixed(2)}</Text>
+      <Text style={[s.small, { flex: 1, textAlign: 'right' }]}>{pct(st.max_dd)}</Text>
+      {note ? <Text style={[s.small, { flex: 1, textAlign: 'right', color: color }]}>{note}</Text> : <Text style={[s.small, { flex: 1 }]} />}
+    </View>
+  );
+  return (
+    <>
+      <Text style={s.section}>Stan's portfolio</Text>
+      <View style={[s.card, { borderColor: v.color }]}>
+        <Text style={s.label}>BUILT ONE TESTED STAGE AT A TIME</Text>
+        <Text style={[s.big, { color: v.color }]}>{v.text}</Text>
+        <Text style={s.dim}>
+          {pct(p.final.cagr)} a year, worst drop {pct(p.final.max_dd)}. Holding SPY: {pct(p.spy.cagr)} a year, worst drop {pct(p.spy.max_dd)}.
+          $1 became ${p.final.growth?.toFixed(2)} vs ${p.spy.growth?.toFixed(2)} ({p.first_day} to {p.last_day}).
+        </Text>
+        <View style={[s.row, { marginTop: 10 }]}>
+          <Text style={[s.label, { flex: 1.6 }]}>STAGE</Text>
+          <Text style={[s.label, { flex: 1, textAlign: 'right' }]}>A YEAR</Text>
+          <Text style={[s.label, { flex: 1, textAlign: 'right' }]}>SHARPE</Text>
+          <Text style={[s.label, { flex: 1, textAlign: 'right' }]}>WORST</Text>
+          <Text style={[s.label, { flex: 1 }]} />
+        </View>
+        {row('Hold SPY', p.spy)}
+        {p.stages.map((st) => row(st.label, st, st.kept ? 'kept' : 'left out', st.kept ? C.good : C.dim))}
+        <Text style={[s.small, { marginTop: 8 }]}>
+          Each row is the portfolio with that stage added. A stage stays only if it helps in both halves of the history, after 0.10% costs. Note: {p.survivorship_note}.
+        </Text>
+      </View>
+      {p.checks.map((c) => (
+        <View key={c.key} style={[s.card, { borderLeftWidth: 3, borderLeftColor: c.passed ? C.good : C.bad }]}>
+          <View style={s.row}>
+            <Text style={[s.text, { flex: 1 }]}>{c.name}</Text>
+            <Text style={[s.small, { color: c.passed ? C.good : C.bad }]}>
+              {c.key.startsWith('final') ? (c.passed ? 'Passed' : 'Failed') : c.passed ? 'Kept' : 'Left out'}
+            </Text>
+          </View>
+          <Text style={s.dim}>{c.detail}</Text>
+        </View>
+      ))}
+    </>
+  );
+}
 
 function StrategyCard({ strategy }: { strategy: Strategy }) {
   const v = VERDICT[strategy.verdict];

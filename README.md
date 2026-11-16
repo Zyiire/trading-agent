@@ -239,6 +239,29 @@ No lookahead: `tests/test_price_action.py` re-runs the engine on data cut off at
 that the trend, pivots, levels and signal at bar i are identical to the full run. A planted
 lookahead bug makes that test fail. A 15-minute bar that is still forming is never used.
 
+## Stan's portfolio (staged)
+
+`agent/stan/portfolio.py` builds a portfolio from four edges with long research records,
+adding one stage at a time:
+
+1. **Trend core:** hold SPY only while it is above its 10-month average at a month end, otherwise cash.
+2. **Volatility sizing:** hold less SPY when the last month was wild (15% volatility target).
+3. **Selloff bounce:** Stan's own rule as a 30% sleeve, 10% per position, at most 10 open.
+4. **Momentum:** a 30% sleeve holding the top 5 stocks by 12-1 month return (if positive), monthly.
+
+A stage stays only if its Sharpe ratio is no worse over the whole history and in each half,
+and it either raises the Sharpe ratio or makes the worst drop 5+ points shallower. Allocations
+are fixed in advance, not tuned. Costs are 0.10% per side, and cash earns nothing.
+
+No lookahead: decisions use month-end closes, fill at the next close and earn from the day
+after. `tests/test_portfolio.py` checks every month-end decision against data cut off on that
+day, and catches a planted 5-day peek.
+
+Caveat: the 43 stocks are today's well-known names (survivorship bias), so the momentum and
+selloff sleeves look better here than they would have in real time.
+
+The paper account keeps trading the selloff bounce until the portfolio passes on real data.
+
 ## Notes
 
 - Free Alpaca data: stock bars come from the IEX feed (history starts around 2016),

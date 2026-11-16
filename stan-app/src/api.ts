@@ -64,6 +64,31 @@ export type Paper = {
 
 export type StrategyCheck = { key: string; name: string; passed: boolean; detail: string };
 
+export type PortfolioStats = {
+  cagr: number | null;
+  vol: number | null;
+  sharpe: number | null;
+  max_dd: number | null;
+  growth: number | null;
+  worst_year: number | null;
+};
+
+export type Portfolio = {
+  name: string;
+  rule: string;
+  first_day: string;
+  last_day: string;
+  spy: PortfolioStats;
+  final: PortfolioStats;
+  stages: (PortfolioStats & { key: string; label: string; kept: boolean })[];
+  kept: string[];
+  checks: StrategyCheck[];
+  checks_passed: number;
+  checks_total: number;
+  survivorship_note: string;
+  verdict: 'real_edge' | 'promising' | 'not_proven';
+};
+
 export type Strategy = {
   name: string;
   source?: string;
@@ -104,6 +129,7 @@ export type StanProfile = {
   daytrade_exam?: Strategy | null;
   trend_exam?: Strategy | null;
   price_action_exam?: Strategy | null;
+  portfolio?: Portfolio | null;
 };
 
 export type ThoughtKind = 'thought' | 'progress' | 'win' | 'fail' | 'lesson' | 'milestone';
