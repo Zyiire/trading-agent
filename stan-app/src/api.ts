@@ -55,7 +55,9 @@ export type PaperTrade = {
   exit_date: string | null; exit_price: number | null; pnl: number | null; ret: number | null;
 };
 export type Paper = {
-  enabled: boolean; approved_by: string; started: string | null; start_equity: number | null; equity: number | null;
+  enabled: boolean; approved_by: string; strategy?: 'selloff' | 'low' | 'medium' | 'high';
+  tier_plan?: { tier: string; weights: Record<string, number>; reason: string; day: string } | null;
+  started: string | null; start_equity: number | null; equity: number | null;
   change: number | null; kill_floor: number | null; halted: boolean; halt_reason: string | null; last_day: string | null;
   open: PaperTrade[]; closed: PaperTrade[];
   stats: { closed: number; win_rate: number | null; avg: number | null; pnl: number };
