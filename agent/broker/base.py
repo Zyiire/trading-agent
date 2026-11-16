@@ -100,8 +100,20 @@ def parse_occ_symbol(contract: str) -> tuple[str, date, str, float]:
     return root, expiration, option_type, strike
 
 
+@dataclass(frozen=True)
+class OrderInfo:
+    client_order_id: str
+    symbol: str
+    side: str          # "buy" or "sell"
+    qty: float
+    status: str        # Alpaca status, e.g. "accepted", "filled", "canceled"
+    filled_qty: float
+    filled_avg_price: float | None
+    filled_at: datetime | None
+
+
 class Broker(Protocol):
-    """Read-only for now. Order placement arrives with the risk engine."""
+    """Reads plus paper-only market-on-open orders (used by agent.stan.paper)."""
 
     def get_account(self) -> AccountInfo: ...
 
@@ -119,3 +131,9 @@ class Broker(Protocol):
         strike_min: float | None = None,
         strike_max: float | None = None,
     ) -> list[OptionQuote]: ...
+
+    def submit_open_order(self, symbol: str, qty: int, side: str, client_order_id: str) -> OrderInfo: ...
+
+    def get_order(self, client_order_id: str) -> OrderInfo | None: ...
+
+    def cancel_open_orders(self) -> int: ...

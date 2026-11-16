@@ -2,7 +2,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FlatList, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { Exam, Lesson, StanProfile, Task, Thought, ThoughtKind, getJson, pct, signedPct } from './src/api';
+import { Exam, Lesson, Paper, Shadow, SkillLibrary, StanProfile, Strategy, Task, Thought, ThoughtKind, getJson, pct, signedPct } from './src/api';
 
 // Set EXPO_PUBLIC_STAN_URL in stan-app/.env to your computer's address, e.g. http://192.168.1.20:8000
 // With no address set, the app shows a saved practice run ("demo").
@@ -23,11 +23,12 @@ const KIND: Record<ThoughtKind, { label: string; color: string }> = {
   milestone: { label: 'MILESTONE', color: C.warn },
 };
 
-type Tab = 'now' | 'mind' | 'report' | 'setup';
+type Tab = 'now' | 'mind' | 'shadow' | 'report' | 'setup';
 const TABS: { key: Tab; label: string }[] = [
   { key: 'now', label: 'Now' },
   { key: 'mind', label: 'Mind' },
-  { key: 'report', label: 'Report card' },
+  { key: 'shadow', label: 'Trades' },
+  { key: 'report', label: 'Report' },
   { key: 'setup', label: 'Setup' },
 ];
 
@@ -54,6 +55,9 @@ export default function App() {
   const [thoughts, setThoughts] = useState<Thought[]>([]);
   const [exams, setExams] = useState<Exam[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [shadow, setShadow] = useState<Shadow | null>(null);
+  const [skills, setSkills] = useState<SkillLibrary | null>(null);
+  const [paper, setPaper] = useState<Paper | null>(null);
   const [error, setError] = useState<string | null>(null);
   const lastThought = useRef(0);
   const runId = useRef<string | null>(null);
@@ -67,12 +71,16 @@ export default function App() {
         lastThought.current = 0;
         setThoughts([]);
       }
-      const [taskList, fresh, examList, lessonList] = await Promise.all([
+      const [taskList, fresh, examList, lessonList, shadowData] = await Promise.all([
         getJson<Task[]>(url, '/tasks', token),
         getJson<Thought[]>(url, `/thoughts?after=${lastThought.current}&limit=500`, token),
         getJson<Exam[]>(url, '/exams', token),
         getJson<Lesson[]>(url, '/lessons', token),
+        getJson<Shadow>(url, '/shadow', token).catch(() => null),
       ]);
+      setShadow(shadowData);
+      getJson<SkillLibrary>(url, '/skills', token).then(setSkills).catch(() => setSkills(null));
+      getJson<Paper>(url, '/paper', token).then(setPaper).catch(() => setPaper(null));
       setStan(profile);
       setTasks(taskList);
       setExams(examList);
@@ -151,6 +159,8 @@ export default function App() {
             })}
             {tasks.length === 0 && <Text style={s.dim}>No training has started yet. Run Stan’s training on your computer.</Text>}
 
+            {skills && <SkillsCard library={skills} />}
+
             {stan && (
               <View style={s.card}>
                 <Text style={s.label}>STAN’S RULES</Text>
@@ -178,6 +188,8 @@ export default function App() {
           />
         )}
 
+        {tab === 'shadow' && <ShadowView shadow={shadow} paper={paper} />}
+
         {tab === 'report' && (
           <ScrollView contentContainerStyle={s.pad}>
             {stan?.summary ? (
@@ -195,10 +207,36 @@ export default function App() {
                   <Stat label="$1 with Stan" value={`$${stan.summary.stan_growth.toFixed(2)}`} note={`holding: $${stan.summary.hold_growth.toFixed(2)}`} />
                   <Stat label="Direction right" value={pct(stan.summary.accuracy)} note={`always 'up': ${pct(stan.summary.baseline_up)}`} />
                 </View>
+                {stan.summary.max_dd !== undefined && stan.summary.max_dd !== null && (
+                  <>
+                    <Text style={s.section}>Fair comparison</Text>
+                    <View style={s.grid}>
+                      <Stat label="$1 in SPY" value={stan.summary.spy_growth ? `$${stan.summary.spy_growth.toFixed(2)}` : 'n/a'} note="the whole market" />
+                      <Stat label="Time invested" value={pct(stan.summary.exposure)} note="the rest is cash" />
+                      <Stat label="Per day invested" value={signedPct(stan.summary.per_day_invested, 3)} note={`holding: ${signedPct(stan.summary.per_day_hold, 3)}`} />
+                      <Stat label="Worst drop" value={pct(stan.summary.max_dd)} note={`holding: ${pct(stan.summary.hold_max_dd)}`} />
+                    </View>
+                    {stan.summary.luck && stan.summary.luck.p_value !== null && (
+                      <View style={s.card}>
+                        <Text style={s.label}>LUCK TEST</Text>
+                        <Text style={s.text}>
+                          {stan.summary.luck.p_value < 0.05 ? 'His picks beat random timing.' : 'His picks look like random timing so far.'}
+                        </Text>
+                        <Text style={s.dim}>
+                          Avg trade {signedPct(stan.summary.luck.actual_avg, 2)} vs random {signedPct(stan.summary.luck.random_avg, 2)} (p = {stan.summary.luck.p_value})
+                        </Text>
+                      </View>
+                    )}
+                  </>
+                )}
               </>
             ) : (
               <Text style={s.dim}>The report card appears when Stan finishes his exams.</Text>
             )}
+
+            {stan?.strategy && <StrategyCard strategy={stan.strategy} />}
+            {stan?.daytrade_exam && <StrategyCard strategy={stan.daytrade_exam} />}
+            {stan?.trend_exam && <StrategyCard strategy={stan.trend_exam} />}
 
             {exams.length > 0 && <Text style={s.section}>Yearly exams (years he had never seen)</Text>}
             {exams.map((e) => (
@@ -207,7 +245,7 @@ export default function App() {
                   <Text style={[s.big, { flex: 1 }]}>{e.year}</Text>
                   <Text style={[s.small, { color: e.passed ? C.good : C.bad }]}>{e.trades === 0 ? 'No trades' : e.passed ? 'Passed' : 'Failed'}</Text>
                 </View>
-                <Text style={s.text}>Stan {signedPct(e.stan_return)} vs holding {signedPct(e.hold_return)}</Text>
+                <Text style={s.text}>Stan {signedPct(e.stan_return)} vs holding {signedPct(e.hold_return)}{e.spy_return !== undefined && e.spy_return !== null ? ` · SPY ${signedPct(e.spy_return)}` : ''}</Text>
                 <Text style={s.dim}>{e.trades} trades · won {pct(e.win_rate)} · profit factor {e.profit_factor === null ? 'n/a' : e.profit_factor.toFixed(2)}</Text>
               </View>
             ))}
@@ -266,6 +304,331 @@ export default function App() {
   );
 }
 
+function ShadowView({ shadow, paper }: { shadow: Shadow | null; paper: Paper | null }) {
+  if (!shadow || !shadow.started) {
+    return (
+      <ScrollView contentContainerStyle={s.pad}>
+        {paper && <PaperSection paper={paper} />}
+        <View style={s.card}>
+          <Text style={s.label}>SHADOW TRADING</Text>
+          <Text style={s.big}>Not started yet</Text>
+          <Text style={s.dim}>
+            Run "python -m agent.stan.shadow" after the market closes. Stan will practice on live days with no real orders.
+          </Text>
+        </View>
+      </ScrollView>
+    );
+  }
+  const sell = shadow.selloff.stats;
+  const calls = shadow.calls.stats;
+  const exp = shadow.expected;
+  const beats = shadow.calls.latest.filter((c) => c.call === 'beat');
+  const lags = shadow.calls.latest.filter((c) => c.call === 'lag');
+  const progress = Math.min(1, sell.closed / sell.needed);
+  return (
+    <ScrollView contentContainerStyle={s.pad}>
+      {paper && <PaperSection paper={paper} />}
+
+      <Text style={s.section}>Shadow trading</Text>
+      <View style={s.card}>
+        <Text style={s.label}>SHADOW TRADING · NO ORDERS</Text>
+        <Text style={s.big}>Practicing on live days</Text>
+        <Text style={s.dim}>Started {shadow.started}. Last finished day: {shadow.last_day}.</Text>
+      </View>
+
+      <Text style={s.section}>Selloff bounce, live</Text>
+      <View style={s.card}>
+        <View style={s.row}>
+          <Text style={[s.text, { flex: 1 }]}>{sell.closed} of {sell.needed} closed trades needed</Text>
+          <Text style={s.small}>{sell.open} open{sell.pending ? ` · ${sell.pending} buying tomorrow` : ''}</Text>
+        </View>
+        <View style={s.track}><View style={[s.fill, { width: `${Math.round(progress * 100)}%`, backgroundColor: C.accent }]} /></View>
+        <Text style={s.dim}>Until about {sell.needed} trades close, live results are mostly luck either way.</Text>
+      </View>
+      <View style={s.grid}>
+        <Stat label="Live win rate" value={pct(sell.win_rate)} note={`backtest: ${pct(exp?.win_rate)}`} />
+        <Stat label="Live avg trade" value={signedPct(sell.avg, 2)} note={`backtest: ${signedPct(exp?.avg, 2)}`} />
+      </View>
+      {shadow.selloff.open.length > 0 && (
+        <View style={s.card}>
+          <Text style={s.label}>OPEN POSITIONS ({shadow.selloff.open.length})</Text>
+          {shadow.selloff.open.map((p) => (
+            <View key={`${p.symbol}-${p.signal_date}`} style={[s.row, s.listRow]}>
+              <Text style={[s.text, { width: 64, fontWeight: '700' }]}>{p.symbol}</Text>
+              <Text style={[s.small, { flex: 1 }]}>
+                {p.status === 'pending' ? 'buys at next open' : `day ${p.days} of 10 · in at $${p.entry_price?.toFixed(2)}`}
+              </Text>
+              <Text style={[s.small, { color: p.status === 'pending' ? C.dim : (p.net_ret ?? 0) >= 0 ? C.good : C.bad }]}>
+                {p.status === 'pending' ? '' : signedPct(p.net_ret, 2)}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
+      {shadow.selloff.recent_closed.length > 0 && (
+        <View style={s.card}>
+          <Text style={s.label}>RECENTLY CLOSED</Text>
+          {shadow.selloff.recent_closed.slice(0, 8).map((p) => (
+            <View key={`${p.symbol}-${p.signal_date}`} style={[s.row, s.listRow]}>
+              <Text style={[s.text, { width: 64, fontWeight: '700' }]}>{p.symbol}</Text>
+              <Text style={[s.small, { flex: 1 }]}>{p.days} day(s), sold {p.exit_date}</Text>
+              <Text style={[s.small, { color: (p.net_ret ?? 0) > 0 ? C.good : C.bad }]}>{signedPct(p.net_ret, 2)}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {shadow.practice && <PracticeSection practice={shadow.practice} />}
+
+      <Text style={s.section}>Beat or lag the market</Text>
+      <View style={s.card}>
+        <Text style={s.dim}>
+          Every day Stan names 5 stocks to beat SPY and 5 to lag it, so he can't score by always guessing up.
+        </Text>
+        <View style={[s.row, { marginTop: 12, alignItems: 'flex-start' }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={[s.label, { color: C.good }]}>BEAT</Text>
+            {beats.map((c) => <Text key={c.symbol} style={s.text}>{c.symbol}</Text>)}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[s.label, { color: C.bad }]}>LAG</Text>
+            {lags.map((c) => <Text key={c.symbol} style={s.text}>{c.symbol}</Text>)}
+          </View>
+        </View>
+        <Text style={[s.small, { marginTop: 8 }]}>Calls made after the close on {shadow.calls.latest_day}</Text>
+      </View>
+      <View style={s.grid}>
+        <Stat label="Calls right" value={pct(calls.hit_rate)} note={`${calls.graded} graded`} />
+        <Stat label="Always 'beat'" value={pct(calls.always_beat_rate)} note="the habit to beat" />
+        <Stat label="Beat calls right" value={pct(calls.beat_hit_rate)} note="stock beat SPY" />
+        <Stat label="Lag calls right" value={pct(calls.lag_hit_rate)} note="stock lagged SPY" />
+      </View>
+
+      <Text style={s.section}>Shadow journal</Text>
+      {shadow.log.slice(0, 30).map((l) => (
+        <View key={l.id} style={[s.card, { borderLeftWidth: 3, borderLeftColor: KIND[l.kind]?.color ?? C.dim }]}>
+          <View style={s.row}>
+            <Text style={[s.label, { color: KIND[l.kind]?.color ?? C.dim, flex: 1 }]}>{KIND[l.kind]?.label ?? l.kind.toUpperCase()}</Text>
+            <Text style={s.small}>{l.day}</Text>
+          </View>
+          <Text style={s.text}>{l.text}</Text>
+        </View>
+      ))}
+    </ScrollView>
+  );
+}
+
+const PAPER_STATUS: Record<string, string> = {
+  pending_entry: 'buying at next open', open: 'holding', pending_exit: 'selling at next open',
+  closed: 'closed', cancelled: 'cancelled',
+};
+
+function money(x: number | null | undefined): string {
+  if (x === null || x === undefined) return 'n/a';
+  const abs = Math.abs(x).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `${x < 0 ? '-' : ''}$${abs}`;
+}
+
+function PaperSection({ paper }: { paper: Paper }) {
+  if (!paper.enabled) {
+    return (
+      <>
+        <Text style={s.section}>Paper account</Text>
+        <View style={s.card}>
+          <Text style={s.label}>ALPACA PAPER · NOT STARTED</Text>
+          <Text style={s.dim}>Run "python -m agent.stan.paper" after the market closes to start Stan's paper trading.</Text>
+        </View>
+      </>
+    );
+  }
+  const up = (paper.change ?? 0) >= 0;
+  return (
+    <>
+      <Text style={s.section}>Paper account</Text>
+      <View style={[s.card, { borderColor: paper.halted ? C.bad : C.line }]}>
+        <Text style={s.label}>ALPACA PAPER MONEY · {paper.halted ? 'STOPPED' : 'TRADING'}</Text>
+        <Text style={s.big}>{money(paper.equity)}</Text>
+        <Text style={[s.text, { color: up ? C.good : C.bad }]}>
+          {signedPct(paper.change, 2)} since {paper.started} (started at {money(paper.start_equity)})
+        </Text>
+        <Text style={s.dim}>Kill switch at {money(paper.kill_floor)}. Strategy: selloff bounce.</Text>
+        <Text style={[s.small, { marginTop: 6 }]}>
+          Paper trading was {paper.approved_by}’s call: Stan passed 9 of 10 stress tests, not all 10.
+        </Text>
+        {paper.halted && <Text style={[s.text, { color: C.bad, marginTop: 8 }]}>{paper.halt_reason}. Run --resume to restart.</Text>}
+      </View>
+      <View style={s.grid}>
+        <Stat label="Closed trades" value={String(paper.stats.closed)} note={`won ${pct(paper.stats.win_rate)}`} />
+        <Stat label="Realized P&L" value={money(paper.stats.pnl)} note={`avg ${signedPct(paper.stats.avg, 2)} a trade`} />
+      </View>
+      {paper.open.length > 0 && (
+        <View style={s.card}>
+          <Text style={s.label}>POSITIONS AND ORDERS ({paper.open.length})</Text>
+          {paper.open.map((t) => (
+            <View key={`${t.symbol}-${t.signal_date}`} style={[s.row, s.listRow]}>
+              <Text style={[s.text, { width: 64, fontWeight: '700' }]}>{t.symbol}</Text>
+              <Text style={[s.small, { flex: 1 }]}>
+                {t.qty} sh · {PAPER_STATUS[t.status]}{t.entry_price ? ` · in at ${money(t.entry_price)}` : ''}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
+      {paper.closed.length > 0 && (
+        <View style={s.card}>
+          <Text style={s.label}>CLOSED</Text>
+          {paper.closed.slice(0, 8).map((t) => (
+            <View key={`${t.symbol}-${t.signal_date}`} style={[s.row, s.listRow]}>
+              <Text style={[s.text, { width: 64, fontWeight: '700' }]}>{t.symbol}</Text>
+              <Text style={[s.small, { flex: 1 }]}>{t.qty} sh · sold {t.exit_date}</Text>
+              <Text style={[s.small, { color: (t.pnl ?? 0) > 0 ? C.good : C.bad }]}>{money(t.pnl)}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+      {paper.log.slice(0, 6).map((l) => (
+        <View key={`p${l.id}`} style={[s.card, { borderLeftWidth: 3, borderLeftColor: KIND[l.kind]?.color ?? C.dim }]}>
+          <View style={s.row}>
+            <Text style={[s.label, { color: KIND[l.kind]?.color ?? C.dim, flex: 1 }]}>PAPER · {KIND[l.kind]?.label ?? l.kind}</Text>
+            <Text style={s.small}>{l.day}</Text>
+          </View>
+          <Text style={s.text}>{l.text}</Text>
+        </View>
+      ))}
+    </>
+  );
+}
+
+const SKILL_STATUS: Record<string, { label: string; color: string }> = {
+  in_use: { label: 'IN USE', color: C.good },
+  learned: { label: 'LEARNED', color: C.accent },
+  locked: { label: 'LOCKED', color: C.warn },
+};
+
+function SkillsCard({ library }: { library: SkillLibrary }) {
+  const [open, setOpen] = useState<string | null>(null);
+  return (
+    <View style={s.card}>
+      <Text style={s.label}>STAN’S SKILLS · {library.skills.length}</Text>
+      <Text style={s.dim}>
+        {library.pack.name} by {library.pack.author} ({library.pack.license}). {library.counts.in_use} in use,{' '}
+        {library.counts.learned} learned, {library.counts.locked} locked. Tap one to see how Stan uses it.
+      </Text>
+      {library.skills.map((k) => (
+        <Pressable key={k.key} onPress={() => setOpen(open === k.key ? null : k.key)} style={s.listRow}
+          accessibilityRole="button" accessibilityState={{ expanded: open === k.key }}>
+          <View style={s.row}>
+            <Text style={[s.text, { flex: 1 }]}>{k.name}</Text>
+            <Text style={[s.small, { color: SKILL_STATUS[k.status].color, fontWeight: '700' }]}>{SKILL_STATUS[k.status].label}</Text>
+          </View>
+          {open === k.key && (
+            <>
+              <Text style={[s.dim, { marginTop: 4 }]}>{k.job}</Text>
+              <Text style={[s.small, { marginTop: 4, color: C.text }]}>Stan: {k.stan}</Text>
+            </>
+          )}
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
+function PracticeSection({ practice }: { practice: NonNullable<Shadow['practice']> }) {
+  const st = practice.stats;
+  if (!st.setups) {
+    return (
+      <>
+        <Text style={s.section}>Day-trade practice</Text>
+        <View style={s.card}>
+          <Text style={s.dim}>
+            Each evening Stan walks every opening-range breakout through the Day Trader skill pack: entry, exit plan, Time Machine,
+            budget and risk on the $50 plan, then grades what happened. Nothing has been practiced yet.
+          </Text>
+        </View>
+      </>
+    );
+  }
+  return (
+    <>
+      <Text style={s.section}>Day-trade practice</Text>
+      <View style={s.card}>
+        <Text style={s.dim}>
+          Opening-range breakouts walked through the Day Trader skill pack each evening, graded after the close. No orders.
+        </Text>
+      </View>
+      <View style={s.grid}>
+        <Stat label="Setups graded" value={String(st.setups)} note={`${st.days} day(s)`} />
+        <Stat label="Avg result" value={`${(st.avg_R ?? 0) >= 0 ? '+' : ''}${(st.avg_R ?? 0).toFixed(2)}R`} note={`won ${pct(st.win_rate)}`} />
+        <Stat label="Taken on $50" value={String(st.taken ?? 0)} note={st.taken_avg_R === null || st.taken_avg_R === undefined ? 'none yet' : `avg ${st.taken_avg_R >= 0 ? '+' : ''}${st.taken_avg_R.toFixed(2)}R`} />
+        <Stat label="Budget said no" value={String(st.refused_by_budget ?? 0)} note="0 whole shares fit" />
+      </View>
+      <View style={s.card}>
+        <Text style={s.label}>CAN HE TRUST THE TIME MACHINE?</Text>
+        <Text style={s.text}>
+          It gave the target {pct(st.tm_predicted_target)} odds on average. The target actually came first {pct(st.tm_actual_target)} of the time.
+        </Text>
+      </View>
+      <View style={s.card}>
+        <Text style={s.label}>RECENT PRACTICE</Text>
+        {practice.recent.slice(0, 12).map((r) => (
+          <View key={`${r.day}-${r.symbol}`} style={s.listRow}>
+            <View style={s.row}>
+              <Text style={[s.text, { width: 64, fontWeight: '700' }]}>{r.symbol}</Text>
+              <Text style={[s.small, { flex: 1 }]}>{r.day} · {r.entry_time} · {r.outcome}</Text>
+              <Text style={[s.small, { color: r.net_R > 0 ? C.good : C.bad }]}>{r.net_R >= 0 ? '+' : ''}{r.net_R.toFixed(2)}R</Text>
+            </View>
+            <Text style={s.small}>
+              {r.taken ? 'Taken on the $50 plan' : r.budget_qty ? `Not taken: ${r.risk_reason || r.risk_verdict}` : 'Budget: 0 shares fit on $50'}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </>
+  );
+}
+
+const VERDICT: Record<Strategy['verdict'], { text: string; color: string }> = {
+  real_edge: { text: 'Real edge: passed every stress test', color: C.good },
+  promising: { text: 'Promising, not proven', color: C.warn },
+  not_proven: { text: 'Not a real edge yet', color: C.bad },
+};
+
+function StrategyCard({ strategy }: { strategy: Strategy }) {
+  const v = VERDICT[strategy.verdict];
+  return (
+    <>
+      <Text style={s.section}>Strategy exam: {strategy.name}</Text>
+      <View style={[s.card, { borderColor: v.color }]}>
+        <Text style={s.label}>STRESS TESTS</Text>
+        <Text style={[s.big, { color: v.color }]}>{v.text}</Text>
+        <Text style={s.dim}>Passed {strategy.checks_passed} of {strategy.checks_total}. Rule: {strategy.rule}.</Text>
+        <Text style={[s.dim, { marginTop: 6 }]}>
+          {strategy.score.trades} trades on {strategy.stocks} stocks · won {pct(strategy.score.win_rate)} ·{' '}
+          {strategy.unit === 'R' && strategy.score.avg_R !== undefined && strategy.score.avg_R !== null
+            ? `${strategy.score.avg_R >= 0 ? '+' : ''}${strategy.score.avg_R.toFixed(3)}R a trade`
+            : `profit factor ${strategy.score.profit_factor === null ? 'n/a' : strategy.score.profit_factor.toFixed(2)}`}{' '}
+          · {(strategy.cost * 100).toFixed(2)}% costs each way
+        </Text>
+        {strategy.sessions ? (
+          <Text style={s.small}>
+            {strategy.sessions} sessions of 5-minute bars, {strategy.first_day} to {strategy.last_day}.{' '}
+            {strategy.source ? `Rule ${strategy.source}.` : 'Rule from the Day Trader skill pack.'}
+          </Text>
+        ) : null}
+      </View>
+      {strategy.checks.map((c) => (
+        <View key={c.key} style={[s.card, { borderLeftWidth: 3, borderLeftColor: c.passed ? C.good : C.bad }]}>
+          <View style={s.row}>
+            <Text style={[s.text, { flex: 1 }]}>{c.name}</Text>
+            <Text style={[s.small, { color: c.passed ? C.good : C.bad }]}>{c.passed ? 'Passed' : 'Failed'}</Text>
+          </View>
+          <Text style={s.dim}>{c.detail}</Text>
+        </View>
+      ))}
+    </>
+  );
+}
+
 function Stat({ label, value, note }: { label: string; value: string; note: string }) {
   return (
     <View style={s.stat}>
@@ -291,6 +654,7 @@ const s = StyleSheet.create({
   pad: { padding: 16, paddingBottom: 32, gap: 12 },
   card: { backgroundColor: C.card, borderRadius: 12, borderWidth: 1, borderColor: C.line, padding: 14 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  listRow: { paddingVertical: 8, borderTopWidth: 1, borderTopColor: C.line },
   label: { color: C.dim, fontSize: 11, fontWeight: '700', letterSpacing: 0.8, marginBottom: 6 },
   section: { color: C.text, fontSize: 16, fontWeight: '700', marginTop: 8 },
   big: { color: C.text, fontSize: 20, fontWeight: '700' },

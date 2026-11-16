@@ -19,24 +19,435 @@
    "of": 5,
    "next": "Paper Trader (candidate)"
   },
-  "run_id": null,
+  "run_id": "20261115-014245-642008",
   "mode": "demo",
   "state": "finished",
   "current_task": null,
-  "tasks_done": 6,
-  "tasks_total": 6,
+  "tasks_done": 10,
+  "tasks_total": 10,
   "summary": {
    "years_tested": 10,
-   "years_passed": 4,
+   "years_passed": 5,
    "years_beat_hold": 4,
-   "accuracy": 0.5135,
-   "baseline_up": 0.5084,
-   "trades": 474,
-   "win_rate": 0.4937,
-   "profit_factor": 0.832,
-   "stan_growth": 0.902,
-   "hold_growth": 2.3573,
+   "accuracy": 0.5119,
+   "baseline_up": 0.5132,
+   "trades": 2061,
+   "win_rate": 0.507,
+   "profit_factor": 0.87,
+   "stan_growth": 0.9419,
+   "hold_growth": 2.8362,
+   "spy_growth": 1.6358,
+   "exposure": 0.0286,
+   "per_day_invested": -0.000777,
+   "per_day_hold": 0.000487,
+   "max_dd": -0.1056,
+   "hold_max_dd": -0.4715,
+   "luck": {
+    "reps": 1000,
+    "actual_avg": -0.00122,
+    "random_avg": -0.00036,
+    "random_avg_p95": 0.00047,
+    "p_value": 0.96,
+    "actual_win": 0.507,
+    "random_win": 0.4934
+   },
    "ready_for_paper": false
+  },
+  "strategy": {
+   "name": "Selloff bounce",
+   "rule": "buy at the next day's open after RSI closes under 30; sell when RSI reaches 50 or after 10 days",
+   "cost": 0.001,
+   "stocks": 43,
+   "score": {
+    "trades": 3419,
+    "win_rate": 0.5531,
+    "profit_factor": 1.009,
+    "avg": 0.00017,
+    "t_stat": 0.2
+   },
+   "by_year": [
+    {
+     "year": 2012,
+     "trades": 105,
+     "win_rate": 0.6381,
+     "profit_factor": 1.879,
+     "avg": 0.01045,
+     "t_stat": 2.72
+    },
+    {
+     "year": 2013,
+     "trades": 153,
+     "win_rate": 0.6275,
+     "profit_factor": 1.77,
+     "avg": 0.01024,
+     "t_stat": 2.94
+    },
+    {
+     "year": 2014,
+     "trades": 263,
+     "win_rate": 0.5551,
+     "profit_factor": 1.178,
+     "avg": 0.00321,
+     "t_stat": 1.1
+    },
+    {
+     "year": 2015,
+     "trades": 318,
+     "win_rate": 0.4214,
+     "profit_factor": 0.458,
+     "avg": -0.01898,
+     "t_stat": -5.63
+    },
+    {
+     "year": 2016,
+     "trades": 159,
+     "win_rate": 0.6918,
+     "profit_factor": 2.161,
+     "avg": 0.01198,
+     "t_stat": 3.95
+    },
+    {
+     "year": 2017,
+     "trades": 199,
+     "win_rate": 0.6683,
+     "profit_factor": 2.217,
+     "avg": 0.01599,
+     "t_stat": 4.5
+    },
+    {
+     "year": 2018,
+     "trades": 383,
+     "win_rate": 0.4569,
+     "profit_factor": 0.711,
+     "avg": -0.00799,
+     "t_stat": -2.81
+    },
+    {
+     "year": 2019,
+     "trades": 254,
+     "win_rate": 0.5748,
+     "profit_factor": 1.533,
+     "avg": 0.00818,
+     "t_stat": 2.82
+    },
+    {
+     "year": 2020,
+     "trades": 201,
+     "win_rate": 0.607,
+     "profit_factor": 1.412,
+     "avg": 0.00574,
+     "t_stat": 2.01
+    },
+    {
+     "year": 2021,
+     "trades": 272,
+     "win_rate": 0.5699,
+     "profit_factor": 1.058,
+     "avg": 0.00093,
+     "t_stat": 0.39
+    },
+    {
+     "year": 2022,
+     "trades": 149,
+     "win_rate": 0.7181,
+     "profit_factor": 3.748,
+     "avg": 0.02278,
+     "t_stat": 6.65
+    },
+    {
+     "year": 2023,
+     "trades": 194,
+     "win_rate": 0.6031,
+     "profit_factor": 1.171,
+     "avg": 0.00291,
+     "t_stat": 0.89
+    },
+    {
+     "year": 2024,
+     "trades": 295,
+     "win_rate": 0.522,
+     "profit_factor": 0.782,
+     "avg": -0.00583,
+     "t_stat": -1.73
+    },
+    {
+     "year": 2025,
+     "trades": 208,
+     "win_rate": 0.4567,
+     "profit_factor": 0.517,
+     "avg": -0.01543,
+     "t_stat": -3.74
+    },
+    {
+     "year": 2026,
+     "trades": 266,
+     "win_rate": 0.5038,
+     "profit_factor": 0.75,
+     "avg": -0.00533,
+     "t_stat": -1.84
+    }
+   ],
+   "versus": {
+    "growth": 0.9844,
+    "hold_growth": 5.4996,
+    "spy_growth": 2.454,
+    "exposure": 0.1804,
+    "per_day_invested": 2.1e-05,
+    "per_day_hold": 0.000533,
+    "max_dd": -0.2012,
+    "hold_max_dd": -0.4715
+   },
+   "luck": {
+    "reps": 1000,
+    "actual_avg": 0.00017,
+    "random_avg": -0.00127,
+    "random_avg_p95": 0.0002,
+    "p_value": 0.0539,
+    "actual_win": 0.5531,
+    "random_win": 0.4894
+   },
+   "checks": [
+    {
+     "key": "basic",
+     "name": "Wins at least half its trades and makes more than it loses (0.10% costs)",
+     "passed": true,
+     "detail": "3419 trades, won 55.3%, profit factor 1.009, average +0.02% per trade"
+    },
+    {
+     "key": "years",
+     "name": "Makes money in at least 70% of years",
+     "passed": false,
+     "detail": "made money in 10 of 15 years; worst was 2015 at -1.90% per trade"
+    },
+    {
+     "key": "luck",
+     "name": "Beats random entries in the same stocks and years (p under 0.05)",
+     "passed": false,
+     "detail": "real trades averaged +0.02% vs -0.13% for random entries (p = 0.0539); random entries won 48.9%"
+    },
+    {
+     "key": "costs",
+     "name": "Still profitable at 0.25% costs per side (wide spreads, bad fills)",
+     "passed": false,
+     "detail": "0.05%: profit factor 1.059; 0.10%: profit factor 1.009; 0.25%: profit factor 0.87"
+    },
+    {
+     "key": "timing",
+     "name": "Works when buying at the next open, not only at the signal close",
+     "passed": true,
+     "detail": "next open: profit factor 1.009; same close: 1.016"
+    },
+    {
+     "key": "grid",
+     "name": "Profitable in at least 10 of 12 nearby settings (not a lucky setting)",
+     "passed": false,
+     "detail": "6 of 12 settings were profitable"
+    },
+    {
+     "key": "new_stocks",
+     "name": "Works on stocks Stan never studied before",
+     "passed": false,
+     "detail": "35 new stocks: won 55.2%, profit factor 0.994; original 8: profit factor 1.073"
+    },
+    {
+     "key": "regime",
+     "name": "Profitable both when the market is above and below its 200-day average",
+     "passed": false,
+     "detail": "market up: 1439 trades, profit factor 1.325; market down: 1856 trades, profit factor 0.791"
+    },
+    {
+     "key": "per_day",
+     "name": "Earns more per day invested than holding does per day",
+     "passed": false,
+     "detail": "+0.002% per day invested vs +0.053% per day holding (invested 18.0% of the time)"
+    },
+    {
+     "key": "drawdown",
+     "name": "Smaller worst drop than holding",
+     "passed": true,
+     "detail": "worst drop -20.1% vs -47.2% holding"
+    }
+   ],
+   "checks_passed": 3,
+   "checks_total": 10,
+   "verdict": "not_proven"
+  },
+  "daytrade_exam": {
+   "name": "Opening-range breakout",
+   "rule": "buy when a 5-minute bar closes above the first 15 minutes' high; stop at the range midpoint, target 1R, out by 3:55 PM (the Day Trader skill pack's rule)",
+   "unit": "R",
+   "cost": 0.0005,
+   "stocks": 43,
+   "sessions": 60,
+   "first_day": "2026-08-24",
+   "last_day": "2026-11-13",
+   "score": {
+    "trades": 1900,
+    "win_rate": 0.5053,
+    "profit_factor": 0.72,
+    "avg": null,
+    "avg_R": -0.1604,
+    "targets": 943,
+    "stops": 915
+   },
+   "two_r": {
+    "trades": 1900,
+    "win_rate": 0.3511,
+    "profit_factor": 0.762,
+    "avg": null,
+    "avg_R": -0.1776,
+    "targets": 551,
+    "stops": 1190
+   },
+   "luck": {
+    "p_value": 0.2126,
+    "actual_avg_R": -0.1604,
+    "random_avg_R": -0.1774,
+    "reps": 333
+   },
+   "checks": [
+    {
+     "key": "basic",
+     "name": "Wins at least half its trades and averages above 0R after 0.05% costs",
+     "passed": false,
+     "detail": "1900 trades over 60 sessions: won 50.5%, average -0.160R per trade, 943 hit the target and 915 the stop"
+    },
+    {
+     "key": "luck",
+     "name": "Beats entering at the same time of day on random sessions (p under 0.05)",
+     "passed": false,
+     "detail": "breakouts averaged -0.160R vs -0.177R for random sessions (p = 0.2126)"
+    },
+    {
+     "key": "costs",
+     "name": "Still averages above 0R at 0.10% costs per side",
+     "passed": false,
+     "detail": "average -0.335R per trade at 0.10% each way"
+    },
+    {
+     "key": "target",
+     "name": "Also averages above 0R with a 2R target",
+     "passed": false,
+     "detail": "2R target: won 35.1%, average -0.178R"
+    },
+    {
+     "key": "breadth",
+     "name": "Averages above 0R in at least 60% of stocks",
+     "passed": false,
+     "detail": "7 of 43 stocks (with 5+ trades) averaged above 0R"
+    },
+    {
+     "key": "weeks",
+     "name": "Ends at least 60% of weeks ahead",
+     "passed": false,
+     "detail": "ahead in 1 of 12 weeks"
+    },
+    {
+     "key": "new_stocks",
+     "name": "Works on the stocks outside Stan's original 8",
+     "passed": false,
+     "detail": "won 50.5%, average -0.161R on 1538 trades"
+    }
+   ],
+   "checks_passed": 0,
+   "checks_total": 7,
+   "verdict": "not_proven"
+  },
+  "trend_exam": {
+   "name": "QQQ trend bot",
+   "rule": "trade with the trend on 5-minute bars: long above VWAP with EMA9 over EMA21 and rising, short on the mirror, only when the last hour moved in a fairly straight line (chop filter); stop 1.5 ATR, stop to break-even at +1R, then a 2 ATR trailing stop; out on a close back across VWAP or at 3:55 PM; 3 trades and -2R a day at most",
+   "source": "rebuilt from the controls in Nick Fischer's QQQ BOTS reel; his exact rules aren't public",
+   "unit": "R",
+   "cost": 0.0003,
+   "stocks": 43,
+   "sessions": 60,
+   "first_day": "2026-08-24",
+   "last_day": "2026-11-13",
+   "score": {
+    "trades": 7196,
+    "win_rate": 0.3444,
+    "profit_factor": 0.766,
+    "avg": null,
+    "avg_R": -0.1213,
+    "total_R": -873.15,
+    "longs": 3559,
+    "shorts": 3637
+   },
+   "focus": {
+    "trades": 168,
+    "win_rate": 0.3929,
+    "profit_factor": 0.975,
+    "avg": null,
+    "avg_R": -0.0119,
+    "total_R": -2.01,
+    "longs": 79,
+    "shorts": 89
+   },
+   "luck": {
+    "p_value": 0.5116,
+    "actual_avg_R": -0.1213,
+    "random_avg_R": -0.1198,
+    "reps": 300
+   },
+   "checks": [
+    {
+     "key": "basic",
+     "name": "Makes more than it loses after 0.03% costs (profit factor 1.2+, 60+ trades)",
+     "passed": false,
+     "detail": "7196 trades (3559 long, 3637 short): won 34.4%, average -0.121R, profit factor 0.766"
+    },
+    {
+     "key": "luck",
+     "name": "Profitable, and beats the same trades taken at random on other days (p under 0.05)",
+     "passed": false,
+     "detail": "its trades averaged -0.121R vs -0.120R at random (p = 0.5116)"
+    },
+    {
+     "key": "costs",
+     "name": "Still ahead at 0.08% costs per side",
+     "passed": false,
+     "detail": "average -0.314R at 0.08% each way"
+    },
+    {
+     "key": "both_sides",
+     "name": "Makes money on the short side too, not just guessing up",
+     "passed": false,
+     "detail": "longs -0.131R on 3559, shorts -0.112R on 3637"
+    },
+    {
+     "key": "risk_levels",
+     "name": "Works at Low, Medium and High risk, not one lucky setting",
+     "passed": false,
+     "detail": "low -0.172R, medium -0.121R, high -0.092R"
+    },
+    {
+     "key": "chop_filter",
+     "name": "The chop filter earns its keep (better with it than without)",
+     "passed": true,
+     "detail": "with it -0.121R on 7196 trades, without it -0.124R on 7652"
+    },
+    {
+     "key": "weeks",
+     "name": "Ends at least 55% of weeks ahead",
+     "passed": false,
+     "detail": "ahead in 0 of 12 weeks"
+    },
+    {
+     "key": "breadth",
+     "name": "Works on QQQ and on at least 60% of the other symbols",
+     "passed": false,
+     "detail": "QQQ -0.012R on 168 trades; 6 of 42 others ahead"
+    },
+    {
+     "key": "drawdown",
+     "name": "Its worst losing stretch is smaller than its total gain",
+     "passed": false,
+     "detail": "QQQ: worst drop 15.8R, total -2.0R"
+    }
+   ],
+   "checks_passed": 1,
+   "checks_total": 9,
+   "verdict": "not_proven"
   }
  },
  "/tasks": [
@@ -46,9 +457,9 @@
    "title": "Collect 15 years of price history",
    "status": "done",
    "progress": 1.0,
-   "detail": "8 stocks, 30,240 trading days, 14.5 years",
-   "started_at": "2026-11-14T16:38:18+00:00",
-   "finished_at": "2026-11-14T16:38:18+00:00"
+   "detail": "43 stocks, 162,540 trading days, 14.5 years",
+   "started_at": "2026-11-15T06:42:45+00:00",
+   "finished_at": "2026-11-15T06:42:45+00:00"
   },
   {
    "id": 2,
@@ -56,9 +467,9 @@
    "title": "Turn prices into signals I can study",
    "status": "done",
    "progress": 1.0,
-   "detail": "28,224 study rows, 14 signals each",
-   "started_at": "2026-11-14T16:38:18+00:00",
-   "finished_at": "2026-11-14T16:38:18+00:00"
+   "detail": "151,704 study rows, 14 signals each",
+   "started_at": "2026-11-15T06:42:45+00:00",
+   "finished_at": "2026-11-15T06:42:46+00:00"
   },
   {
    "id": 3,
@@ -67,8 +478,8 @@
    "status": "done",
    "progress": 1.0,
    "detail": "7 bull, 4 bear, 4 sideways years",
-   "started_at": "2026-11-14T16:38:18+00:00",
-   "finished_at": "2026-11-14T16:38:18+00:00"
+   "started_at": "2026-11-15T06:42:46+00:00",
+   "finished_at": "2026-11-15T06:42:46+00:00"
   },
   {
    "id": 4,
@@ -76,9 +487,9 @@
    "title": "Sit an exam on every year I have not seen",
    "status": "done",
    "progress": 1.0,
-   "detail": "4 of 10 exams passed",
-   "started_at": "2026-11-14T16:38:18+00:00",
-   "finished_at": "2026-11-14T16:38:20+00:00"
+   "detail": "5 of 10 exams passed",
+   "started_at": "2026-11-15T06:42:46+00:00",
+   "finished_at": "2026-11-15T06:42:53+00:00"
   },
   {
    "id": 5,
@@ -86,501 +497,3606 @@
    "title": "Review my wins and losses",
    "status": "done",
    "progress": 1.0,
-   "detail": "2 lesson(s) written down",
-   "started_at": "2026-11-14T16:38:20+00:00",
-   "finished_at": "2026-11-14T16:38:20+00:00"
+   "detail": "3 lesson(s) written down",
+   "started_at": "2026-11-15T06:42:53+00:00",
+   "finished_at": "2026-11-15T06:42:53+00:00"
   },
   {
    "id": 6,
+   "key": "selloff",
+   "title": "Strategy exam: buy after a sharp selloff",
+   "status": "done",
+   "progress": 1.0,
+   "detail": "Year-by-year results recorded",
+   "started_at": "2026-11-15T06:42:53+00:00",
+   "finished_at": "2026-11-15T06:42:53+00:00"
+  },
+  {
+   "id": 7,
+   "key": "stress",
+   "title": "Stress-test the selloff strategy",
+   "status": "done",
+   "progress": 1.0,
+   "detail": "Passed 3 of 10 stress tests",
+   "started_at": "2026-11-15T06:42:53+00:00",
+   "finished_at": "2026-11-15T06:42:58+00:00"
+  },
+  {
+   "id": 8,
+   "key": "daytrade",
+   "title": "Day-trading exam: opening-range breakout",
+   "status": "done",
+   "progress": 1.0,
+   "detail": "Passed 0 of 7 checks",
+   "started_at": "2026-11-15T06:42:58+00:00",
+   "finished_at": "2026-11-15T06:43:00+00:00"
+  },
+  {
+   "id": 9,
+   "key": "trend",
+   "title": "Day-trading exam: the QQQ trend bot from the reel",
+   "status": "done",
+   "progress": 1.0,
+   "detail": "Passed 1 of 9 checks",
+   "started_at": "2026-11-15T06:43:00+00:00",
+   "finished_at": "2026-11-15T06:43:00+00:00"
+  },
+  {
+   "id": 10,
    "key": "report",
    "title": "Write my report card",
    "status": "done",
    "progress": 1.0,
    "detail": "Not ready yet",
-   "started_at": "2026-11-14T16:38:20+00:00",
-   "finished_at": "2026-11-14T16:38:20+00:00"
+   "started_at": "2026-11-15T06:43:00+00:00",
+   "finished_at": "2026-11-15T06:43:00+00:00"
   }
  ],
  "/thoughts": [
   {
    "id": 1,
-   "ts": "2026-11-14T16:38:18+00:00",
+   "ts": "2026-11-15T06:42:45+00:00",
    "kind": "milestone",
    "text": "Day one of school. No trades until I pass my exams. Let's study."
   },
   {
    "id": 2,
-   "ts": "2026-11-14T16:38:18+00:00",
+   "ts": "2026-11-15T06:42:45+00:00",
    "kind": "thought",
    "text": "Heads up: this is practice data, not real market history. The numbers show how I work, not how real markets behave."
   },
   {
    "id": 3,
-   "ts": "2026-11-14T16:38:18+00:00",
+   "ts": "2026-11-15T06:42:45+00:00",
    "kind": "progress",
-   "text": "I have 30,240 days of prices across 8 stocks from practice data (demo), covering 14.5 years."
+   "text": "I have 162,540 days of prices across 43 stocks from practice data (demo), covering 14.5 years."
   },
   {
    "id": 4,
-   "ts": "2026-11-14T16:38:18+00:00",
+   "ts": "2026-11-15T06:42:46+00:00",
    "kind": "progress",
-   "text": "Built 28,224 study rows. Each one holds only what I could have known at that day's close. No peeking at tomorrow."
+   "text": "Built 151,704 study rows. Each one holds only what I could have known at that day's close. No peeking at tomorrow."
   },
   {
    "id": 5,
-   "ts": "2026-11-14T16:38:18+00:00",
+   "ts": "2026-11-15T06:42:46+00:00",
    "kind": "thought",
    "text": "2012: SPY went +15.6% with a worst drop of -7.4%. I'm filing that as a bull year."
   },
   {
    "id": 6,
-   "ts": "2026-11-14T16:38:18+00:00",
+   "ts": "2026-11-15T06:42:46+00:00",
    "kind": "thought",
    "text": "2013: SPY went +9.4% with a worst drop of -25.1%. I'm filing that as a sideways year."
   },
   {
    "id": 7,
-   "ts": "2026-11-14T16:38:18+00:00",
+   "ts": "2026-11-15T06:42:46+00:00",
    "kind": "thought",
    "text": "2014: SPY went +26.7% with a worst drop of -18.4%. I'm filing that as a bull year."
   },
   {
    "id": 8,
-   "ts": "2026-11-14T16:38:18+00:00",
+   "ts": "2026-11-15T06:42:46+00:00",
    "kind": "thought",
    "text": "2015: SPY went -25.8% with a worst drop of -53.5%. I'm filing that as a bear year."
   },
   {
    "id": 9,
-   "ts": "2026-11-14T16:38:18+00:00",
+   "ts": "2026-11-15T06:42:46+00:00",
    "kind": "thought",
    "text": "2016: SPY went +15.4% with a worst drop of -23.5%. I'm filing that as a bull year."
   },
   {
    "id": 10,
-   "ts": "2026-11-14T16:38:18+00:00",
+   "ts": "2026-11-15T06:42:46+00:00",
    "kind": "thought",
    "text": "2017: SPY went +51.0% with a worst drop of -15.0%. I'm filing that as a bull year."
   },
   {
    "id": 11,
-   "ts": "2026-11-14T16:38:18+00:00",
+   "ts": "2026-11-15T06:42:46+00:00",
    "kind": "thought",
    "text": "2018: SPY went -22.0% with a worst drop of -29.3%. I'm filing that as a bear year."
   },
   {
    "id": 12,
-   "ts": "2026-11-14T16:38:18+00:00",
+   "ts": "2026-11-15T06:42:46+00:00",
    "kind": "thought",
    "text": "2019: SPY went +24.4% with a worst drop of -20.3%. I'm filing that as a bull year."
   },
   {
    "id": 13,
-   "ts": "2026-11-14T16:38:18+00:00",
+   "ts": "2026-11-15T06:42:46+00:00",
    "kind": "thought",
    "text": "2020: SPY went +26.6% with a worst drop of -16.2%. I'm filing that as a bull year."
   },
   {
    "id": 14,
-   "ts": "2026-11-14T16:38:18+00:00",
+   "ts": "2026-11-15T06:42:46+00:00",
    "kind": "thought",
    "text": "2021: SPY went -3.2% with a worst drop of -23.3%. I'm filing that as a sideways year."
   },
   {
    "id": 15,
-   "ts": "2026-11-14T16:38:18+00:00",
+   "ts": "2026-11-15T06:42:46+00:00",
    "kind": "thought",
    "text": "2022: SPY went +26.5% with a worst drop of -15.9%. I'm filing that as a bull year."
   },
   {
    "id": 16,
-   "ts": "2026-11-14T16:38:18+00:00",
+   "ts": "2026-11-15T06:42:46+00:00",
    "kind": "thought",
    "text": "2023: SPY went +1.3% with a worst drop of -23.2%. I'm filing that as a sideways year."
   },
   {
    "id": 17,
-   "ts": "2026-11-14T16:38:18+00:00",
+   "ts": "2026-11-15T06:42:46+00:00",
    "kind": "thought",
    "text": "2024: SPY went -14.7% with a worst drop of -42.2%. I'm filing that as a bear year."
   },
   {
    "id": 18,
-   "ts": "2026-11-14T16:38:18+00:00",
+   "ts": "2026-11-15T06:42:46+00:00",
    "kind": "thought",
    "text": "2025: SPY went +7.8% with a worst drop of -32.6%. I'm filing that as a sideways year."
   },
   {
    "id": 19,
-   "ts": "2026-11-14T16:38:18+00:00",
+   "ts": "2026-11-15T06:42:46+00:00",
    "kind": "thought",
    "text": "2026: SPY went -24.0% with a worst drop of -32.9%. I'm filing that as a bear year."
   },
   {
    "id": 20,
-   "ts": "2026-11-14T16:38:18+00:00",
+   "ts": "2026-11-15T06:42:46+00:00",
    "kind": "thought",
    "text": "Mostly up years means always guessing 'up' looks smart. I have to beat that, not just beat a coin flip."
   },
   {
    "id": 21,
-   "ts": "2026-11-14T16:38:19+00:00",
-   "kind": "win",
-   "text": "2017 exam: 212 trades, won 55.2%, profit factor 1.133. I made +2.4% and trailed simply holding (+32.0%). Passed."
+   "ts": "2026-11-15T06:42:46+00:00",
+   "kind": "fail",
+   "text": "2017 exam: 613 trades, won 47.5%, profit factor 0.741. I made -4.1% and trailed simply holding (+39.8%). Failed."
   },
   {
    "id": 22,
-   "ts": "2026-11-14T16:38:19+00:00",
+   "ts": "2026-11-15T06:42:46+00:00",
    "kind": "fail",
-   "text": "Worst trade of 2017: SPY on Nov 27, -6.7% in 10 day(s). Logged for review."
+   "text": "Worst trade of 2017: C on Nov 27, -13.4% in 4 day(s). Logged for review."
   },
   {
    "id": 23,
-   "ts": "2026-11-14T16:38:19+00:00",
+   "ts": "2026-11-15T06:42:46+00:00",
    "kind": "win",
-   "text": "Best trade of 2017: AMD on Nov 10, +12.9% in 6 day(s)."
+   "text": "Best trade of 2017: BA on Nov 14, +10.9% in 3 day(s)."
   },
   {
    "id": 24,
-   "ts": "2026-11-14T16:38:19+00:00",
+   "ts": "2026-11-15T06:42:47+00:00",
    "kind": "fail",
-   "text": "2018 exam: 134 trades, won 40.3%, profit factor 0.484. I made -10.5% and beat simply holding (-36.2%). Failed."
+   "text": "2018 exam: 332 trades, won 42.5%, profit factor 0.5. I made -4.8% and beat simply holding (-36.7%). Failed."
   },
   {
    "id": 25,
-   "ts": "2026-11-14T16:38:19+00:00",
+   "ts": "2026-11-15T06:42:47+00:00",
    "kind": "fail",
-   "text": "Worst trade of 2018: TSLA on Apr 04, -11.6% in 12 day(s). Logged for review."
+   "text": "Worst trade of 2018: ORCL on Nov 12, -14.7% in 9 day(s). Logged for review."
   },
   {
    "id": 26,
-   "ts": "2026-11-14T16:38:19+00:00",
+   "ts": "2026-11-15T06:42:47+00:00",
    "kind": "win",
-   "text": "Best trade of 2018: AMD on Jul 25, +4.1% in 1 day(s)."
+   "text": "Best trade of 2018: ORCL on Sep 10, +6.9% in 2 day(s)."
   },
   {
    "id": 27,
-   "ts": "2026-11-14T16:38:19+00:00",
-   "kind": "fail",
-   "text": "2019 exam: 10 trades, won 40.0%, profit factor 0.414. I made -0.7% and trailed simply holding (+10.8%). Failed."
+   "ts": "2026-11-15T06:42:48+00:00",
+   "kind": "win",
+   "text": "2019 exam: 255 trades, won 52.2%, profit factor 1.147. I made +0.6% and trailed simply holding (+24.7%). Passed."
   },
   {
    "id": 28,
-   "ts": "2026-11-14T16:38:19+00:00",
+   "ts": "2026-11-15T06:42:48+00:00",
    "kind": "fail",
-   "text": "Worst trade of 2019: IWM on Jun 06, -2.4% in 1 day(s). Logged for review."
+   "text": "Worst trade of 2019: BAC on Dec 19, -5.9% in 2 day(s). Logged for review."
   },
   {
    "id": 29,
-   "ts": "2026-11-14T16:38:19+00:00",
+   "ts": "2026-11-15T06:42:48+00:00",
    "kind": "win",
-   "text": "Best trade of 2019: MSFT on Feb 13, +1.6% in 2 day(s)."
+   "text": "Best trade of 2019: AAPL on Sep 11, +5.6% in 1 day(s)."
   },
   {
    "id": 30,
-   "ts": "2026-11-14T16:38:19+00:00",
-   "kind": "thought",
-   "text": "2020 exam: I was never confident enough to trade, so I sat in cash. Holding did +39.5%."
+   "ts": "2026-11-15T06:42:48+00:00",
+   "kind": "win",
+   "text": "2020 exam: 96 trades, won 59.4%, profit factor 1.27. I made +0.4% and trailed simply holding (+32.0%). Passed."
   },
   {
    "id": 31,
-   "ts": "2026-11-14T16:38:19+00:00",
-   "kind": "win",
-   "text": "2021 exam: 3 trades, won 66.7%, profit factor 2.143. I made +0.2% and beat simply holding (-5.2%). Passed."
+   "ts": "2026-11-15T06:42:48+00:00",
+   "kind": "fail",
+   "text": "Worst trade of 2020: NKE on Nov 17, -4.9% in 3 day(s). Logged for review."
   },
   {
    "id": 32,
-   "ts": "2026-11-14T16:38:19+00:00",
-   "kind": "fail",
-   "text": "Worst trade of 2021: IWM on Mar 10, -1.4% in 1 day(s). Logged for review."
+   "ts": "2026-11-15T06:42:48+00:00",
+   "kind": "win",
+   "text": "Best trade of 2020: INTC on Jan 21, +6.7% in 4 day(s)."
   },
   {
    "id": 33,
-   "ts": "2026-11-14T16:38:19+00:00",
-   "kind": "win",
-   "text": "Best trade of 2021: TSLA on Aug 09, +2.2% in 1 day(s)."
+   "ts": "2026-11-15T06:42:49+00:00",
+   "kind": "fail",
+   "text": "2021 exam: 24 trades, won 45.8%, profit factor 0.921. I made -0.0% and beat simply holding (-1.2%). Failed."
   },
   {
    "id": 34,
-   "ts": "2026-11-14T16:38:19+00:00",
-   "kind": "win",
-   "text": "2022 exam: 13 trades, won 69.2%, profit factor 2.7. I made +1.4% and trailed simply holding (+59.3%). Passed."
+   "ts": "2026-11-15T06:42:49+00:00",
+   "kind": "fail",
+   "text": "Worst trade of 2021: CSCO on Dec 08, -2.6% in 1 day(s). Logged for review."
   },
   {
    "id": 35,
-   "ts": "2026-11-14T16:38:19+00:00",
-   "kind": "fail",
-   "text": "Worst trade of 2022: AMD on Jan 04, -2.6% in 2 day(s). Logged for review."
+   "ts": "2026-11-15T06:42:49+00:00",
+   "kind": "win",
+   "text": "Best trade of 2021: XOM on Apr 15, +3.4% in 1 day(s)."
   },
   {
    "id": 36,
-   "ts": "2026-11-14T16:38:19+00:00",
+   "ts": "2026-11-15T06:42:49+00:00",
    "kind": "win",
-   "text": "Best trade of 2022: SPY on Sep 06, +3.4% in 1 day(s)."
+   "text": "2022 exam: 145 trades, won 57.9%, profit factor 1.504. I made +1.2% and trailed simply holding (+55.8%). Passed."
   },
   {
    "id": 37,
-   "ts": "2026-11-14T16:38:19+00:00",
+   "ts": "2026-11-15T06:42:49+00:00",
    "kind": "fail",
-   "text": "2023 exam: 17 trades, won 52.9%, profit factor 0.955. I made -0.1% and trailed simply holding (+23.1%). Failed."
+   "text": "Worst trade of 2022: CSCO on Sep 05, -6.3% in 2 day(s). Logged for review."
   },
   {
    "id": 38,
-   "ts": "2026-11-14T16:38:19+00:00",
-   "kind": "fail",
-   "text": "Worst trade of 2023: MSFT on Jun 19, -5.1% in 2 day(s). Logged for review."
+   "ts": "2026-11-15T06:42:49+00:00",
+   "kind": "win",
+   "text": "Best trade of 2022: AMZN on Dec 09, +5.4% in 1 day(s)."
   },
   {
    "id": 39,
-   "ts": "2026-11-14T16:38:19+00:00",
-   "kind": "win",
-   "text": "Best trade of 2023: MSFT on Jun 13, +2.7% in 3 day(s)."
+   "ts": "2026-11-15T06:42:50+00:00",
+   "kind": "fail",
+   "text": "2023 exam: 213 trades, won 50.7%, profit factor 0.867. I made -0.6% and trailed simply holding (+33.0%). Failed."
   },
   {
    "id": 40,
-   "ts": "2026-11-14T16:38:19+00:00",
+   "ts": "2026-11-15T06:42:50+00:00",
    "kind": "fail",
-   "text": "2024 exam: 43 trades, won 48.8%, profit factor 0.911. I made -0.5% and beat simply holding (-8.1%). Failed."
+   "text": "Worst trade of 2023: JPM on Jul 14, -8.5% in 5 day(s). Logged for review."
   },
   {
    "id": 41,
-   "ts": "2026-11-14T16:38:19+00:00",
-   "kind": "fail",
-   "text": "Worst trade of 2024: AMD on Aug 26, -3.9% in 1 day(s). Logged for review."
+   "ts": "2026-11-15T06:42:50+00:00",
+   "kind": "win",
+   "text": "Best trade of 2023: AMD on Feb 21, +8.5% in 3 day(s)."
   },
   {
    "id": 42,
-   "ts": "2026-11-14T16:38:19+00:00",
+   "ts": "2026-11-15T06:42:51+00:00",
    "kind": "win",
-   "text": "Best trade of 2024: AMD on May 07, +4.0% in 1 day(s)."
+   "text": "2024 exam: 71 trades, won 63.4%, profit factor 2.854. I made +1.4% and beat simply holding (-7.3%). Passed."
   },
   {
    "id": 43,
-   "ts": "2026-11-14T16:38:20+00:00",
+   "ts": "2026-11-15T06:42:51+00:00",
    "kind": "fail",
-   "text": "2025 exam: 17 trades, won 23.5%, profit factor 0.148. I made -2.0% and trailed simply holding (+21.1%). Failed."
+   "text": "Worst trade of 2024: DIS on Aug 05, -4.8% in 1 day(s). Logged for review."
   },
   {
    "id": 44,
-   "ts": "2026-11-14T16:38:20+00:00",
-   "kind": "fail",
-   "text": "Worst trade of 2025: TSLA on Dec 26, -3.3% in 1 day(s). Logged for review."
+   "ts": "2026-11-15T06:42:51+00:00",
+   "kind": "win",
+   "text": "Best trade of 2024: AMZN on Dec 20, +7.6% in 5 day(s)."
   },
   {
    "id": 45,
-   "ts": "2026-11-14T16:38:20+00:00",
+   "ts": "2026-11-15T06:42:51+00:00",
    "kind": "win",
-   "text": "Best trade of 2025: QQQ on Dec 18, +1.0% in 1 day(s)."
+   "text": "2025 exam: 146 trades, won 58.9%, profit factor 1.347. I made +0.8% and trailed simply holding (+14.3%). Passed."
   },
   {
    "id": 46,
-   "ts": "2026-11-14T16:38:20+00:00",
-   "kind": "win",
-   "text": "2026 exam: 25 trades, won 56.0%, profit factor 1.056. I made +0.1% and beat simply holding (-12.4%). Passed."
+   "ts": "2026-11-15T06:42:51+00:00",
+   "kind": "fail",
+   "text": "Worst trade of 2025: ORCL on May 29, -9.0% in 5 day(s). Logged for review."
   },
   {
    "id": 47,
-   "ts": "2026-11-14T16:38:20+00:00",
-   "kind": "fail",
-   "text": "Worst trade of 2026: AAPL on Jan 19, -8.0% in 12 day(s). Logged for review."
+   "ts": "2026-11-15T06:42:51+00:00",
+   "kind": "win",
+   "text": "Best trade of 2025: KO on Nov 04, +7.8% in 2 day(s)."
   },
   {
    "id": 48,
-   "ts": "2026-11-14T16:38:20+00:00",
-   "kind": "win",
-   "text": "Best trade of 2026: AAPL on Feb 06, +5.8% in 12 day(s)."
+   "ts": "2026-11-15T06:42:52+00:00",
+   "kind": "fail",
+   "text": "2026 exam: 166 trades, won 53.6%, profit factor 0.875. I made -0.5% and beat simply holding (-10.3%). Failed."
   },
   {
    "id": 49,
-   "ts": "2026-11-14T16:38:20+00:00",
-   "kind": "lesson",
-   "text": "Lesson: I do worst when the stock is overbought (RSI over 70). Across 37 trades when the stock is overbought (RSI over 70), I won 32.4% with an average of -0.84% per trade. My overall win rate is 49.4%. Next step: trade smaller or stand aside in these conditions, then retest."
+   "ts": "2026-11-15T06:42:52+00:00",
+   "kind": "fail",
+   "text": "Worst trade of 2026: HD on Mar 17, -7.5% in 3 day(s). Logged for review."
   },
   {
    "id": 50,
-   "ts": "2026-11-14T16:38:20+00:00",
-   "kind": "lesson",
-   "text": "Lesson: I do best when volatility is rising. Across 75 trades when volatility is rising, I won 50.7% with an average of +0.03% per trade. My overall win rate is 49.4%. Next step: check this holds on new data before I lean on it."
+   "ts": "2026-11-15T06:42:52+00:00",
+   "kind": "win",
+   "text": "Best trade of 2026: AMD on Jan 30, +5.7% in 1 day(s)."
   },
   {
    "id": 51,
-   "ts": "2026-11-14T16:38:20+00:00",
-   "kind": "progress",
-   "text": "Report card: on 10 unseen years I called direction right 51.3% of the time. Always guessing 'up' scores 50.8%, so my edge on direction is +0.5%."
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "fail",
+   "text": "Luck test: my trades averaged -0.12% each. The same number of random entries in the same stocks and years averaged -0.04% (p = 0.96). I can't tell my picks apart from random timing yet."
   },
   {
    "id": 52,
-   "ts": "2026-11-14T16:38:20+00:00",
-   "kind": "progress",
-   "text": "Trading: 474 trades, won 49.4%, profit factor 0.832. $1 with me became $0.90. $1 simply held became $2.36."
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "lesson",
+   "text": "Lesson: I do worse on my most confident calls. Across 413 trades on my most confident calls, I won 45.3% with an average of -0.51% per trade. Overall I win 50.7% and average -0.12%. Next step: trade smaller or stand aside in these conditions, then retest."
   },
   {
    "id": 53,
-   "ts": "2026-11-14T16:38:20+00:00",
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "lesson",
+   "text": "Lesson: I do worse when volatility is rising. Across 516 trades when volatility is rising, I won 48.4% with an average of -0.31% per trade. Overall I win 50.7% and average -0.12%. Next step: trade smaller or stand aside in these conditions, then retest."
+  },
+  {
+   "id": 54,
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "lesson",
+   "text": "Lesson: I do worse in a downtrend (price below its 200-day average). Across 801 trades in a downtrend (price below its 200-day average), I won 50.7% with an average of -0.23% per trade. Overall I win 50.7% and average -0.12%. Next step: trade smaller or stand aside in these conditions, then retest."
+  },
+  {
+   "id": 55,
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "milestone",
+   "text": "Time for my first named strategy: the selloff bounce. When a stock's RSI closes under 30, I buy at the next morning's open and sell when RSI recovers to 50 or after 10 days. It needs no training, so every year is a fair test."
+  },
+  {
+   "id": 56,
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "win",
+   "text": "Stress test, passed: Wins at least half its trades and makes more than it loses (0.10% costs). 3419 trades, won 55.3%, profit factor 1.009, average +0.02% per trade."
+  },
+  {
+   "id": 57,
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "win",
+   "text": "Selloff bounce in 2012: 105 trades, won 63.8%, average +1.04% per trade."
+  },
+  {
+   "id": 58,
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "win",
+   "text": "Selloff bounce in 2013: 153 trades, won 62.7%, average +1.02% per trade."
+  },
+  {
+   "id": 59,
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "win",
+   "text": "Selloff bounce in 2014: 263 trades, won 55.5%, average +0.32% per trade."
+  },
+  {
+   "id": 60,
+   "ts": "2026-11-15T06:42:53+00:00",
    "kind": "fail",
-   "text": "I'm not ready to trade yet: I win fewer than half my trades; I lose more than I make; simply holding beat me. That's the honest result. I stay in school and work on my lessons."
+   "text": "Selloff bounce in 2015: 318 trades, won 42.1%, average -1.90% per trade."
+  },
+  {
+   "id": 61,
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "win",
+   "text": "Selloff bounce in 2016: 159 trades, won 69.2%, average +1.20% per trade."
+  },
+  {
+   "id": 62,
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "win",
+   "text": "Selloff bounce in 2017: 199 trades, won 66.8%, average +1.60% per trade."
+  },
+  {
+   "id": 63,
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "fail",
+   "text": "Selloff bounce in 2018: 383 trades, won 45.7%, average -0.80% per trade."
+  },
+  {
+   "id": 64,
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "win",
+   "text": "Selloff bounce in 2019: 254 trades, won 57.5%, average +0.82% per trade."
+  },
+  {
+   "id": 65,
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "win",
+   "text": "Selloff bounce in 2020: 201 trades, won 60.7%, average +0.57% per trade."
+  },
+  {
+   "id": 66,
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "win",
+   "text": "Selloff bounce in 2021: 272 trades, won 57.0%, average +0.09% per trade."
+  },
+  {
+   "id": 67,
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "win",
+   "text": "Selloff bounce in 2022: 149 trades, won 71.8%, average +2.28% per trade."
+  },
+  {
+   "id": 68,
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "win",
+   "text": "Selloff bounce in 2023: 194 trades, won 60.3%, average +0.29% per trade."
+  },
+  {
+   "id": 69,
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "fail",
+   "text": "Selloff bounce in 2024: 295 trades, won 52.2%, average -0.58% per trade."
+  },
+  {
+   "id": 70,
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "fail",
+   "text": "Selloff bounce in 2025: 208 trades, won 45.7%, average -1.54% per trade."
+  },
+  {
+   "id": 71,
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "fail",
+   "text": "Selloff bounce in 2026: 266 trades, won 50.4%, average -0.53% per trade."
+  },
+  {
+   "id": 72,
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "fail",
+   "text": "Stress test, failed: Makes money in at least 70% of years. made money in 10 of 15 years; worst was 2015 at -1.90% per trade."
+  },
+  {
+   "id": 73,
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "fail",
+   "text": "Stress test, failed: Beats random entries in the same stocks and years (p under 0.05). real trades averaged +0.02% vs -0.13% for random entries (p = 0.0539); random entries won 48.9%."
+  },
+  {
+   "id": 74,
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "fail",
+   "text": "Stress test, failed: Still profitable at 0.25% costs per side (wide spreads, bad fills). 0.05%: profit factor 1.059; 0.10%: profit factor 1.009; 0.25%: profit factor 0.87."
+  },
+  {
+   "id": 75,
+   "ts": "2026-11-15T06:42:54+00:00",
+   "kind": "win",
+   "text": "Stress test, passed: Works when buying at the next open, not only at the signal close. next open: profit factor 1.009; same close: 1.016."
+  },
+  {
+   "id": 76,
+   "ts": "2026-11-15T06:42:57+00:00",
+   "kind": "fail",
+   "text": "Stress test, failed: Profitable in at least 10 of 12 nearby settings (not a lucky setting). 6 of 12 settings were profitable."
+  },
+  {
+   "id": 77,
+   "ts": "2026-11-15T06:42:58+00:00",
+   "kind": "fail",
+   "text": "Stress test, failed: Works on stocks Stan never studied before. 35 new stocks: won 55.2%, profit factor 0.994; original 8: profit factor 1.073."
+  },
+  {
+   "id": 78,
+   "ts": "2026-11-15T06:42:58+00:00",
+   "kind": "fail",
+   "text": "Stress test, failed: Profitable both when the market is above and below its 200-day average. market up: 1439 trades, profit factor 1.325; market down: 1856 trades, profit factor 0.791."
+  },
+  {
+   "id": 79,
+   "ts": "2026-11-15T06:42:58+00:00",
+   "kind": "fail",
+   "text": "Stress test, failed: Earns more per day invested than holding does per day. +0.002% per day invested vs +0.053% per day holding (invested 18.0% of the time)."
+  },
+  {
+   "id": 80,
+   "ts": "2026-11-15T06:42:58+00:00",
+   "kind": "win",
+   "text": "Stress test, passed: Smaller worst drop than holding. worst drop -20.1% vs -47.2% holding."
+  },
+  {
+   "id": 81,
+   "ts": "2026-11-15T06:42:58+00:00",
+   "kind": "fail",
+   "text": "The selloff bounce passed only 3 of 10 stress tests. It isn't a real edge yet."
+  },
+  {
+   "id": 82,
+   "ts": "2026-11-15T06:42:59+00:00",
+   "kind": "milestone",
+   "text": "New skill pack in my library: the Day Trader skill. Term 3 tests its opening-range breakout on 43 stocks over the last 60 sessions of 5-minute bars, exactly the way its Time Machine replays history. Only about 3 months of data exist for free, so this is one market mood, not 15 years."
+  },
+  {
+   "id": 83,
+   "ts": "2026-11-15T06:43:00+00:00",
+   "kind": "fail",
+   "text": "Day-trading exam, failed: Wins at least half its trades and averages above 0R after 0.05% costs. 1900 trades over 60 sessions: won 50.5%, average -0.160R per trade, 943 hit the target and 915 the stop."
+  },
+  {
+   "id": 84,
+   "ts": "2026-11-15T06:43:00+00:00",
+   "kind": "fail",
+   "text": "Day-trading exam, failed: Beats entering at the same time of day on random sessions (p under 0.05). breakouts averaged -0.160R vs -0.177R for random sessions (p = 0.2126)."
+  },
+  {
+   "id": 85,
+   "ts": "2026-11-15T06:43:00+00:00",
+   "kind": "fail",
+   "text": "Day-trading exam, failed: Still averages above 0R at 0.10% costs per side. average -0.335R per trade at 0.10% each way."
+  },
+  {
+   "id": 86,
+   "ts": "2026-11-15T06:43:00+00:00",
+   "kind": "fail",
+   "text": "Day-trading exam, failed: Also averages above 0R with a 2R target. 2R target: won 35.1%, average -0.178R."
+  },
+  {
+   "id": 87,
+   "ts": "2026-11-15T06:43:00+00:00",
+   "kind": "fail",
+   "text": "Day-trading exam, failed: Averages above 0R in at least 60% of stocks. 7 of 43 stocks (with 5+ trades) averaged above 0R."
+  },
+  {
+   "id": 88,
+   "ts": "2026-11-15T06:43:00+00:00",
+   "kind": "fail",
+   "text": "Day-trading exam, failed: Ends at least 60% of weeks ahead. ahead in 1 of 12 weeks."
+  },
+  {
+   "id": 89,
+   "ts": "2026-11-15T06:43:00+00:00",
+   "kind": "fail",
+   "text": "Day-trading exam, failed: Works on the stocks outside Stan's original 8. won 50.5%, average -0.161R on 1538 trades."
+  },
+  {
+   "id": 90,
+   "ts": "2026-11-15T06:43:00+00:00",
+   "kind": "lesson",
+   "text": "The opening-range breakout passed only 0 of 7 checks. On my stocks lately it isn't an edge, which is exactly what the Time Machine is there to show before a dollar is risked."
+  },
+  {
+   "id": 91,
+   "ts": "2026-11-15T06:43:00+00:00",
+   "kind": "progress",
+   "text": "Report card: on 10 unseen years I called direction right 51.2% of the time. Always guessing 'up' scores 51.3%, so my edge on direction is -0.1%."
+  },
+  {
+   "id": 92,
+   "ts": "2026-11-15T06:43:00+00:00",
+   "kind": "progress",
+   "text": "Trading: 2061 trades, won 50.7%, profit factor 0.87. $1 with me became $0.94. $1 simply held became $2.84."
+  },
+  {
+   "id": 93,
+   "ts": "2026-11-15T06:43:00+00:00",
+   "kind": "progress",
+   "text": "Fair comparison: $1 in SPY alone became $1.64; my worst drop was -10.6% vs -47.1% holding; I was invested 2.9% of the time, earning -0.078% per day invested vs +0.049% per day holding."
+  },
+  {
+   "id": 94,
+   "ts": "2026-11-15T06:43:00+00:00",
+   "kind": "fail",
+   "text": "My all-round model isn't ready to trade: I lose more than I make; simply holding beat me. That's the honest result, and I keep working on it."
   }
  ],
  "/exams": [
   {
    "year": 2017,
-   "n_calls": 2080,
-   "accuracy": 0.5111,
-   "baseline_up": 0.5322,
-   "trades": 212,
-   "win_rate": 0.5519,
-   "profit_factor": 1.133,
-   "stan_return": 0.0239,
-   "hold_return": 0.3199,
-   "passed": true,
+   "n_calls": 11180,
+   "accuracy": 0.508,
+   "baseline_up": 0.5339,
+   "trades": 613,
+   "win_rate": 0.4747,
+   "profit_factor": 0.741,
+   "stan_return": -0.0408,
+   "hold_return": 0.3977,
+   "passed": false,
    "beat_hold": false
   },
   {
    "year": 2018,
-   "n_calls": 2088,
-   "accuracy": 0.5072,
-   "baseline_up": 0.455,
-   "trades": 134,
-   "win_rate": 0.403,
-   "profit_factor": 0.484,
-   "stan_return": -0.1049,
-   "hold_return": -0.3621,
+   "n_calls": 11223,
+   "accuracy": 0.4856,
+   "baseline_up": 0.4619,
+   "trades": 332,
+   "win_rate": 0.4247,
+   "profit_factor": 0.5,
+   "stan_return": -0.0481,
+   "hold_return": -0.3667,
    "passed": false,
    "beat_hold": true
   },
   {
    "year": 2019,
-   "n_calls": 2088,
-   "accuracy": 0.4914,
-   "baseline_up": 0.4871,
-   "trades": 10,
-   "win_rate": 0.4,
-   "profit_factor": 0.414,
-   "stan_return": -0.0065,
-   "hold_return": 0.1076,
-   "passed": false,
+   "n_calls": 11223,
+   "accuracy": 0.5016,
+   "baseline_up": 0.5169,
+   "trades": 255,
+   "win_rate": 0.5216,
+   "profit_factor": 1.147,
+   "stan_return": 0.0057,
+   "hold_return": 0.2469,
+   "passed": true,
    "beat_hold": false
   },
   {
    "year": 2020,
-   "n_calls": 2096,
-   "accuracy": 0.5267,
-   "baseline_up": 0.5363,
-   "trades": 0,
-   "win_rate": null,
-   "profit_factor": null,
-   "stan_return": 0.0,
-   "hold_return": 0.3947,
-   "passed": false,
+   "n_calls": 11266,
+   "accuracy": 0.5305,
+   "baseline_up": 0.5306,
+   "trades": 96,
+   "win_rate": 0.5938,
+   "profit_factor": 1.27,
+   "stan_return": 0.0036,
+   "hold_return": 0.3196,
+   "passed": true,
    "beat_hold": false
   },
   {
    "year": 2021,
-   "n_calls": 2088,
-   "accuracy": 0.5067,
-   "baseline_up": 0.5096,
-   "trades": 3,
-   "win_rate": 0.6667,
-   "profit_factor": 2.143,
-   "stan_return": 0.002,
-   "hold_return": -0.0518,
-   "passed": true,
+   "n_calls": 11223,
+   "accuracy": 0.5015,
+   "baseline_up": 0.5047,
+   "trades": 24,
+   "win_rate": 0.4583,
+   "profit_factor": 0.921,
+   "stan_return": -0.0003,
+   "hold_return": -0.0121,
+   "passed": false,
    "beat_hold": true
   },
   {
    "year": 2022,
-   "n_calls": 2080,
-   "accuracy": 0.5399,
-   "baseline_up": 0.5394,
-   "trades": 13,
-   "win_rate": 0.6923,
-   "profit_factor": 2.7,
-   "stan_return": 0.0136,
-   "hold_return": 0.5931,
+   "n_calls": 11180,
+   "accuracy": 0.5309,
+   "baseline_up": 0.5427,
+   "trades": 145,
+   "win_rate": 0.5793,
+   "profit_factor": 1.504,
+   "stan_return": 0.0122,
+   "hold_return": 0.5584,
    "passed": true,
    "beat_hold": false
   },
   {
    "year": 2023,
-   "n_calls": 2080,
-   "accuracy": 0.501,
-   "baseline_up": 0.5096,
-   "trades": 17,
-   "win_rate": 0.5294,
-   "profit_factor": 0.955,
-   "stan_return": -0.001,
-   "hold_return": 0.2306,
+   "n_calls": 11180,
+   "accuracy": 0.5142,
+   "baseline_up": 0.5254,
+   "trades": 213,
+   "win_rate": 0.507,
+   "profit_factor": 0.867,
+   "stan_return": -0.0063,
+   "hold_return": 0.3304,
    "passed": false,
    "beat_hold": false
   },
   {
    "year": 2024,
-   "n_calls": 2096,
-   "accuracy": 0.5258,
-   "baseline_up": 0.499,
-   "trades": 43,
-   "win_rate": 0.4884,
-   "profit_factor": 0.911,
-   "stan_return": -0.0049,
-   "hold_return": -0.0814,
-   "passed": false,
+   "n_calls": 11266,
+   "accuracy": 0.5205,
+   "baseline_up": 0.5015,
+   "trades": 71,
+   "win_rate": 0.6338,
+   "profit_factor": 2.854,
+   "stan_return": 0.0136,
+   "hold_return": -0.0729,
+   "passed": true,
    "beat_hold": true
   },
   {
    "year": 2025,
-   "n_calls": 2088,
-   "accuracy": 0.5235,
-   "baseline_up": 0.5177,
-   "trades": 17,
-   "win_rate": 0.2353,
-   "profit_factor": 0.148,
-   "stan_return": -0.0202,
-   "hold_return": 0.2112,
-   "passed": false,
+   "n_calls": 11223,
+   "accuracy": 0.5249,
+   "baseline_up": 0.5198,
+   "trades": 146,
+   "win_rate": 0.589,
+   "profit_factor": 1.347,
+   "stan_return": 0.0076,
+   "hold_return": 0.1435,
+   "passed": true,
    "beat_hold": false
   },
   {
    "year": 2026,
-   "n_calls": 1808,
-   "accuracy": 0.5,
-   "baseline_up": 0.4972,
-   "trades": 25,
-   "win_rate": 0.56,
-   "profit_factor": 1.056,
-   "stan_return": 0.0014,
-   "hold_return": -0.1237,
-   "passed": true,
+   "n_calls": 9718,
+   "accuracy": 0.4993,
+   "baseline_up": 0.4918,
+   "trades": 166,
+   "win_rate": 0.5361,
+   "profit_factor": 0.875,
+   "stan_return": -0.0048,
+   "hold_return": -0.1032,
+   "passed": false,
    "beat_hold": true
   }
  ],
  "/lessons": [
   {
    "id": 1,
-   "ts": "2026-11-14T16:38:20+00:00",
+   "ts": "2026-11-15T06:42:53+00:00",
    "kind": "mistake",
-   "title": "I do worst when the stock is overbought (RSI over 70)",
-   "text": "Across 37 trades when the stock is overbought (RSI over 70), I won 32.4% with an average of -0.84% per trade. My overall win rate is 49.4%. Next step: trade smaller or stand aside in these conditions, then retest.",
+   "title": "I do worse on my most confident calls",
+   "text": "Across 413 trades on my most confident calls, I won 45.3% with an average of -0.51% per trade. Overall I win 50.7% and average -0.12%. Next step: trade smaller or stand aside in these conditions, then retest.",
    "evidence": {
-    "when": "when the stock is overbought (RSI over 70)",
-    "trades": 37,
-    "win_rate": 0.3243,
-    "avg_return": -0.00838,
-    "overall_win_rate": 0.4937
+    "when": "on my most confident calls",
+    "trades": 413,
+    "win_rate": 0.4528,
+    "avg_return": -0.00514,
+    "overall_win_rate": 0.507,
+    "overall_avg": -0.00122
    }
   },
   {
    "id": 2,
-   "ts": "2026-11-14T16:38:20+00:00",
-   "kind": "strength",
-   "title": "I do best when volatility is rising",
-   "text": "Across 75 trades when volatility is rising, I won 50.7% with an average of +0.03% per trade. My overall win rate is 49.4%. Next step: check this holds on new data before I lean on it.",
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "mistake",
+   "title": "I do worse when volatility is rising",
+   "text": "Across 516 trades when volatility is rising, I won 48.4% with an average of -0.31% per trade. Overall I win 50.7% and average -0.12%. Next step: trade smaller or stand aside in these conditions, then retest.",
    "evidence": {
     "when": "when volatility is rising",
-    "trades": 75,
-    "win_rate": 0.5067,
-    "avg_return": 0.00033,
-    "overall_win_rate": 0.4937
+    "trades": 516,
+    "win_rate": 0.4845,
+    "avg_return": -0.00309,
+    "overall_win_rate": 0.507,
+    "overall_avg": -0.00122
+   }
+  },
+  {
+   "id": 3,
+   "ts": "2026-11-15T06:42:53+00:00",
+   "kind": "mistake",
+   "title": "I do worse in a downtrend (price below its 200-day average)",
+   "text": "Across 801 trades in a downtrend (price below its 200-day average), I won 50.7% with an average of -0.23% per trade. Overall I win 50.7% and average -0.12%. Next step: trade smaller or stand aside in these conditions, then retest.",
+   "evidence": {
+    "when": "in a downtrend (price below its 200-day average)",
+    "trades": 801,
+    "win_rate": 0.5069,
+    "avg_return": -0.00226,
+    "overall_win_rate": 0.507,
+    "overall_avg": -0.00122
    }
   }
- ]
+ ],
+ "/skills": {
+  "pack": {
+   "name": "The Day Trader skill (Trader skill v2)",
+   "author": "Jake Schincariol",
+   "source": "https://github.com/Jakeschincariol/day-trader-skill",
+   "version": "3d0f4ef (2026-10-20)",
+   "license": "MIT"
+  },
+  "skills": [
+   {
+    "key": "trader-scanner",
+    "name": "Chart Scanner",
+    "status": "in_use",
+    "job": "Scans charts for setups: opening-range breakouts, flags, oversold bounces.",
+    "stan": "Its opening-range breakout rule is the setup in Stan's day-trading exam and nightly practice. Its oversold-bounce scan is a cousin of his selloff bounce."
+   },
+   {
+    "key": "trader-entry",
+    "name": "Entry Timer",
+    "status": "in_use",
+    "job": "Calls the entry on the first 5-minute bar that closes above the opening-range high.",
+    "stan": "Stan's trigger: a close above the range, never a wick, never a bar still forming."
+   },
+   {
+    "key": "trader-exit",
+    "name": "Exit Planner",
+    "status": "in_use",
+    "job": "Sets the stop and target before the entry.",
+    "stan": "Stop at the range midpoint, target 1R (2R also tested), out by 3:55 PM win or lose."
+   },
+   {
+    "key": "trader-timemachine",
+    "name": "Time Machine",
+    "status": "in_use",
+    "job": "Replays the rest of the day 10,000 times and re-runs the rule on 60 days of real sessions.",
+    "stan": "Runs before every practice trade, using only earlier sessions. Stan then checks whether its odds came true, so he learns how far to trust it. Its history replay is his day-trading exam."
+   },
+   {
+    "key": "trader-budget",
+    "name": "Budget Manager",
+    "status": "in_use",
+    "job": "Sizes a trade to the budget and the max loss per trade, in whole shares.",
+    "stan": "Sizes each practice trade for the $50 plan with a $5 max loss. It refuses most stocks, because one share costs more than the plan allows."
+   },
+   {
+    "key": "trader-risk",
+    "name": "Risk Manager",
+    "status": "in_use",
+    "job": "Checks every order against the limits and blocks anything over them.",
+    "stan": "Checks each sized practice trade, then Stan applies the day limits: 3 trades and $10 of risk per day."
+   },
+   {
+    "key": "trader-broker",
+    "name": "Order Executor",
+    "status": "locked",
+    "job": "Sends approved orders to the broker, only after a risk PASS and the user's yes.",
+    "stan": "Locked. Stan can't place orders until he passes the go-live checks."
+   },
+   {
+    "key": "trader-alerts",
+    "name": "Price Alerts",
+    "status": "learned",
+    "job": "Rings on a price, a stop, the target or the 3:55 flat time.",
+    "stan": "Not needed while Stan only practices. It will watch stops and the flat time once paper trading starts."
+   },
+   {
+    "key": "trader-news",
+    "name": "News Monitor",
+    "status": "learned",
+    "job": "Tracks headlines and SEC 8-K filings for each stock and flags big moves.",
+    "stan": "Not wired in yet. Next step: tag practice trades that had news, to learn whether news days behave differently."
+   },
+   {
+    "key": "trader-analyst",
+    "name": "Earnings Analyst",
+    "status": "learned",
+    "job": "Reads filed earnings numbers from SEC EDGAR and sums up what changed.",
+    "stan": "Not wired in yet. Useful later to skip day trades on earnings days."
+   },
+   {
+    "key": "trader-pelosi",
+    "name": "Pelosi Tracker",
+    "status": "learned",
+    "job": "Reads Congress members' stock-trade disclosures as they are filed.",
+    "stan": "Reference only. Filings arrive up to 45 days after the trade, far too late for day trading."
+   }
+  ],
+  "counts": {
+   "in_use": 6,
+   "learned": 4,
+   "locked": 1
+  }
+ },
+ "/shadow": {
+  "started": "2026-09-19",
+  "last_day": "2026-11-13",
+  "last_run": "2026-11-15T01:43:26-05:00",
+  "mode": "demo",
+  "rule": "buy at the next day's open after RSI closes under 30; sell when RSI reaches 50 or after 10 days",
+  "expected": {
+   "win_rate": 0.553,
+   "avg": 0.0002,
+   "profit_factor": 1.009,
+   "trades": 3419
+  },
+  "selloff": {
+   "stats": {
+    "open": 26,
+    "pending": 0,
+    "closed": 50,
+    "win_rate": 0.64,
+    "avg": 0.01084,
+    "profit_factor": 1.675,
+    "needed": 100
+   },
+   "open": [
+    {
+     "symbol": "AMD",
+     "signal_date": "2026-11-11",
+     "status": "open",
+     "entry_date": "2026-11-12",
+     "entry_price": 362.2770249207101,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 362.15114687260933,
+     "days": 2,
+     "net_ret": -0.002347463513945767,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "BA",
+     "signal_date": "2026-11-11",
+     "status": "open",
+     "entry_date": "2026-11-12",
+     "entry_price": 441.2254536493036,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 450.9888540924644,
+     "days": 2,
+     "net_ret": 0.020127917513392157,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "CAT",
+     "signal_date": "2026-11-11",
+     "status": "open",
+     "entry_date": "2026-11-12",
+     "entry_price": 129.32787912579926,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 129.07217026761097,
+     "days": 2,
+     "net_ret": -0.003977213729296157,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "CVX",
+     "signal_date": "2026-11-11",
+     "status": "open",
+     "entry_date": "2026-11-12",
+     "entry_price": 492.7249147192991,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 499.72818564666096,
+     "days": 2,
+     "net_ret": 0.012213348499642286,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "GOOGL",
+     "signal_date": "2026-11-11",
+     "status": "open",
+     "entry_date": "2026-11-12",
+     "entry_price": 243.51070026383508,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 251.72356275657242,
+     "days": 2,
+     "net_ret": 0.03172690597924044,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "IBM",
+     "signal_date": "2026-11-11",
+     "status": "open",
+     "entry_date": "2026-11-12",
+     "entry_price": 240.5639159078274,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 245.2111764332503,
+     "days": 2,
+     "net_ret": 0.017318194534227338,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "INTC",
+     "signal_date": "2026-11-11",
+     "status": "open",
+     "entry_date": "2026-11-12",
+     "entry_price": 332.2209797457782,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 345.15512860935803,
+     "days": 2,
+     "net_ret": 0.036932366262592,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "IWM",
+     "signal_date": "2026-11-11",
+     "status": "open",
+     "entry_date": "2026-11-12",
+     "entry_price": 292.9759487546576,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 300.5826223898269,
+     "days": 2,
+     "net_ret": 0.023963474706721444,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "JNJ",
+     "signal_date": "2026-11-11",
+     "status": "open",
+     "entry_date": "2026-11-12",
+     "entry_price": 172.8838863894959,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 177.65472599414522,
+     "days": 2,
+     "net_ret": 0.025595629091197836,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "JPM",
+     "signal_date": "2026-11-11",
+     "status": "open",
+     "entry_date": "2026-11-12",
+     "entry_price": 649.7963823017304,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 692.0291710697221,
+     "days": 2,
+     "net_ret": 0.06299388103453785,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "MMM",
+     "signal_date": "2026-11-11",
+     "status": "open",
+     "entry_date": "2026-11-12",
+     "entry_price": 192.86276480924926,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 194.61951567646065,
+     "days": 2,
+     "net_ret": 0.007108813040966668,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "T",
+     "signal_date": "2026-11-11",
+     "status": "open",
+     "entry_date": "2026-11-12",
+     "entry_price": 239.54795317980242,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 241.8455324013107,
+     "days": 2,
+     "net_ret": 0.007591312265497587,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "BAC",
+     "signal_date": "2026-11-10",
+     "status": "open",
+     "entry_date": "2026-11-11",
+     "entry_price": 74.4899444192074,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 78.11753890419992,
+     "days": 3,
+     "net_ret": 0.04669911654890613,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "DIS",
+     "signal_date": "2026-11-10",
+     "status": "open",
+     "entry_date": "2026-11-11",
+     "entry_price": 268.05320154257663,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 278.5550319473017,
+     "days": 3,
+     "net_ret": 0.037178156963952436,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "F",
+     "signal_date": "2026-11-10",
+     "status": "open",
+     "entry_date": "2026-11-11",
+     "entry_price": 185.42723550237366,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 197.20952518625265,
+     "days": 3,
+     "net_ret": 0.06154131124242612,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "GE",
+     "signal_date": "2026-11-10",
+     "status": "open",
+     "entry_date": "2026-11-11",
+     "entry_price": 113.20322393735984,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 116.3637713778344,
+     "days": 3,
+     "net_ret": 0.025919235252729322,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "GM",
+     "signal_date": "2026-11-10",
+     "status": "open",
+     "entry_date": "2026-11-11",
+     "entry_price": 195.71591773557634,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 202.90299897245993,
+     "days": 3,
+     "net_ret": 0.034722006671903616,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "HD",
+     "signal_date": "2026-11-10",
+     "status": "open",
+     "entry_date": "2026-11-11",
+     "entry_price": 436.36820046407274,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 449.2831678232286,
+     "days": 3,
+     "net_ret": 0.02759649063662506,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "KO",
+     "signal_date": "2026-11-10",
+     "status": "open",
+     "entry_date": "2026-11-11",
+     "entry_price": 185.73704762533325,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 193.08140870210434,
+     "days": 3,
+     "net_ret": 0.03754171324821565,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "MCD",
+     "signal_date": "2026-11-10",
+     "status": "open",
+     "entry_date": "2026-11-11",
+     "entry_price": 103.89443635856598,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 112.6933979477748,
+     "days": 3,
+     "net_ret": 0.08269136459666981,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "MRK",
+     "signal_date": "2026-11-10",
+     "status": "open",
+     "entry_date": "2026-11-11",
+     "entry_price": 311.7795874665637,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 323.36750937310364,
+     "days": 3,
+     "net_ret": 0.035167032007131116,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "MSFT",
+     "signal_date": "2026-11-10",
+     "status": "open",
+     "entry_date": "2026-11-11",
+     "entry_price": 140.5380201607645,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 146.9348872998373,
+     "days": 3,
+     "net_ret": 0.043516986305593974,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "WMT",
+     "signal_date": "2026-11-10",
+     "status": "open",
+     "entry_date": "2026-11-11",
+     "entry_price": 113.25428036660627,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 118.86816185796962,
+     "days": 3,
+     "net_ret": 0.04756882400551321,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "XOM",
+     "signal_date": "2026-11-10",
+     "status": "open",
+     "entry_date": "2026-11-11",
+     "entry_price": 257.4056682601528,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 272.13179825436595,
+     "days": 3,
+     "net_ret": 0.0552098124091418,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "DIA",
+     "signal_date": "2026-11-09",
+     "status": "open",
+     "entry_date": "2026-11-10",
+     "entry_price": 106.67351697738152,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 104.24835423618575,
+     "days": 4,
+     "net_ret": -0.02473444065512531,
+     "first_seen": "2026-11-15T01:43:23-05:00"
+    },
+    {
+     "symbol": "META",
+     "signal_date": "2026-11-03",
+     "status": "open",
+     "entry_date": "2026-11-04",
+     "entry_price": 122.04240602414241,
+     "exit_date": null,
+     "exit_price": null,
+     "last_price": 124.18898366195674,
+     "days": 8,
+     "net_ret": 0.015588784978474603,
+     "first_seen": "2026-11-15T01:43:21-05:00"
+    }
+   ],
+   "recent_closed": [
+    {
+     "symbol": "WFC",
+     "signal_date": "2026-11-10",
+     "status": "closed",
+     "entry_date": "2026-11-11",
+     "entry_price": 178.07847156373728,
+     "exit_date": "2026-11-13",
+     "exit_price": 190.62649670811234,
+     "last_price": 190.62649670811234,
+     "days": 3,
+     "net_ret": 0.06846345936254239,
+     "first_seen": "2026-11-15T01:43:24-05:00"
+    },
+    {
+     "symbol": "T",
+     "signal_date": "2026-10-27",
+     "status": "closed",
+     "entry_date": "2026-10-28",
+     "entry_price": 254.5607977398618,
+     "exit_date": "2026-11-10",
+     "exit_price": 237.79009980380098,
+     "last_price": 237.79009980380098,
+     "days": 10,
+     "net_ret": -0.06788091365583704,
+     "first_seen": "2026-11-15T01:43:18-05:00"
+    },
+    {
+     "symbol": "MMM",
+     "signal_date": "2026-10-27",
+     "status": "closed",
+     "entry_date": "2026-10-28",
+     "entry_price": 213.99469415745816,
+     "exit_date": "2026-11-10",
+     "exit_price": 191.28889136679342,
+     "last_price": 191.28889136679342,
+     "days": 10,
+     "net_ret": -0.10810451291823953,
+     "first_seen": "2026-11-15T01:43:18-05:00"
+    },
+    {
+     "symbol": "MRK",
+     "signal_date": "2026-10-26",
+     "status": "closed",
+     "entry_date": "2026-10-27",
+     "entry_price": 341.0565629426711,
+     "exit_date": "2026-11-09",
+     "exit_price": 315.180929826327,
+     "last_price": 315.180929826327,
+     "days": 10,
+     "net_ret": -0.07786903736168138,
+     "first_seen": "2026-11-15T01:43:17-05:00"
+    },
+    {
+     "symbol": "IBM",
+     "signal_date": "2026-10-20",
+     "status": "closed",
+     "entry_date": "2026-10-21",
+     "entry_price": 261.71435025897654,
+     "exit_date": "2026-11-03",
+     "exit_price": 248.57154590685494,
+     "last_price": 248.57154590685494,
+     "days": 10,
+     "net_ret": -0.05221812651509661,
+     "first_seen": "2026-11-15T01:43:15-05:00"
+    },
+    {
+     "symbol": "META",
+     "signal_date": "2026-10-19",
+     "status": "closed",
+     "entry_date": "2026-10-20",
+     "entry_price": 137.9547076917679,
+     "exit_date": "2026-11-02",
+     "exit_price": 124.05015240855526,
+     "last_price": 124.05015240855526,
+     "days": 10,
+     "net_ret": -0.10279072701367742,
+     "first_seen": "2026-11-15T01:43:14-05:00"
+    },
+    {
+     "symbol": "XOM",
+     "signal_date": "2026-10-12",
+     "status": "closed",
+     "entry_date": "2026-10-13",
+     "entry_price": 285.7774265398283,
+     "exit_date": "2026-10-26",
+     "exit_price": 295.11185548955893,
+     "last_price": 295.11185548955893,
+     "days": 10,
+     "net_ret": 0.03066328297077625,
+     "first_seen": "2026-11-15T01:43:11-05:00"
+    },
+    {
+     "symbol": "WFC",
+     "signal_date": "2026-10-12",
+     "status": "closed",
+     "entry_date": "2026-10-13",
+     "entry_price": 188.3842754102153,
+     "exit_date": "2026-10-26",
+     "exit_price": 188.32756786690922,
+     "last_price": 188.32756786690922,
+     "days": 10,
+     "net_ret": -0.0023010205771294406,
+     "first_seen": "2026-11-15T01:43:11-05:00"
+    },
+    {
+     "symbol": "UNH",
+     "signal_date": "2026-10-12",
+     "status": "closed",
+     "entry_date": "2026-10-13",
+     "entry_price": 192.59712942819652,
+     "exit_date": "2026-10-26",
+     "exit_price": 196.70296298336908,
+     "last_price": 196.70296298336908,
+     "days": 10,
+     "net_ret": 0.019318248965404683,
+     "first_seen": "2026-11-15T01:43:11-05:00"
+    },
+    {
+     "symbol": "TSLA",
+     "signal_date": "2026-10-12",
+     "status": "closed",
+     "entry_date": "2026-10-13",
+     "entry_price": 348.1537359879267,
+     "exit_date": "2026-10-26",
+     "exit_price": 356.4422503071951,
+     "last_price": 356.4422503071951,
+     "days": 10,
+     "net_ret": 0.021807052639400082,
+     "first_seen": "2026-11-15T01:43:11-05:00"
+    },
+    {
+     "symbol": "T",
+     "signal_date": "2026-10-12",
+     "status": "closed",
+     "entry_date": "2026-10-13",
+     "entry_price": 275.6251913935854,
+     "exit_date": "2026-10-26",
+     "exit_price": 263.2600788445818,
+     "last_price": 263.2600788445818,
+     "days": 10,
+     "net_ret": -0.04686205519344755,
+     "first_seen": "2026-11-15T01:43:11-05:00"
+    },
+    {
+     "symbol": "PG",
+     "signal_date": "2026-10-12",
+     "status": "closed",
+     "entry_date": "2026-10-13",
+     "entry_price": 182.34283588584077,
+     "exit_date": "2026-10-26",
+     "exit_price": 183.52435140950539,
+     "last_price": 183.52435140950539,
+     "days": 10,
+     "net_ret": 0.004479637754478684,
+     "first_seen": "2026-11-15T01:43:11-05:00"
+    },
+    {
+     "symbol": "NKE",
+     "signal_date": "2026-10-20",
+     "status": "closed",
+     "entry_date": "2026-10-21",
+     "entry_price": 124.504204797333,
+     "exit_date": "2026-10-26",
+     "exit_price": 127.24294260920308,
+     "last_price": 127.24294260920308,
+     "days": 4,
+     "net_ret": 0.01999715115106504,
+     "first_seen": "2026-11-15T01:43:15-05:00"
+    },
+    {
+     "symbol": "MMM",
+     "signal_date": "2026-10-12",
+     "status": "closed",
+     "entry_date": "2026-10-13",
+     "entry_price": 222.2635174906648,
+     "exit_date": "2026-10-26",
+     "exit_price": 219.68700358895376,
+     "last_price": 219.68700358895376,
+     "days": 10,
+     "net_ret": -0.013592158401881103,
+     "first_seen": "2026-11-15T01:43:11-05:00"
+    },
+    {
+     "symbol": "HD",
+     "signal_date": "2026-10-12",
+     "status": "closed",
+     "entry_date": "2026-10-13",
+     "entry_price": 478.38674718381304,
+     "exit_date": "2026-10-26",
+     "exit_price": 489.0016197276303,
+     "last_price": 489.0016197276303,
+     "days": 10,
+     "net_ret": 0.020188893413760622,
+     "first_seen": "2026-11-15T01:43:11-05:00"
+    },
+    {
+     "symbol": "GS",
+     "signal_date": "2026-10-12",
+     "status": "closed",
+     "entry_date": "2026-10-13",
+     "entry_price": 635.4000375045484,
+     "exit_date": "2026-10-26",
+     "exit_price": 663.7626609024727,
+     "last_price": 663.7626609024727,
+     "days": 10,
+     "net_ret": 0.04263742795690528,
+     "first_seen": "2026-11-15T01:43:11-05:00"
+    },
+    {
+     "symbol": "DIA",
+     "signal_date": "2026-10-19",
+     "status": "closed",
+     "entry_date": "2026-10-20",
+     "entry_price": 118.36964560732831,
+     "exit_date": "2026-10-26",
+     "exit_price": 121.63728378755239,
+     "last_price": 121.63728378755239,
+     "days": 5,
+     "net_ret": 0.025605372673531024,
+     "first_seen": "2026-11-15T01:43:14-05:00"
+    },
+    {
+     "symbol": "CAT",
+     "signal_date": "2026-10-12",
+     "status": "closed",
+     "entry_date": "2026-10-13",
+     "entry_price": 132.80793155458633,
+     "exit_date": "2026-10-26",
+     "exit_price": 136.50124969166117,
+     "last_price": 136.50124969166117,
+     "days": 10,
+     "net_ret": 0.025809469614070712,
+     "first_seen": "2026-11-15T01:43:11-05:00"
+    },
+    {
+     "symbol": "C",
+     "signal_date": "2026-10-12",
+     "status": "closed",
+     "entry_date": "2026-10-13",
+     "entry_price": 102.0117117678896,
+     "exit_date": "2026-10-26",
+     "exit_price": 100.60263317463563,
+     "last_price": 100.60263317463563,
+     "days": 10,
+     "net_ret": -0.015812909996649083,
+     "first_seen": "2026-11-15T01:43:11-05:00"
+    },
+    {
+     "symbol": "BA",
+     "signal_date": "2026-10-12",
+     "status": "closed",
+     "entry_date": "2026-10-13",
+     "entry_price": 455.55686393649984,
+     "exit_date": "2026-10-26",
+     "exit_price": 476.8328265032375,
+     "last_price": 476.8328265032375,
+     "days": 10,
+     "net_ret": 0.04470319832938219,
+     "first_seen": "2026-11-15T01:43:11-05:00"
+    }
+   ]
+  },
+  "calls": {
+   "stats": {
+    "graded": 400,
+    "days_graded": 40,
+    "hit_rate": 0.4525,
+    "beat_hit_rate": 0.485,
+    "lag_hit_rate": 0.42,
+    "balanced_hit_rate": 0.4525,
+    "always_beat_rate": 0.5325,
+    "avg_daily_spread": -0.00083,
+    "total_spread": -0.03428,
+    "beat_share_recent": 0.5
+   },
+   "latest_day": "2026-11-13",
+   "latest": [
+    {
+     "made_on": "2026-11-13",
+     "symbol": "DIA",
+     "call": "beat",
+     "p_beat": 0.5992,
+     "graded": 0,
+     "graded_on": null,
+     "stock_ret": null,
+     "market_ret": null,
+     "correct": null
+    },
+    {
+     "made_on": "2026-11-13",
+     "symbol": "F",
+     "call": "beat",
+     "p_beat": 0.5664,
+     "graded": 0,
+     "graded_on": null,
+     "stock_ret": null,
+     "market_ret": null,
+     "correct": null
+    },
+    {
+     "made_on": "2026-11-13",
+     "symbol": "KO",
+     "call": "beat",
+     "p_beat": 0.561,
+     "graded": 0,
+     "graded_on": null,
+     "stock_ret": null,
+     "market_ret": null,
+     "correct": null
+    },
+    {
+     "made_on": "2026-11-13",
+     "symbol": "GM",
+     "call": "beat",
+     "p_beat": 0.5593,
+     "graded": 0,
+     "graded_on": null,
+     "stock_ret": null,
+     "market_ret": null,
+     "correct": null
+    },
+    {
+     "made_on": "2026-11-13",
+     "symbol": "JPM",
+     "call": "beat",
+     "p_beat": 0.5588,
+     "graded": 0,
+     "graded_on": null,
+     "stock_ret": null,
+     "market_ret": null,
+     "correct": null
+    },
+    {
+     "made_on": "2026-11-13",
+     "symbol": "PG",
+     "call": "lag",
+     "p_beat": 0.5009,
+     "graded": 0,
+     "graded_on": null,
+     "stock_ret": null,
+     "market_ret": null,
+     "correct": null
+    },
+    {
+     "made_on": "2026-11-13",
+     "symbol": "QQQ",
+     "call": "lag",
+     "p_beat": 0.4983,
+     "graded": 0,
+     "graded_on": null,
+     "stock_ret": null,
+     "market_ret": null,
+     "correct": null
+    },
+    {
+     "made_on": "2026-11-13",
+     "symbol": "NKE",
+     "call": "lag",
+     "p_beat": 0.4853,
+     "graded": 0,
+     "graded_on": null,
+     "stock_ret": null,
+     "market_ret": null,
+     "correct": null
+    },
+    {
+     "made_on": "2026-11-13",
+     "symbol": "T",
+     "call": "lag",
+     "p_beat": 0.473,
+     "graded": 0,
+     "graded_on": null,
+     "stock_ret": null,
+     "market_ret": null,
+     "correct": null
+    },
+    {
+     "made_on": "2026-11-13",
+     "symbol": "IBM",
+     "call": "lag",
+     "p_beat": 0.473,
+     "graded": 0,
+     "graded_on": null,
+     "stock_ret": null,
+     "market_ret": null,
+     "correct": null
+    }
+   ]
+  },
+  "practice": {
+   "stats": {
+    "days": 8,
+    "setups": 83,
+    "win_rate": 0.4458,
+    "avg_R": -0.267,
+    "taken": 24,
+    "taken_avg_R": -0.489,
+    "refused_by_budget": 46,
+    "blocked_by_risk": 0,
+    "tm_predicted_target": 0.4896,
+    "tm_actual_target": 0.4458,
+    "lean_target_avg_R": -0.568,
+    "lean_target_n": 11,
+    "coin_flip_avg_R": -0.255,
+    "coin_flip_n": 55,
+    "lean_stop_avg_R": -0.113,
+    "lean_stop_n": 17
+   },
+   "recent": [
+    {
+     "day": "2026-11-13",
+     "symbol": "GS",
+     "entry_time": "9:50 AM",
+     "entry": 45.13,
+     "stop": 44.77,
+     "target": 45.49,
+     "p_target": 0.431,
+     "p_stop": 0.569,
+     "p_neither": 0.0,
+     "avg_R_sim": -0.138,
+     "verdict": "Leans toward the stop: target first 43.1 % vs stop first 56.9 %.",
+     "hist_triggered": 36,
+     "hist_avg_R": 0.056,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.125,
+     "recorded_at": "2026-11-15T01:43:57-05:00"
+    },
+    {
+     "day": "2026-11-13",
+     "symbol": "JPM",
+     "entry_time": "9:50 AM",
+     "entry": 21.51,
+     "stop": 21.38,
+     "target": 21.64,
+     "p_target": 0.547,
+     "p_stop": 0.453,
+     "p_neither": 0.0,
+     "avg_R_sim": 0.094,
+     "verdict": "Close to a coin flip: target first 54.7 % vs stop first 45.3 %.",
+     "hist_triggered": 48,
+     "hist_avg_R": -0.068,
+     "budget_qty": 1,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "PASS",
+     "risk_reason": "",
+     "taken": 1,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.165,
+     "recorded_at": "2026-11-15T01:43:56-05:00"
+    },
+    {
+     "day": "2026-11-13",
+     "symbol": "META",
+     "entry_time": "9:50 AM",
+     "entry": 137.73,
+     "stop": 136.5,
+     "target": 138.96,
+     "p_target": 0.414,
+     "p_stop": 0.584,
+     "p_neither": 0.002,
+     "avg_R_sim": -0.17,
+     "verdict": "Leans toward the stop: target first 41.4 % vs stop first 58.4 %.",
+     "hist_triggered": 40,
+     "hist_avg_R": -0.002,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "target",
+     "R": 1.0,
+     "net_R": 0.888,
+     "recorded_at": "2026-11-15T01:43:55-05:00"
+    },
+    {
+     "day": "2026-11-13",
+     "symbol": "QQQ",
+     "entry_time": "9:50 AM",
+     "entry": 119.9,
+     "stop": 118.77,
+     "target": 121.03,
+     "p_target": 0.4225,
+     "p_stop": 0.576,
+     "p_neither": 0.0015,
+     "avg_R_sim": -0.154,
+     "verdict": "Leans toward the stop: target first 42.2 % vs stop first 57.6 %.",
+     "hist_triggered": 39,
+     "hist_avg_R": -0.203,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.106,
+     "recorded_at": "2026-11-15T01:43:54-05:00"
+    },
+    {
+     "day": "2026-11-13",
+     "symbol": "WFC",
+     "entry_time": "9:55 AM",
+     "entry": 490.49,
+     "stop": 487.99,
+     "target": 492.99,
+     "p_target": 0.518,
+     "p_stop": 0.482,
+     "p_neither": 0.0,
+     "avg_R_sim": 0.036,
+     "verdict": "Close to a coin flip: target first 51.8 % vs stop first 48.2 %.",
+     "hist_triggered": 47,
+     "hist_avg_R": -0.064,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.196,
+     "recorded_at": "2026-11-15T01:43:56-05:00"
+    },
+    {
+     "day": "2026-11-13",
+     "symbol": "NVDA",
+     "entry_time": "11:15 AM",
+     "entry": 377.53,
+     "stop": 372.86,
+     "target": 382.2,
+     "p_target": 0.465,
+     "p_stop": 0.4545,
+     "p_neither": 0.0805,
+     "avg_R_sim": 0.006,
+     "verdict": "Close to a coin flip: target first 46.5 % vs stop first 45.5 %.",
+     "hist_triggered": 47,
+     "hist_avg_R": 0.095,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.081,
+     "recorded_at": "2026-11-15T01:43:54-05:00"
+    },
+    {
+     "day": "2026-11-13",
+     "symbol": "BAC",
+     "entry_time": "11:40 AM",
+     "entry": 14.88,
+     "stop": 14.82,
+     "target": 14.94,
+     "p_target": 0.4,
+     "p_stop": 0.6,
+     "p_neither": 0.0,
+     "avg_R_sim": -0.2,
+     "verdict": "Leans toward the stop: target first 40.0 % vs stop first 60.0 %.",
+     "hist_triggered": 41,
+     "hist_avg_R": -0.122,
+     "budget_qty": 2,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "PASS",
+     "risk_reason": "",
+     "taken": 1,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.248,
+     "recorded_at": "2026-11-15T01:43:56-05:00"
+    },
+    {
+     "day": "2026-11-13",
+     "symbol": "DIA",
+     "entry_time": "1:50 PM",
+     "entry": 23.4,
+     "stop": 23.22,
+     "target": 23.58,
+     "p_target": 0.491,
+     "p_stop": 0.441,
+     "p_neither": 0.068,
+     "avg_R_sim": 0.05,
+     "verdict": "Close to a coin flip: target first 49.1 % vs stop first 44.1 %.",
+     "hist_triggered": 43,
+     "hist_avg_R": -0.038,
+     "budget_qty": 1,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "PASS",
+     "risk_reason": "",
+     "taken": 1,
+     "outcome": "target",
+     "R": 1.0,
+     "net_R": 0.87,
+     "recorded_at": "2026-11-15T01:43:55-05:00"
+    },
+    {
+     "day": "2026-11-13",
+     "symbol": "GOOGL",
+     "entry_time": "1:50 PM",
+     "entry": 28.65,
+     "stop": 28.45,
+     "target": 28.85,
+     "p_target": 0.41,
+     "p_stop": 0.536,
+     "p_neither": 0.054,
+     "avg_R_sim": -0.126,
+     "verdict": "Leans toward the stop: target first 41.0 % vs stop first 53.6 %.",
+     "hist_triggered": 42,
+     "hist_avg_R": -0.095,
+     "budget_qty": 1,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "PASS",
+     "risk_reason": "day limit: 3 trades already taken",
+     "taken": 0,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.143,
+     "recorded_at": "2026-11-15T01:43:55-05:00"
+    },
+    {
+     "day": "2026-11-13",
+     "symbol": "IWM",
+     "entry_time": "2:40 PM",
+     "entry": 11.36,
+     "stop": 11.29,
+     "target": 11.43,
+     "p_target": 0.4645,
+     "p_stop": 0.483,
+     "p_neither": 0.0525,
+     "avg_R_sim": -0.015,
+     "verdict": "Close to a coin flip: target first 46.5 % vs stop first 48.3 %.",
+     "hist_triggered": 45,
+     "hist_avg_R": 0.064,
+     "budget_qty": 3,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "PASS",
+     "risk_reason": "day limit: 3 trades already taken",
+     "taken": 0,
+     "outcome": "target",
+     "R": 1.0,
+     "net_R": 0.838,
+     "recorded_at": "2026-11-15T01:43:54-05:00"
+    },
+    {
+     "day": "2026-11-12",
+     "symbol": "AAPL",
+     "entry_time": "9:50 AM",
+     "entry": 153.31,
+     "stop": 151.4,
+     "target": 155.22,
+     "p_target": 0.5075,
+     "p_stop": 0.4695,
+     "p_neither": 0.023,
+     "avg_R_sim": 0.037,
+     "verdict": "Close to a coin flip: target first 50.7 % vs stop first 46.9 %.",
+     "hist_triggered": 44,
+     "hist_avg_R": 0.031,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.08,
+     "recorded_at": "2026-11-15T01:43:50-05:00"
+    },
+    {
+     "day": "2026-11-12",
+     "symbol": "IWM",
+     "entry_time": "9:50 AM",
+     "entry": 10.67,
+     "stop": 10.57,
+     "target": 10.77,
+     "p_target": 0.5635,
+     "p_stop": 0.435,
+     "p_neither": 0.0015,
+     "avg_R_sim": 0.128,
+     "verdict": "Leans toward the target: target first 56.4 % vs stop first 43.5 %.",
+     "hist_triggered": 44,
+     "hist_avg_R": 0.088,
+     "budget_qty": 3,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "PASS",
+     "risk_reason": "",
+     "taken": 1,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.107,
+     "recorded_at": "2026-11-15T01:43:51-05:00"
+    },
+    {
+     "day": "2026-11-12",
+     "symbol": "QQQ",
+     "entry_time": "9:50 AM",
+     "entry": 119.91,
+     "stop": 119.16,
+     "target": 120.66,
+     "p_target": 0.431,
+     "p_stop": 0.569,
+     "p_neither": 0.0,
+     "avg_R_sim": -0.138,
+     "verdict": "Leans toward the stop: target first 43.1 % vs stop first 56.9 %.",
+     "hist_triggered": 38,
+     "hist_avg_R": -0.234,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "target",
+     "R": 1.0,
+     "net_R": 0.84,
+     "recorded_at": "2026-11-15T01:43:49-05:00"
+    },
+    {
+     "day": "2026-11-12",
+     "symbol": "MSFT",
+     "entry_time": "9:55 AM",
+     "entry": 27.75,
+     "stop": 27.69,
+     "target": 27.81,
+     "p_target": 0.4635,
+     "p_stop": 0.5365,
+     "p_neither": 0.0,
+     "avg_R_sim": -0.073,
+     "verdict": "Close to a coin flip: target first 46.4 % vs stop first 53.6 %.",
+     "hist_triggered": 46,
+     "hist_avg_R": -0.087,
+     "budget_qty": 1,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "PASS",
+     "risk_reason": "",
+     "taken": 1,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.462,
+     "recorded_at": "2026-11-15T01:43:50-05:00"
+    },
+    {
+     "day": "2026-11-12",
+     "symbol": "AMZN",
+     "entry_time": "10:00 AM",
+     "entry": 113.44,
+     "stop": 112.42,
+     "target": 114.46,
+     "p_target": 0.5405,
+     "p_stop": 0.4575,
+     "p_neither": 0.002,
+     "avg_R_sim": 0.083,
+     "verdict": "Close to a coin flip: target first 54.0 % vs stop first 45.8 %.",
+     "hist_triggered": 41,
+     "hist_avg_R": 0.171,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.111,
+     "recorded_at": "2026-11-15T01:43:52-05:00"
+    },
+    {
+     "day": "2026-11-12",
+     "symbol": "BAC",
+     "entry_time": "10:00 AM",
+     "entry": 14.82,
+     "stop": 14.71,
+     "target": 14.93,
+     "p_target": 0.4565,
+     "p_stop": 0.5435,
+     "p_neither": 0.0,
+     "avg_R_sim": -0.087,
+     "verdict": "Close to a coin flip: target first 45.6 % vs stop first 54.4 %.",
+     "hist_triggered": 40,
+     "hist_avg_R": -0.15,
+     "budget_qty": 2,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "PASS",
+     "risk_reason": "",
+     "taken": 1,
+     "outcome": "target",
+     "R": 1.0,
+     "net_R": 0.865,
+     "recorded_at": "2026-11-15T01:43:53-05:00"
+    },
+    {
+     "day": "2026-11-12",
+     "symbol": "META",
+     "entry_time": "10:00 AM",
+     "entry": 137.84,
+     "stop": 136.99,
+     "target": 138.69,
+     "p_target": 0.4745,
+     "p_stop": 0.5255,
+     "p_neither": 0.0,
+     "avg_R_sim": -0.051,
+     "verdict": "Close to a coin flip: target first 47.4 % vs stop first 52.5 %.",
+     "hist_triggered": 39,
+     "hist_avg_R": 0.023,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.162,
+     "recorded_at": "2026-11-15T01:43:52-05:00"
+    },
+    {
+     "day": "2026-11-12",
+     "symbol": "GOOGL",
+     "entry_time": "10:10 AM",
+     "entry": 28.69,
+     "stop": 28.62,
+     "target": 28.76,
+     "p_target": 0.517,
+     "p_stop": 0.483,
+     "p_neither": 0.0,
+     "avg_R_sim": 0.034,
+     "verdict": "Close to a coin flip: target first 51.7 % vs stop first 48.3 %.",
+     "hist_triggered": 41,
+     "hist_avg_R": -0.122,
+     "budget_qty": 1,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "PASS",
+     "risk_reason": "day limit: 3 trades already taken",
+     "taken": 0,
+     "outcome": "target",
+     "R": 1.0,
+     "net_R": 0.59,
+     "recorded_at": "2026-11-15T01:43:52-05:00"
+    },
+    {
+     "day": "2026-11-12",
+     "symbol": "JPM",
+     "entry_time": "10:10 AM",
+     "entry": 19.97,
+     "stop": 19.82,
+     "target": 20.12,
+     "p_target": 0.5675,
+     "p_stop": 0.4325,
+     "p_neither": 0.0,
+     "avg_R_sim": 0.135,
+     "verdict": "Leans toward the target: target first 56.8 % vs stop first 43.2 %.",
+     "hist_triggered": 47,
+     "hist_avg_R": -0.048,
+     "budget_qty": 1,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "PASS",
+     "risk_reason": "day limit: 3 trades already taken",
+     "taken": 0,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.133,
+     "recorded_at": "2026-11-15T01:43:53-05:00"
+    },
+    {
+     "day": "2026-11-12",
+     "symbol": "WFC",
+     "entry_time": "10:40 AM",
+     "entry": 461.07,
+     "stop": 457.89,
+     "target": 464.25,
+     "p_target": 0.526,
+     "p_stop": 0.473,
+     "p_neither": 0.001,
+     "avg_R_sim": 0.053,
+     "verdict": "Close to a coin flip: target first 52.6 % vs stop first 47.3 %.",
+     "hist_triggered": 46,
+     "hist_avg_R": -0.087,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "target",
+     "R": 1.0,
+     "net_R": 0.855,
+     "recorded_at": "2026-11-15T01:43:53-05:00"
+    },
+    {
+     "day": "2026-11-12",
+     "symbol": "NVDA",
+     "entry_time": "11:05 AM",
+     "entry": 371.51,
+     "stop": 368.94,
+     "target": 374.08,
+     "p_target": 0.5065,
+     "p_stop": 0.4935,
+     "p_neither": 0.0,
+     "avg_R_sim": 0.013,
+     "verdict": "Close to a coin flip: target first 50.6 % vs stop first 49.4 %.",
+     "hist_triggered": 46,
+     "hist_avg_R": 0.075,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "target",
+     "R": 1.0,
+     "net_R": 0.855,
+     "recorded_at": "2026-11-15T01:43:50-05:00"
+    },
+    {
+     "day": "2026-11-12",
+     "symbol": "AMD",
+     "entry_time": "12:15 PM",
+     "entry": 240.35,
+     "stop": 238.88,
+     "target": 241.82,
+     "p_target": 0.546,
+     "p_stop": 0.454,
+     "p_neither": 0.0,
+     "avg_R_sim": 0.092,
+     "verdict": "Close to a coin flip: target first 54.6 % vs stop first 45.4 %.",
+     "hist_triggered": 45,
+     "hist_avg_R": 0.014,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.164,
+     "recorded_at": "2026-11-15T01:43:51-05:00"
+    },
+    {
+     "day": "2026-11-11",
+     "symbol": "AAPL",
+     "entry_time": "9:50 AM",
+     "entry": 149.26,
+     "stop": 147.49,
+     "target": 151.03,
+     "p_target": 0.5105,
+     "p_stop": 0.4705,
+     "p_neither": 0.019,
+     "avg_R_sim": 0.04,
+     "verdict": "Close to a coin flip: target first 51.0 % vs stop first 47.0 %.",
+     "hist_triggered": 43,
+     "hist_avg_R": 0.008,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "target",
+     "R": 1.0,
+     "net_R": 0.916,
+     "recorded_at": "2026-11-15T01:43:46-05:00"
+    },
+    {
+     "day": "2026-11-11",
+     "symbol": "DIA",
+     "entry_time": "9:50 AM",
+     "entry": 23.43,
+     "stop": 23.35,
+     "target": 23.51,
+     "p_target": 0.477,
+     "p_stop": 0.523,
+     "p_neither": 0.0,
+     "avg_R_sim": -0.046,
+     "verdict": "Close to a coin flip: target first 47.7 % vs stop first 52.3 %.",
+     "hist_triggered": 42,
+     "hist_avg_R": -0.015,
+     "budget_qty": 1,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "PASS",
+     "risk_reason": "",
+     "taken": 1,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.293,
+     "recorded_at": "2026-11-15T01:43:48-05:00"
+    },
+    {
+     "day": "2026-11-11",
+     "symbol": "GS",
+     "entry_time": "9:50 AM",
+     "entry": 44.21,
+     "stop": 43.65,
+     "target": 44.77,
+     "p_target": 0.4055,
+     "p_stop": 0.5655,
+     "p_neither": 0.029,
+     "avg_R_sim": -0.158,
+     "verdict": "Leans toward the stop: target first 40.6 % vs stop first 56.5 %.",
+     "hist_triggered": 35,
+     "hist_avg_R": 0.029,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "target",
+     "R": 1.0,
+     "net_R": 0.921,
+     "recorded_at": "2026-11-15T01:43:49-05:00"
+    },
+    {
+     "day": "2026-11-11",
+     "symbol": "MSFT",
+     "entry_time": "9:50 AM",
+     "entry": 27.74,
+     "stop": 27.62,
+     "target": 27.86,
+     "p_target": 0.514,
+     "p_stop": 0.486,
+     "p_neither": 0.0,
+     "avg_R_sim": 0.028,
+     "verdict": "Close to a coin flip: target first 51.4 % vs stop first 48.6 %.",
+     "hist_triggered": 45,
+     "hist_avg_R": -0.067,
+     "budget_qty": 1,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "PASS",
+     "risk_reason": "",
+     "taken": 1,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.231,
+     "recorded_at": "2026-11-15T01:43:46-05:00"
+    },
+    {
+     "day": "2026-11-11",
+     "symbol": "NVDA",
+     "entry_time": "9:55 AM",
+     "entry": 375.31,
+     "stop": 374.04,
+     "target": 376.58,
+     "p_target": 0.504,
+     "p_stop": 0.496,
+     "p_neither": 0.0,
+     "avg_R_sim": 0.008,
+     "verdict": "Close to a coin flip: target first 50.4 % vs stop first 49.6 %.",
+     "hist_triggered": 45,
+     "hist_avg_R": 0.099,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.296,
+     "recorded_at": "2026-11-15T01:43:47-05:00"
+    },
+    {
+     "day": "2026-11-11",
+     "symbol": "TSLA",
+     "entry_time": "9:55 AM",
+     "entry": 14.13,
+     "stop": 14.04,
+     "target": 14.22,
+     "p_target": 0.566,
+     "p_stop": 0.434,
+     "p_neither": 0.0,
+     "avg_R_sim": 0.132,
+     "verdict": "Leans toward the target: target first 56.6 % vs stop first 43.4 %.",
+     "hist_triggered": 44,
+     "hist_avg_R": 0.172,
+     "budget_qty": 2,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "PASS",
+     "risk_reason": "",
+     "taken": 1,
+     "outcome": "target",
+     "R": 1.0,
+     "net_R": 0.843,
+     "recorded_at": "2026-11-15T01:43:47-05:00"
+    },
+    {
+     "day": "2026-11-11",
+     "symbol": "WFC",
+     "entry_time": "10:00 AM",
+     "entry": 459.4,
+     "stop": 457.51,
+     "target": 461.29,
+     "p_target": 0.4995,
+     "p_stop": 0.5005,
+     "p_neither": 0.0,
+     "avg_R_sim": -0.001,
+     "verdict": "Close to a coin flip: target first 50.0 % vs stop first 50.0 %.",
+     "hist_triggered": 45,
+     "hist_avg_R": -0.067,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.243,
+     "recorded_at": "2026-11-15T01:43:49-05:00"
+    },
+    {
+     "day": "2026-11-11",
+     "symbol": "AMD",
+     "entry_time": "11:25 AM",
+     "entry": 243.52,
+     "stop": 242.27,
+     "target": 244.77,
+     "p_target": 0.494,
+     "p_stop": 0.506,
+     "p_neither": 0.0,
+     "avg_R_sim": -0.012,
+     "verdict": "Close to a coin flip: target first 49.4 % vs stop first 50.6 %.",
+     "hist_triggered": 44,
+     "hist_avg_R": 0.037,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.195,
+     "recorded_at": "2026-11-15T01:43:47-05:00"
+    },
+    {
+     "day": "2026-11-11",
+     "symbol": "META",
+     "entry_time": "11:50 AM",
+     "entry": 139.48,
+     "stop": 138.19,
+     "target": 140.77,
+     "p_target": 0.5045,
+     "p_stop": 0.4495,
+     "p_neither": 0.046,
+     "avg_R_sim": 0.055,
+     "verdict": "Close to a coin flip: target first 50.4 % vs stop first 45.0 %.",
+     "hist_triggered": 38,
+     "hist_avg_R": 0.05,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.108,
+     "recorded_at": "2026-11-15T01:43:48-05:00"
+    },
+    {
+     "day": "2026-11-11",
+     "symbol": "AMZN",
+     "entry_time": "1:30 PM",
+     "entry": 111.8,
+     "stop": 111.58,
+     "target": 112.02,
+     "p_target": 0.447,
+     "p_stop": 0.553,
+     "p_neither": 0.0,
+     "avg_R_sim": -0.106,
+     "verdict": "Leans toward the stop: target first 44.7 % vs stop first 55.3 %.",
+     "hist_triggered": 40,
+     "hist_avg_R": 0.15,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "target",
+     "R": 1.0,
+     "net_R": 0.492,
+     "recorded_at": "2026-11-15T01:43:48-05:00"
+    },
+    {
+     "day": "2026-11-10",
+     "symbol": "AMZN",
+     "entry_time": "9:50 AM",
+     "entry": 113.35,
+     "stop": 112.51,
+     "target": 114.19,
+     "p_target": 0.5305,
+     "p_stop": 0.4695,
+     "p_neither": 0.0,
+     "avg_R_sim": 0.061,
+     "verdict": "Close to a coin flip: target first 53.0 % vs stop first 46.9 %.",
+     "hist_triggered": 39,
+     "hist_avg_R": 0.179,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.135,
+     "recorded_at": "2026-11-15T01:43:44-05:00"
+    },
+    {
+     "day": "2026-11-10",
+     "symbol": "BAC",
+     "entry_time": "9:50 AM",
+     "entry": 14.99,
+     "stop": 14.86,
+     "target": 15.12,
+     "p_target": 0.509,
+     "p_stop": 0.49,
+     "p_neither": 0.001,
+     "avg_R_sim": 0.019,
+     "verdict": "Close to a coin flip: target first 50.9 % vs stop first 49.0 %.",
+     "hist_triggered": 39,
+     "hist_avg_R": -0.128,
+     "budget_qty": 2,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "PASS",
+     "risk_reason": "",
+     "taken": 1,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.115,
+     "recorded_at": "2026-11-15T01:43:45-05:00"
+    },
+    {
+     "day": "2026-11-10",
+     "symbol": "QQQ",
+     "entry_time": "9:50 AM",
+     "entry": 118.71,
+     "stop": 118.21,
+     "target": 119.21,
+     "p_target": 0.469,
+     "p_stop": 0.531,
+     "p_neither": 0.0,
+     "avg_R_sim": -0.062,
+     "verdict": "Close to a coin flip: target first 46.9 % vs stop first 53.1 %.",
+     "hist_triggered": 37,
+     "hist_avg_R": -0.214,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.237,
+     "recorded_at": "2026-11-15T01:43:43-05:00"
+    },
+    {
+     "day": "2026-11-10",
+     "symbol": "TSLA",
+     "entry_time": "9:50 AM",
+     "entry": 14.45,
+     "stop": 14.37,
+     "target": 14.53,
+     "p_target": 0.5525,
+     "p_stop": 0.4475,
+     "p_neither": 0.0,
+     "avg_R_sim": 0.105,
+     "verdict": "Leans toward the target: target first 55.2 % vs stop first 44.8 %.",
+     "hist_triggered": 43,
+     "hist_avg_R": 0.199,
+     "budget_qty": 2,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "PASS",
+     "risk_reason": "",
+     "taken": 1,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.181,
+     "recorded_at": "2026-11-15T01:43:44-05:00"
+    },
+    {
+     "day": "2026-11-10",
+     "symbol": "MSFT",
+     "entry_time": "9:55 AM",
+     "entry": 28.11,
+     "stop": 27.93,
+     "target": 28.29,
+     "p_target": 0.482,
+     "p_stop": 0.518,
+     "p_neither": 0.0,
+     "avg_R_sim": -0.036,
+     "verdict": "Close to a coin flip: target first 48.2 % vs stop first 51.8 %.",
+     "hist_triggered": 44,
+     "hist_avg_R": -0.091,
+     "budget_qty": 1,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "PASS",
+     "risk_reason": "",
+     "taken": 1,
+     "outcome": "target",
+     "R": 1.0,
+     "net_R": 0.844,
+     "recorded_at": "2026-11-15T01:43:43-05:00"
+    },
+    {
+     "day": "2026-11-10",
+     "symbol": "WFC",
+     "entry_time": "10:55 AM",
+     "entry": 470.21,
+     "stop": 468.86,
+     "target": 471.56,
+     "p_target": 0.491,
+     "p_stop": 0.509,
+     "p_neither": 0.0,
+     "avg_R_sim": -0.018,
+     "verdict": "Close to a coin flip: target first 49.1 % vs stop first 50.9 %.",
+     "hist_triggered": 44,
+     "hist_avg_R": -0.091,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "target",
+     "R": 1.0,
+     "net_R": 0.652,
+     "recorded_at": "2026-11-15T01:43:45-05:00"
+    },
+    {
+     "day": "2026-11-10",
+     "symbol": "GOOGL",
+     "entry_time": "11:50 AM",
+     "entry": 28.69,
+     "stop": 28.6,
+     "target": 28.78,
+     "p_target": 0.511,
+     "p_stop": 0.489,
+     "p_neither": 0.0,
+     "avg_R_sim": 0.022,
+     "verdict": "Close to a coin flip: target first 51.1 % vs stop first 48.9 %.",
+     "hist_triggered": 40,
+     "hist_avg_R": -0.1,
+     "budget_qty": 1,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "PASS",
+     "risk_reason": "day limit: 3 trades already taken",
+     "taken": 0,
+     "outcome": "stop",
+     "R": -1.0,
+     "net_R": -1.319,
+     "recorded_at": "2026-11-15T01:43:45-05:00"
+    },
+    {
+     "day": "2026-11-10",
+     "symbol": "AAPL",
+     "entry_time": "1:00 PM",
+     "entry": 144.34,
+     "stop": 143.13,
+     "target": 145.55,
+     "p_target": 0.3735,
+     "p_stop": 0.6015,
+     "p_neither": 0.025,
+     "avg_R_sim": -0.228,
+     "verdict": "Leans toward the stop: target first 37.4 % vs stop first 60.2 %.",
+     "hist_triggered": 42,
+     "hist_avg_R": -0.015,
+     "budget_qty": 0,
+     "budget_bound_by": "position cap",
+     "risk_verdict": "REFUSED",
+     "risk_reason": "budget: 0 shares fit (position cap decides)",
+     "taken": 0,
+     "outcome": "target",
+     "R": 1.0,
+     "net_R": 0.881,
+     "recorded_at": "2026-11-15T01:43:43-05:00"
+    }
+   ]
+  },
+  "log": [
+   {
+    "id": 448,
+    "ts": "2026-11-15T01:43:57-05:00",
+    "day": "2026-11-13",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-13: WFC broke its opening range at 9:55 AM ($490.49, stop $487.99, target $492.99). Time Machine said: Close to a coin flip: target first 51.8 % vs stop first 48.2 %. Result: stop, -1.20R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 447,
+    "ts": "2026-11-15T01:43:57-05:00",
+    "day": "2026-11-13",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-13: GS broke its opening range at 9:50 AM ($45.13, stop $44.77, target $45.49). Time Machine said: Leans toward the stop: target first 43.1 % vs stop first 56.9 %. Result: stop, -1.12R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 446,
+    "ts": "2026-11-15T01:43:57-05:00",
+    "day": "2026-11-13",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-13: JPM broke its opening range at 9:50 AM ($21.51, stop $21.38, target $21.64). Time Machine said: Close to a coin flip: target first 54.7 % vs stop first 45.3 %. Result: stop, -1.17R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 445,
+    "ts": "2026-11-15T01:43:57-05:00",
+    "day": "2026-11-13",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-13: META broke its opening range at 9:50 AM ($137.73, stop $136.50, target $138.96). Time Machine said: Leans toward the stop: target first 41.4 % vs stop first 58.4 %. Result: target, +0.89R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 444,
+    "ts": "2026-11-15T01:43:57-05:00",
+    "day": "2026-11-13",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-13: QQQ broke its opening range at 9:50 AM ($119.90, stop $118.77, target $121.03). Time Machine said: Leans toward the stop: target first 42.2 % vs stop first 57.6 %. Result: stop, -1.11R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 443,
+    "ts": "2026-11-15T01:43:57-05:00",
+    "day": "2026-11-13",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-13: IWM broke its opening range at 2:40 PM ($11.36, stop $11.29, target $11.43). Time Machine said: Close to a coin flip: target first 46.5 % vs stop first 48.3 %. Result: target, +0.84R after costs. On the $50 plan: not taken (day limit: 3 trades already taken)."
+   },
+   {
+    "id": 442,
+    "ts": "2026-11-15T01:43:57-05:00",
+    "day": "2026-11-13",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-13: GOOGL broke its opening range at 1:50 PM ($28.65, stop $28.45, target $28.85). Time Machine said: Leans toward the stop: target first 41.0 % vs stop first 53.6 %. Result: stop, -1.14R after costs. On the $50 plan: not taken (day limit: 3 trades already taken)."
+   },
+   {
+    "id": 441,
+    "ts": "2026-11-15T01:43:57-05:00",
+    "day": "2026-11-13",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-13: DIA broke its opening range at 1:50 PM ($23.40, stop $23.22, target $23.58). Time Machine said: Close to a coin flip: target first 49.1 % vs stop first 44.1 %. Result: target, +0.87R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 440,
+    "ts": "2026-11-15T01:43:57-05:00",
+    "day": "2026-11-13",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-13: BAC broke its opening range at 11:40 AM ($14.88, stop $14.82, target $14.94). Time Machine said: Leans toward the stop: target first 40.0 % vs stop first 60.0 %. Result: stop, -1.25R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 439,
+    "ts": "2026-11-15T01:43:57-05:00",
+    "day": "2026-11-13",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-13: NVDA broke its opening range at 11:15 AM ($377.53, stop $372.86, target $382.20). Time Machine said: Close to a coin flip: target first 46.5 % vs stop first 45.5 %. Result: stop, -1.08R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 438,
+    "ts": "2026-11-15T01:43:53-05:00",
+    "day": "2026-11-12",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-12: MSFT broke its opening range at 9:55 AM ($27.75, stop $27.69, target $27.81). Time Machine said: Close to a coin flip: target first 46.4 % vs stop first 53.6 %. Result: stop, -1.46R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 437,
+    "ts": "2026-11-15T01:43:53-05:00",
+    "day": "2026-11-12",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-12: IWM broke its opening range at 9:50 AM ($10.67, stop $10.57, target $10.77). Time Machine said: Leans toward the target: target first 56.4 % vs stop first 43.5 %. Result: stop, -1.11R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 436,
+    "ts": "2026-11-15T01:43:53-05:00",
+    "day": "2026-11-12",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-12: AAPL broke its opening range at 9:50 AM ($153.31, stop $151.40, target $155.22). Time Machine said: Close to a coin flip: target first 50.7 % vs stop first 46.9 %. Result: stop, -1.08R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 435,
+    "ts": "2026-11-15T01:43:53-05:00",
+    "day": "2026-11-12",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-12: QQQ broke its opening range at 9:50 AM ($119.91, stop $119.16, target $120.66). Time Machine said: Leans toward the stop: target first 43.1 % vs stop first 56.9 %. Result: target, +0.84R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 434,
+    "ts": "2026-11-15T01:43:53-05:00",
+    "day": "2026-11-12",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-12: AMD broke its opening range at 12:15 PM ($240.35, stop $238.88, target $241.82). Time Machine said: Close to a coin flip: target first 54.6 % vs stop first 45.4 %. Result: stop, -1.16R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 433,
+    "ts": "2026-11-15T01:43:53-05:00",
+    "day": "2026-11-12",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-12: NVDA broke its opening range at 11:05 AM ($371.51, stop $368.94, target $374.08). Time Machine said: Close to a coin flip: target first 50.6 % vs stop first 49.4 %. Result: target, +0.85R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 432,
+    "ts": "2026-11-15T01:43:53-05:00",
+    "day": "2026-11-12",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-12: WFC broke its opening range at 10:40 AM ($461.07, stop $457.89, target $464.25). Time Machine said: Close to a coin flip: target first 52.6 % vs stop first 47.3 %. Result: target, +0.85R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 431,
+    "ts": "2026-11-15T01:43:53-05:00",
+    "day": "2026-11-12",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-12: JPM broke its opening range at 10:10 AM ($19.97, stop $19.82, target $20.12). Time Machine said: Leans toward the target: target first 56.8 % vs stop first 43.2 %. Result: stop, -1.13R after costs. On the $50 plan: not taken (day limit: 3 trades already taken)."
+   },
+   {
+    "id": 430,
+    "ts": "2026-11-15T01:43:53-05:00",
+    "day": "2026-11-12",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-12: GOOGL broke its opening range at 10:10 AM ($28.69, stop $28.62, target $28.76). Time Machine said: Close to a coin flip: target first 51.7 % vs stop first 48.3 %. Result: target, +0.59R after costs. On the $50 plan: not taken (day limit: 3 trades already taken)."
+   },
+   {
+    "id": 429,
+    "ts": "2026-11-15T01:43:53-05:00",
+    "day": "2026-11-12",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-12: BAC broke its opening range at 10:00 AM ($14.82, stop $14.71, target $14.93). Time Machine said: Close to a coin flip: target first 45.6 % vs stop first 54.4 %. Result: target, +0.86R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 428,
+    "ts": "2026-11-15T01:43:53-05:00",
+    "day": "2026-11-12",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-12: META broke its opening range at 10:00 AM ($137.84, stop $136.99, target $138.69). Time Machine said: Close to a coin flip: target first 47.4 % vs stop first 52.5 %. Result: stop, -1.16R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 427,
+    "ts": "2026-11-15T01:43:53-05:00",
+    "day": "2026-11-12",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-12: AMZN broke its opening range at 10:00 AM ($113.44, stop $112.42, target $114.46). Time Machine said: Close to a coin flip: target first 54.0 % vs stop first 45.8 %. Result: stop, -1.11R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 426,
+    "ts": "2026-11-15T01:43:49-05:00",
+    "day": "2026-11-11",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-11: TSLA broke its opening range at 9:55 AM ($14.13, stop $14.04, target $14.22). Time Machine said: Leans toward the target: target first 56.6 % vs stop first 43.4 %. Result: target, +0.84R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 425,
+    "ts": "2026-11-15T01:43:49-05:00",
+    "day": "2026-11-11",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-11: NVDA broke its opening range at 9:55 AM ($375.31, stop $374.04, target $376.58). Time Machine said: Close to a coin flip: target first 50.4 % vs stop first 49.6 %. Result: stop, -1.30R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 424,
+    "ts": "2026-11-15T01:43:49-05:00",
+    "day": "2026-11-11",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-11: GS broke its opening range at 9:50 AM ($44.21, stop $43.65, target $44.77). Time Machine said: Leans toward the stop: target first 40.6 % vs stop first 56.5 %. Result: target, +0.92R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 423,
+    "ts": "2026-11-15T01:43:49-05:00",
+    "day": "2026-11-11",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-11: DIA broke its opening range at 9:50 AM ($23.43, stop $23.35, target $23.51). Time Machine said: Close to a coin flip: target first 47.7 % vs stop first 52.3 %. Result: stop, -1.29R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 422,
+    "ts": "2026-11-15T01:43:49-05:00",
+    "day": "2026-11-11",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-11: MSFT broke its opening range at 9:50 AM ($27.74, stop $27.62, target $27.86). Time Machine said: Close to a coin flip: target first 51.4 % vs stop first 48.6 %. Result: stop, -1.23R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 421,
+    "ts": "2026-11-15T01:43:49-05:00",
+    "day": "2026-11-11",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-11: AAPL broke its opening range at 9:50 AM ($149.26, stop $147.49, target $151.03). Time Machine said: Close to a coin flip: target first 51.0 % vs stop first 47.0 %. Result: target, +0.92R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 420,
+    "ts": "2026-11-15T01:43:49-05:00",
+    "day": "2026-11-11",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-11: AMZN broke its opening range at 1:30 PM ($111.80, stop $111.58, target $112.02). Time Machine said: Leans toward the stop: target first 44.7 % vs stop first 55.3 %. Result: target, +0.49R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 419,
+    "ts": "2026-11-15T01:43:49-05:00",
+    "day": "2026-11-11",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-11: META broke its opening range at 11:50 AM ($139.48, stop $138.19, target $140.77). Time Machine said: Close to a coin flip: target first 50.4 % vs stop first 45.0 %. Result: stop, -1.11R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 418,
+    "ts": "2026-11-15T01:43:49-05:00",
+    "day": "2026-11-11",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-11: AMD broke its opening range at 11:25 AM ($243.52, stop $242.27, target $244.77). Time Machine said: Close to a coin flip: target first 49.4 % vs stop first 50.6 %. Result: stop, -1.20R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 417,
+    "ts": "2026-11-15T01:43:49-05:00",
+    "day": "2026-11-11",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-11: WFC broke its opening range at 10:00 AM ($459.40, stop $457.51, target $461.29). Time Machine said: Close to a coin flip: target first 50.0 % vs stop first 50.0 %. Result: stop, -1.24R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 416,
+    "ts": "2026-11-15T01:43:46-05:00",
+    "day": "2026-11-10",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-10: MSFT broke its opening range at 9:55 AM ($28.11, stop $27.93, target $28.29). Time Machine said: Close to a coin flip: target first 48.2 % vs stop first 51.8 %. Result: target, +0.84R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 415,
+    "ts": "2026-11-15T01:43:46-05:00",
+    "day": "2026-11-10",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-10: BAC broke its opening range at 9:50 AM ($14.99, stop $14.86, target $15.12). Time Machine said: Close to a coin flip: target first 50.9 % vs stop first 49.0 %. Result: stop, -1.11R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 414,
+    "ts": "2026-11-15T01:43:46-05:00",
+    "day": "2026-11-10",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-10: AMZN broke its opening range at 9:50 AM ($113.35, stop $112.51, target $114.19). Time Machine said: Close to a coin flip: target first 53.0 % vs stop first 46.9 %. Result: stop, -1.14R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 413,
+    "ts": "2026-11-15T01:43:46-05:00",
+    "day": "2026-11-10",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-10: TSLA broke its opening range at 9:50 AM ($14.45, stop $14.37, target $14.53). Time Machine said: Leans toward the target: target first 55.2 % vs stop first 44.8 %. Result: stop, -1.18R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 412,
+    "ts": "2026-11-15T01:43:46-05:00",
+    "day": "2026-11-10",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-10: QQQ broke its opening range at 9:50 AM ($118.71, stop $118.21, target $119.21). Time Machine said: Close to a coin flip: target first 46.9 % vs stop first 53.1 %. Result: stop, -1.24R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 411,
+    "ts": "2026-11-15T01:43:46-05:00",
+    "day": "2026-11-10",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-10: IWM broke its opening range at 2:00 PM ($10.62, stop $10.55, target $10.69). Time Machine said: Close to a coin flip: target first 47.1 % vs stop first 49.7 %. Result: target, +0.85R after costs. On the $50 plan: not taken (day limit: 3 trades already taken)."
+   },
+   {
+    "id": 410,
+    "ts": "2026-11-15T01:43:46-05:00",
+    "day": "2026-11-10",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-10: AAPL broke its opening range at 1:00 PM ($144.34, stop $143.13, target $145.55). Time Machine said: Leans toward the stop: target first 37.4 % vs stop first 60.2 %. Result: target, +0.88R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 409,
+    "ts": "2026-11-15T01:43:46-05:00",
+    "day": "2026-11-10",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-10: GOOGL broke its opening range at 11:50 AM ($28.69, stop $28.60, target $28.78). Time Machine said: Close to a coin flip: target first 51.1 % vs stop first 48.9 %. Result: stop, -1.32R after costs. On the $50 plan: not taken (day limit: 3 trades already taken)."
+   },
+   {
+    "id": 408,
+    "ts": "2026-11-15T01:43:46-05:00",
+    "day": "2026-11-10",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-10: WFC broke its opening range at 10:55 AM ($470.21, stop $468.86, target $471.56). Time Machine said: Close to a coin flip: target first 49.1 % vs stop first 50.9 %. Result: target, +0.65R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 407,
+    "ts": "2026-11-15T01:43:42-05:00",
+    "day": "2026-11-09",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-09: AAPL broke its opening range at 9:55 AM ($144.03, stop $143.46, target $144.60). Time Machine said: Close to a coin flip: target first 51.3 % vs stop first 48.7 %. Result: target, +0.75R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 406,
+    "ts": "2026-11-15T01:43:42-05:00",
+    "day": "2026-11-09",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-09: JPM broke its opening range at 9:50 AM ($20.80, stop $20.59, target $21.01). Time Machine said: Leans toward the target: target first 57.1 % vs stop first 42.2 %. Result: stop, -1.10R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 405,
+    "ts": "2026-11-15T01:43:42-05:00",
+    "day": "2026-11-09",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-09: META broke its opening range at 9:50 AM ($139.77, stop $139.29, target $140.25). Time Machine said: Close to a coin flip: target first 45.2 % vs stop first 54.8 %. Result: stop, -1.29R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 404,
+    "ts": "2026-11-15T01:43:42-05:00",
+    "day": "2026-11-09",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-09: DIA broke its opening range at 9:50 AM ($23.74, stop $23.49, target $23.99). Time Machine said: Close to a coin flip: target first 46.1 % vs stop first 53.2 %. Result: target, +0.91R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 403,
+    "ts": "2026-11-15T01:43:42-05:00",
+    "day": "2026-11-09",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-09: IWM broke its opening range at 9:50 AM ($10.74, stop $10.53, target $10.95). Time Machine said: Leans toward the target: target first 38.6 % vs stop first 31.2 %. Result: stop, -1.05R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 402,
+    "ts": "2026-11-15T01:43:42-05:00",
+    "day": "2026-11-09",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-09: NVDA broke its opening range at 9:50 AM ($378.57, stop $374.44, target $382.70). Time Machine said: Close to a coin flip: target first 51.1 % vs stop first 47.9 %. Result: target, +0.91R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 401,
+    "ts": "2026-11-15T01:43:42-05:00",
+    "day": "2026-11-09",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-09: QQQ broke its opening range at 9:50 AM ($116.40, stop $115.66, target $117.14). Time Machine said: Close to a coin flip: target first 45.2 % vs stop first 54.8 %. Result: target, +0.84R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 400,
+    "ts": "2026-11-15T01:43:42-05:00",
+    "day": "2026-11-09",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-09: AMD broke its opening range at 12:35 PM ($245.75, stop $244.48, target $247.02). Time Machine said: Close to a coin flip: target first 54.5 % vs stop first 45.5 %. Result: target, +0.81R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 399,
+    "ts": "2026-11-15T01:43:42-05:00",
+    "day": "2026-11-09",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-09: TSLA broke its opening range at 11:20 AM ($14.27, stop $14.16, target $14.38). Time Machine said: Close to a coin flip: target first 53.8 % vs stop first 46.2 %. Result: target, +0.87R after costs. On the $50 plan: not taken (day limit: 3 trades already taken)."
+   },
+   {
+    "id": 398,
+    "ts": "2026-11-15T01:43:42-05:00",
+    "day": "2026-11-09",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-09: GOOGL broke its opening range at 10:55 AM ($28.10, stop $27.88, target $28.32). Time Machine said: Close to a coin flip: target first 52.5 % vs stop first 47.3 %. Result: stop, -1.13R after costs. On the $50 plan: not taken (day limit: 3 trades already taken)."
+   },
+   {
+    "id": 397,
+    "ts": "2026-11-15T01:43:38-05:00",
+    "day": "2026-11-06",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-06: META broke its opening range at 9:55 AM ($134.72, stop $132.87, target $136.57). Time Machine said: Leans toward the stop: target first 34.4 % vs stop first 54.2 %. Result: target, +0.93R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 396,
+    "ts": "2026-11-15T01:43:38-05:00",
+    "day": "2026-11-06",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-06: WFC broke its opening range at 9:50 AM ($463.12, stop $460.91, target $465.33). Time Machine said: Close to a coin flip: target first 54.2 % vs stop first 45.8 %. Result: stop, -1.21R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 395,
+    "ts": "2026-11-15T01:43:38-05:00",
+    "day": "2026-11-06",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-06: AAPL broke its opening range at 9:50 AM ($146.95, stop $145.97, target $147.93). Time Machine said: Close to a coin flip: target first 53.0 % vs stop first 46.9 %. Result: stop, -1.15R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 394,
+    "ts": "2026-11-15T01:43:38-05:00",
+    "day": "2026-11-06",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-06: QQQ broke its opening range at 9:50 AM ($115.90, stop $115.39, target $116.41). Time Machine said: Close to a coin flip: target first 45.3 % vs stop first 54.7 %. Result: target, +0.77R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 393,
+    "ts": "2026-11-15T01:43:38-05:00",
+    "day": "2026-11-06",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-06: DIA broke its opening range at 2:10 PM ($23.33, stop $23.19, target $23.47). Time Machine said: Close to a coin flip: target first 53.1 % vs stop first 45.1 %. Result: close, -0.02R after costs. On the $50 plan: not taken (day limit: 3 trades already taken)."
+   },
+   {
+    "id": 392,
+    "ts": "2026-11-15T01:43:38-05:00",
+    "day": "2026-11-06",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-06: MSFT broke its opening range at 1:30 PM ($28.40, stop $28.29, target $28.51). Time Machine said: Close to a coin flip: target first 51.8 % vs stop first 48.1 %. Result: stop, -1.26R after costs. On the $50 plan: not taken (day limit: 3 trades already taken)."
+   },
+   {
+    "id": 391,
+    "ts": "2026-11-15T01:43:38-05:00",
+    "day": "2026-11-06",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-06: BAC broke its opening range at 12:20 PM ($14.72, stop $14.62, target $14.82). Time Machine said: Close to a coin flip: target first 47.8 % vs stop first 52.2 %. Result: stop, -1.15R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 390,
+    "ts": "2026-11-15T01:43:38-05:00",
+    "day": "2026-11-06",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-06: NVDA broke its opening range at 10:30 AM ($377.43, stop $374.66, target $380.20). Time Machine said: Close to a coin flip: target first 49.4 % vs stop first 50.6 %. Result: stop, -1.14R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 389,
+    "ts": "2026-11-15T01:43:38-05:00",
+    "day": "2026-11-06",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-06: GOOGL broke its opening range at 10:05 AM ($26.95, stop $26.83, target $27.07). Time Machine said: Close to a coin flip: target first 50.7 % vs stop first 49.3 %. Result: target, +0.78R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 388,
+    "ts": "2026-11-15T01:43:38-05:00",
+    "day": "2026-11-06",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-06: JPM broke its opening range at 10:00 AM ($20.11, stop $19.87, target $20.35). Time Machine said: Leans toward the target: target first 57.1 % vs stop first 40.2 %. Result: target, +0.92R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 387,
+    "ts": "2026-11-15T01:43:38-05:00",
+    "day": "2026-11-06",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-06: AMZN broke its opening range at 10:00 AM ($111.72, stop $110.70, target $112.74). Time Machine said: Leans toward the target: target first 56.5 % vs stop first 43.3 %. Result: target, +0.89R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 386,
+    "ts": "2026-11-15T01:43:35-05:00",
+    "day": "2026-11-05",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-05: AMZN broke its opening range at 9:55 AM ($107.86, stop $107.56, target $108.16). Time Machine said: Leans toward the stop: target first 44.0 % vs stop first 56.0 %. Result: stop, -1.36R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 385,
+    "ts": "2026-11-15T01:43:35-05:00",
+    "day": "2026-11-05",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-05: MSFT broke its opening range at 9:55 AM ($28.52, stop $28.25, target $28.79). Time Machine said: Close to a coin flip: target first 46.8 % vs stop first 53.0 %. Result: target, +0.89R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 384,
+    "ts": "2026-11-15T01:43:35-05:00",
+    "day": "2026-11-05",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-05: GS broke its opening range at 9:50 AM ($47.42, stop $46.82, target $48.02). Time Machine said: Leans toward the stop: target first 41.0 % vs stop first 56.5 %. Result: target, +0.92R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 383,
+    "ts": "2026-11-15T01:43:35-05:00",
+    "day": "2026-11-05",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-05: DIA broke its opening range at 9:50 AM ($23.44, stop $23.20, target $23.68). Time Machine said: Close to a coin flip: target first 48.9 % vs stop first 51.0 %. Result: stop, -1.10R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 382,
+    "ts": "2026-11-15T01:43:35-05:00",
+    "day": "2026-11-05",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-05: IWM broke its opening range at 9:50 AM ($11.84, stop $11.74, target $11.94). Time Machine said: Leans toward the target: target first 61.3 % vs stop first 38.6 %. Result: stop, -1.12R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 381,
+    "ts": "2026-11-15T01:43:35-05:00",
+    "day": "2026-11-05",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-05: JPM broke its opening range at 10:30 AM ($19.99, stop $19.90, target $20.08). Time Machine said: Close to a coin flip: target first 50.2 % vs stop first 49.8 %. Result: stop, -1.22R after costs. On the $50 plan: not taken (day limit: 3 trades already taken)."
+   },
+   {
+    "id": 380,
+    "ts": "2026-11-15T01:43:35-05:00",
+    "day": "2026-11-05",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-05: WFC broke its opening range at 10:05 AM ($467.60, stop $464.68, target $470.52). Time Machine said: Close to a coin flip: target first 50.0 % vs stop first 50.0 %. Result: target, +0.84R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 379,
+    "ts": "2026-11-15T01:43:35-05:00",
+    "day": "2026-11-05",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-05: AMD broke its opening range at 10:00 AM ($248.59, stop $247.24, target $249.94). Time Machine said: Close to a coin flip: target first 54.4 % vs stop first 45.6 %. Result: target, +0.82R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 378,
+    "ts": "2026-11-15T01:43:35-05:00",
+    "day": "2026-11-05",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-05: AAPL broke its opening range at 10:00 AM ($142.19, stop $139.61, target $144.77). Time Machine said: Leans toward the stop: target first 34.6 % vs stop first 43.6 %. Result: target, +0.94R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 377,
+    "ts": "2026-11-15T01:43:31-05:00",
+    "day": "2026-11-04",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-04: WFC broke its opening range at 9:55 AM ($471.69, stop $466.87, target $476.51). Time Machine said: Close to a coin flip: target first 50.7 % vs stop first 47.7 %. Result: stop, -1.10R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 376,
+    "ts": "2026-11-15T01:43:31-05:00",
+    "day": "2026-11-04",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-04: IWM broke its opening range at 9:55 AM ($12.05, stop $11.93, target $12.17). Time Machine said: Leans toward the target: target first 60.2 % vs stop first 39.0 %. Result: stop, -1.10R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 375,
+    "ts": "2026-11-15T01:43:31-05:00",
+    "day": "2026-11-04",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-04: AMZN broke its opening range at 3:00 PM ($106.58, stop $106.32, target $106.84). Time Machine said: Close to a coin flip: target first 50.6 % vs stop first 49.4 %. Result: target, +0.59R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 374,
+    "ts": "2026-11-15T01:43:31-05:00",
+    "day": "2026-11-04",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-04: AMD broke its opening range at 2:20 PM ($247.85, stop $246.89, target $248.81). Time Machine said: Close to a coin flip: target first 52.3 % vs stop first 47.7 %. Result: target, +0.74R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 373,
+    "ts": "2026-11-15T01:43:31-05:00",
+    "day": "2026-11-04",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-04: META broke its opening range at 12:55 PM ($137.78, stop $136.98, target $138.58). Time Machine said: Leans toward the stop: target first 44.6 % vs stop first 55.2 %. Result: target, +0.83R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 372,
+    "ts": "2026-11-15T01:43:31-05:00",
+    "day": "2026-11-04",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-04: GOOGL broke its opening range at 12:05 PM ($26.98, stop $26.89, target $27.07). Time Machine said: Leans toward the stop: target first 43.9 % vs stop first 56.1 %. Result: stop, -1.30R after costs. On the $50 plan: not taken (day limit: 3 trades already taken)."
+   },
+   {
+    "id": 371,
+    "ts": "2026-11-15T01:43:31-05:00",
+    "day": "2026-11-04",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-04: JPM broke its opening range at 10:20 AM ($19.04, stop $18.84, target $19.24). Time Machine said: Close to a coin flip: target first 52.9 % vs stop first 46.1 %. Result: target, +0.91R after costs. On the $50 plan: not taken (day limit: 3 trades already taken)."
+   },
+   {
+    "id": 370,
+    "ts": "2026-11-15T01:43:31-05:00",
+    "day": "2026-11-04",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-04: BAC broke its opening range at 10:15 AM ($15.38, stop $15.26, target $15.50). Time Machine said: Leans toward the stop: target first 43.4 % vs stop first 56.6 %. Result: stop, -1.13R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 369,
+    "ts": "2026-11-15T01:43:31-05:00",
+    "day": "2026-11-04",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-04: NVDA broke its opening range at 10:05 AM ($381.81, stop $379.09, target $384.53). Time Machine said: Close to a coin flip: target first 51.7 % vs stop first 48.2 %. Result: stop, -1.14R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 368,
+    "ts": "2026-11-15T01:43:31-05:00",
+    "day": "2026-11-04",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-04: TSLA broke its opening range at 10:00 AM ($14.60, stop $14.46, target $14.74). Time Machine said: Leans toward the target: target first 55.5 % vs stop first 44.1 %. Result: stop, -1.10R after costs. On the $50 plan: taken."
+   },
+   {
+    "id": 367,
+    "ts": "2026-11-15T01:43:31-05:00",
+    "day": "2026-11-04",
+    "kind": "win",
+    "text": "Day-trade practice 2026-11-04: AAPL broke its opening range at 10:00 AM ($143.31, stop $141.10, target $145.52). Time Machine said: Close to a coin flip: target first 41.1 % vs stop first 46.2 %. Result: target, +0.94R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 366,
+    "ts": "2026-11-15T01:43:31-05:00",
+    "day": "2026-11-04",
+    "kind": "fail",
+    "text": "Day-trade practice 2026-11-04: QQQ broke its opening range at 10:00 AM ($121.39, stop $120.58, target $122.20). Time Machine said: Leans toward the stop: target first 39.0 % vs stop first 61.0 %. Result: stop, -1.15R after costs. On the $50 plan: budget said 0 shares."
+   },
+   {
+    "id": 365,
+    "ts": "2026-11-15T01:43:26-05:00",
+    "day": "2026-11-13",
+    "kind": "lesson",
+    "text": "Habit check: saying 'beat' every time would have been right 53.2% of the time. I'm at 45.2%, with 50.0% of my recent calls on the 'beat' side. I'm behind the habit right now, so my calls still need work, but I won't fall back on it."
+   },
+   {
+    "id": 364,
+    "ts": "2026-11-15T01:43:26-05:00",
+    "day": "2026-11-13",
+    "kind": "progress",
+    "text": "Shadow day wrap-up: 50 closed selloff trades so far, won 64.0%, average +1.08%; 26 open. The backtest promised 55.3% wins and +0.02% per trade. Too early to judge: I want about 100 closed trades."
+   },
+   {
+    "id": 363,
+    "ts": "2026-11-15T01:43:26-05:00",
+    "day": "2026-11-13",
+    "kind": "thought",
+    "text": "Tomorrow I expect DIA, F, KO, GM, JPM to beat the market and PG, QQQ, NKE, IBM, T to lag it."
+   },
+   {
+    "id": 362,
+    "ts": "2026-11-15T01:43:26-05:00",
+    "day": "2026-11-13",
+    "kind": "win",
+    "text": "Sold WFC at $190.63 after 3 day(s): +6.85% after costs."
+   },
+   {
+    "id": 361,
+    "ts": "2026-11-15T01:43:25-05:00",
+    "day": "2026-11-13",
+    "kind": "fail",
+    "text": "Graded 10 calls from yesterday: 4 right. All-time: 45.2% right on 400 calls (beat calls 48.5%, lag calls 42.0%)."
+   },
+   {
+    "id": 360,
+    "ts": "2026-11-15T01:43:25-05:00",
+    "day": "2026-11-12",
+    "kind": "lesson",
+    "text": "Habit check: saying 'beat' every time would have been right 53.8% of the time. I'm at 45.4%, with 50.0% of my recent calls on the 'beat' side. I'm behind the habit right now, so my calls still need work, but I won't fall back on it."
+   },
+   {
+    "id": 359,
+    "ts": "2026-11-15T01:43:25-05:00",
+    "day": "2026-11-12",
+    "kind": "progress",
+    "text": "Shadow day wrap-up: 49 closed selloff trades so far, won 63.3%, average +0.97%; 27 open. The backtest promised 55.3% wins and +0.02% per trade. Too early to judge: I want about 100 closed trades."
+   },
+   {
+    "id": 358,
+    "ts": "2026-11-15T01:43:25-05:00",
+    "day": "2026-11-12",
+    "kind": "thought",
+    "text": "Tomorrow I expect DIA, MMM, XOM, VZ, F to beat the market and HD, UNH, INTC, MRK, T to lag it."
+   },
+   {
+    "id": 357,
+    "ts": "2026-11-15T01:43:25-05:00",
+    "day": "2026-11-12",
+    "kind": "progress",
+    "text": "Bought T at the open for $239.55 (shadow)."
+   },
+   {
+    "id": 356,
+    "ts": "2026-11-15T01:43:25-05:00",
+    "day": "2026-11-12",
+    "kind": "progress",
+    "text": "Bought MMM at the open for $192.86 (shadow)."
+   },
+   {
+    "id": 355,
+    "ts": "2026-11-15T01:43:25-05:00",
+    "day": "2026-11-12",
+    "kind": "progress",
+    "text": "Bought JPM at the open for $649.80 (shadow)."
+   },
+   {
+    "id": 354,
+    "ts": "2026-11-15T01:43:25-05:00",
+    "day": "2026-11-12",
+    "kind": "progress",
+    "text": "Bought JNJ at the open for $172.88 (shadow)."
+   },
+   {
+    "id": 353,
+    "ts": "2026-11-15T01:43:25-05:00",
+    "day": "2026-11-12",
+    "kind": "progress",
+    "text": "Bought IWM at the open for $292.98 (shadow)."
+   },
+   {
+    "id": 352,
+    "ts": "2026-11-15T01:43:25-05:00",
+    "day": "2026-11-12",
+    "kind": "progress",
+    "text": "Bought INTC at the open for $332.22 (shadow)."
+   },
+   {
+    "id": 351,
+    "ts": "2026-11-15T01:43:25-05:00",
+    "day": "2026-11-12",
+    "kind": "progress",
+    "text": "Bought IBM at the open for $240.56 (shadow)."
+   },
+   {
+    "id": 350,
+    "ts": "2026-11-15T01:43:25-05:00",
+    "day": "2026-11-12",
+    "kind": "progress",
+    "text": "Bought GOOGL at the open for $243.51 (shadow)."
+   },
+   {
+    "id": 349,
+    "ts": "2026-11-15T01:43:25-05:00",
+    "day": "2026-11-12",
+    "kind": "progress",
+    "text": "Bought CVX at the open for $492.72 (shadow)."
+   }
+  ]
+ },
+ "/paper": {
+  "enabled": true,
+  "approved_by": "Zy",
+  "started": "2026-08-03",
+  "start_equity": 100000.0,
+  "equity": 99909.23151778868,
+  "change": -0.0009076848221132305,
+  "kill_floor": 80000.0,
+  "halted": false,
+  "halt_reason": null,
+  "last_day": "2026-09-11",
+  "open": [],
+  "closed": [
+   {
+    "symbol": "AAA",
+    "signal_date": "2026-08-28",
+    "status": "closed",
+    "qty": 100,
+    "entry_order": "stan-AAA-20260828-buy",
+    "entry_date": "2026-08-31",
+    "entry_price": 98.1641855373021,
+    "exit_signal_date": "2026-09-03",
+    "exit_reason": "RSI recovered to 54",
+    "exit_order": "stan-AAA-20260828-sell20260903",
+    "exit_date": "2026-09-04",
+    "exit_price": 110.48465564870811,
+    "pnl": 1232.05,
+    "ret": 0.12551,
+    "created_at": "2026-11-15T12:56:38-05:00"
+   },
+   {
+    "symbol": "AAA",
+    "signal_date": "2026-08-13",
+    "status": "closed",
+    "qty": 90,
+    "entry_order": "stan-AAA-20260813-buy",
+    "entry_date": "2026-08-14",
+    "entry_price": 110.00298442836755,
+    "exit_signal_date": "2026-08-27",
+    "exit_reason": "10 trading days passed",
+    "exit_order": "stan-AAA-20260813-sell20260827",
+    "exit_date": "2026-08-28",
+    "exit_price": 95.30503450223505,
+    "pnl": -1322.82,
+    "ret": -0.13361,
+    "created_at": "2026-11-15T12:56:38-05:00"
+   }
+  ],
+  "stats": {
+   "closed": 2,
+   "win_rate": 0.5,
+   "avg": -0.00405,
+   "pnl": -90.77
+  },
+  "equity_history": [
+   {
+    "day": "2026-08-03",
+    "equity": 100000.0,
+    "cash": 100000.0
+   },
+   {
+    "day": "2026-08-04",
+    "equity": 100000.0,
+    "cash": 100000.0
+   },
+   {
+    "day": "2026-08-05",
+    "equity": 100000.0,
+    "cash": 100000.0
+   },
+   {
+    "day": "2026-08-06",
+    "equity": 100000.0,
+    "cash": 100000.0
+   },
+   {
+    "day": "2026-08-07",
+    "equity": 100000.0,
+    "cash": 100000.0
+   },
+   {
+    "day": "2026-08-10",
+    "equity": 100000.0,
+    "cash": 100000.0
+   },
+   {
+    "day": "2026-08-11",
+    "equity": 100000.0,
+    "cash": 100000.0
+   },
+   {
+    "day": "2026-08-12",
+    "equity": 100000.0,
+    "cash": 100000.0
+   },
+   {
+    "day": "2026-08-13",
+    "equity": 100000.0,
+    "cash": 100000.0
+   },
+   {
+    "day": "2026-08-14",
+    "equity": 99742.85016627135,
+    "cash": 90099.73140144692
+   },
+   {
+    "day": "2026-08-17",
+    "equity": 99501.77219715074,
+    "cash": 90099.73140144692
+   },
+   {
+    "day": "2026-08-18",
+    "equity": 99266.72117725814,
+    "cash": 90099.73140144692
+   },
+   {
+    "day": "2026-08-19",
+    "equity": 99037.54643286286,
+    "cash": 90099.73140144692
+   },
+   {
+    "day": "2026-08-20",
+    "equity": 98814.10105707747,
+    "cash": 90099.73140144692
+   },
+   {
+    "day": "2026-08-21",
+    "equity": 98596.24181568669,
+    "cash": 90099.73140144692
+   },
+   {
+    "day": "2026-08-24",
+    "equity": 98383.8290553307,
+    "cash": 90099.73140144692
+   },
+   {
+    "day": "2026-08-25",
+    "equity": 98176.7266139836,
+    "cash": 90099.73140144692
+   },
+   {
+    "day": "2026-08-26",
+    "equity": 98419.03647035972,
+    "cash": 90099.73140144692
+   },
+   {
+    "day": "2026-08-27",
+    "equity": 98668.6156224271,
+    "cash": 90099.73140144692
+   },
+   {
+    "day": "2026-08-28",
+    "equity": 98677.18450664807,
+    "cash": 98677.18450664807
+   },
+   {
+    "day": "2026-08-31",
+    "equity": 98961.57625295995,
+    "cash": 88860.76595291786
+   },
+   {
+    "day": "2026-09-01",
+    "equity": 99264.6005619612,
+    "cash": 88860.76595291786
+   },
+   {
+    "day": "2026-09-02",
+    "equity": 99576.7156002325,
+    "cash": 88860.76595291786
+   },
+   {
+    "day": "2026-09-03",
+    "equity": 99898.19408965194,
+    "cash": 88860.76595291786
+   },
+   {
+    "day": "2026-09-04",
+    "equity": 99909.23151778868,
+    "cash": 99909.23151778868
+   },
+   {
+    "day": "2026-09-07",
+    "equity": 99909.23151778868,
+    "cash": 99909.23151778868
+   },
+   {
+    "day": "2026-09-08",
+    "equity": 99909.23151778868,
+    "cash": 99909.23151778868
+   },
+   {
+    "day": "2026-09-09",
+    "equity": 99909.23151778868,
+    "cash": 99909.23151778868
+   },
+   {
+    "day": "2026-09-10",
+    "equity": 99909.23151778868,
+    "cash": 99909.23151778868
+   },
+   {
+    "day": "2026-09-11",
+    "equity": 99909.23151778868,
+    "cash": 99909.23151778868
+   }
+  ],
+  "log": [
+   {
+    "id": 9,
+    "ts": "2026-11-15T12:56:38-05:00",
+    "day": "2026-09-04",
+    "kind": "win",
+    "text": "Sold 100 AAA at $110.48: +12.55% ($+1,232.05)."
+   },
+   {
+    "id": 8,
+    "ts": "2026-11-15T12:56:38-05:00",
+    "day": "2026-09-03",
+    "kind": "thought",
+    "text": "Selling 100 AAA at tomorrow's open: RSI recovered to 54."
+   },
+   {
+    "id": 7,
+    "ts": "2026-11-15T12:56:38-05:00",
+    "day": "2026-08-31",
+    "kind": "progress",
+    "text": "Bought 100 AAA at $98.16 in the opening auction."
+   },
+   {
+    "id": 6,
+    "ts": "2026-11-15T12:56:38-05:00",
+    "day": "2026-08-28",
+    "kind": "thought",
+    "text": "Buying 100 AAA at tomorrow's open (RSI closed at 22, about $9,807)."
+   },
+   {
+    "id": 5,
+    "ts": "2026-11-15T12:56:38-05:00",
+    "day": "2026-08-28",
+    "kind": "fail",
+    "text": "Sold 90 AAA at $95.31: -13.36% ($-1,322.82)."
+   },
+   {
+    "id": 4,
+    "ts": "2026-11-15T12:56:38-05:00",
+    "day": "2026-08-27",
+    "kind": "thought",
+    "text": "Selling 90 AAA at tomorrow's open: 10 trading days passed."
+   },
+   {
+    "id": 3,
+    "ts": "2026-11-15T12:56:38-05:00",
+    "day": "2026-08-14",
+    "kind": "progress",
+    "text": "Bought 90 AAA at $110.00 in the opening auction."
+   },
+   {
+    "id": 2,
+    "ts": "2026-11-15T12:56:38-05:00",
+    "day": "2026-08-13",
+    "kind": "thought",
+    "text": "Buying 90 AAA at tomorrow's open (RSI closed at 29, about $9,890)."
+   },
+   {
+    "id": 1,
+    "ts": "2026-11-15T12:56:38-05:00",
+    "day": "2026-08-03",
+    "kind": "milestone",
+    "text": "Paper trading starts with $100,000.00 of paper money. Rule: the selloff bounce. Each trade gets 10% of the account, up to 10 at once. Kill switch at 20% below the start."
+   }
+  ]
+ }
 }
