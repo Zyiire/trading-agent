@@ -219,6 +219,26 @@ higher costs, the short side alone, all three risk levels, the chop filter, week
 breadth beyond QQQ, and drawdown. It shows on the Report tab. It does not trade until it
 passes; if it does, the next step is shadow practice, then the paper account.
 
+## Price action at key levels
+
+`agent/stan/price_action/` turns Zy's discretionary playbook into fixed rules on raw OHLCV
+(no RSI, no MACD). One module per part:
+
+| File | Job |
+|---|---|
+| `config.py` | `PriceActionConfig`: every threshold (pivot N, wick ratio, zone buffer, R:R, risk, session times) |
+| `series.py` | 5-minute bars as arrays; 15-minute bars built only from closed 5-minute bars |
+| `structure.py` | Swing pivots confirmed only after N later bars close; HH/HL = up, LH/LL = down, else chop |
+| `levels.py` | Previous day high/low, premarket high/low (when available), recent swing levels, zone buffer |
+| `patterns.py` | Pin bar (2:1 wick, closes in the top/bottom 30%), engulfing on above-average volume, failed breakout |
+| `risk.py` | Stop 2 cents past the wick, size = dollar risk / stop distance, 2R or next level, break-even at 1R |
+| `engine.py` | The decision at each closed bar, and the trades it makes |
+| `exam.py` | 9 stress tests, shown on the Report tab |
+
+No lookahead: `tests/test_price_action.py` re-runs the engine on data cut off at bar i and checks
+that the trend, pivots, levels and signal at bar i are identical to the full run. A planted
+lookahead bug makes that test fail. A 15-minute bar that is still forming is never used.
+
 ## Notes
 
 - Free Alpaca data: stock bars come from the IEX feed (history starts around 2016),
