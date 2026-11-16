@@ -67,3 +67,10 @@ def test_other_websites_cannot_change_anything(client):
     r = c.post("/paper/use", json={"strategy": "high"}, headers={"Origin": "http://evil.example"})
     assert r.status_code == 403
     assert c.post("/paper/run", json={"dry_run": False}, headers={"Origin": "http://evil.example"}).status_code == 403
+
+
+def test_demo_label_is_really_hidden_in_real_mode():
+    """The pill's display style must not override the hidden attribute."""
+    from agent.web import WEBAPP
+    html = (WEBAPP / "index.html").read_text()
+    assert "[hidden] { display: none !important; }" in html
