@@ -454,9 +454,17 @@ function PaperSection({ paper }: { paper: Paper }) {
         <Text style={[s.text, { color: up ? C.good : C.bad }]}>
           {signedPct(paper.change, 2)} since {paper.started} (started at {money(paper.start_equity)})
         </Text>
-        <Text style={s.dim}>Kill switch at {money(paper.kill_floor)}. Strategy: selloff bounce.</Text>
+        <Text style={s.dim}>
+          Kill switch at {money(paper.kill_floor)}. Strategy:{' '}
+          {!paper.strategy || paper.strategy === 'selloff' ? 'selloff bounce' : `${paper.strategy}-risk arena winner`}.
+        </Text>
+        {paper.tier_plan ? (
+          <Text style={[s.small, { marginTop: 6 }]}>Latest plan ({paper.tier_plan.day}): {paper.tier_plan.reason}.</Text>
+        ) : null}
         <Text style={[s.small, { marginTop: 6 }]}>
-          Paper trading was {paper.approved_by}’s call: Stan passed 9 of 10 stress tests, not all 10.
+          {!paper.strategy || paper.strategy === 'selloff'
+            ? `Paper trading was ${paper.approved_by}’s call: Stan passed 9 of 10 stress tests, not all 10.`
+            : `${paper.approved_by} picked this from Stan's strategy arena.`}
         </Text>
         {paper.halted && <Text style={[s.text, { color: C.bad, marginTop: 8 }]}>{paper.halt_reason}. Run --resume to restart.</Text>}
       </View>

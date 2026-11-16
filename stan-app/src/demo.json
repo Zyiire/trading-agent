@@ -595,6 +595,7 @@
      "tier": "medium",
      "eligible": true,
      "survivorship": false,
+     "benchmark": false,
      "rank": 1,
      "beats_spy": true
     },
@@ -614,6 +615,7 @@
      "tier": "low",
      "eligible": true,
      "survivorship": false,
+     "benchmark": false,
      "sharpe_halves": [
       0.732,
       0.567
@@ -641,6 +643,7 @@
      "tier": "medium",
      "eligible": true,
      "survivorship": false,
+     "benchmark": false,
      "rank": 3,
      "beats_spy": true
     },
@@ -663,6 +666,7 @@
      "tier": "medium",
      "eligible": true,
      "survivorship": false,
+     "benchmark": false,
      "rank": 4,
      "beats_spy": true
     },
@@ -685,6 +689,7 @@
      "tier": "high",
      "eligible": false,
      "survivorship": true,
+     "benchmark": false,
      "rank": 5,
      "beats_spy": true
     },
@@ -707,6 +712,7 @@
      "tier": "high",
      "eligible": false,
      "survivorship": false,
+     "benchmark": true,
      "rank": 6,
      "beats_spy": true
     },
@@ -729,6 +735,7 @@
      "tier": "high",
      "eligible": false,
      "survivorship": false,
+     "benchmark": false,
      "rank": 7,
      "beats_spy": true
     },
@@ -751,6 +758,7 @@
      "tier": "medium",
      "eligible": true,
      "survivorship": false,
+     "benchmark": false,
      "rank": 8,
      "beats_spy": true
     },
@@ -771,8 +779,9 @@
      ],
      "sharpe_2x_costs": 0.282,
      "tier": "high",
-     "eligible": true,
+     "eligible": false,
      "survivorship": false,
+     "benchmark": true,
      "rank": 9,
      "beats_spy": false
     },
@@ -795,6 +804,7 @@
      "tier": "medium",
      "eligible": true,
      "survivorship": false,
+     "benchmark": false,
      "rank": 10,
      "beats_spy": false
     },
@@ -817,6 +827,7 @@
      "tier": "high",
      "eligible": true,
      "survivorship": false,
+     "benchmark": false,
      "rank": 11,
      "beats_spy": false
     },
@@ -839,6 +850,7 @@
      "tier": "medium",
      "eligible": false,
      "survivorship": true,
+     "benchmark": false,
      "rank": 12,
      "beats_spy": false
     },
@@ -861,6 +873,7 @@
      "tier": "high",
      "eligible": true,
      "survivorship": false,
+     "benchmark": false,
      "rank": 13,
      "beats_spy": false
     },
@@ -883,6 +896,7 @@
      "tier": "high",
      "eligible": false,
      "survivorship": false,
+     "benchmark": false,
      "rank": 14,
      "beats_spy": false
     },
@@ -905,6 +919,7 @@
      "tier": "high",
      "eligible": false,
      "survivorship": false,
+     "benchmark": false,
      "rank": 15,
      "beats_spy": false
     },
@@ -927,6 +942,7 @@
      "tier": "high",
      "eligible": false,
      "survivorship": false,
+     "benchmark": false,
      "rank": 16,
      "beats_spy": false
     },
@@ -949,6 +965,7 @@
      "tier": "high",
      "eligible": false,
      "survivorship": false,
+     "benchmark": false,
      "rank": 17,
      "beats_spy": false
     }
@@ -975,8 +992,9 @@
     ],
     "sharpe_2x_costs": 0.282,
     "tier": "high",
-    "eligible": true,
+    "eligible": false,
     "survivorship": false,
+    "benchmark": true,
     "rank": 9,
     "beats_spy": false
    },
@@ -985,6 +1003,7 @@
    "notes": [
     "Options are priced from VIX/VXN with Black-Scholes, not real quotes, so treat their results as estimates.",
     "Stock momentum and the selloff bounce use today's well-known stocks, so they can't win a tier.",
+    "Hold SPY and 3x QQQ always are yardsticks with no rule of their own, so they can't win either.",
     "Tiers come from each strategy's measured worst drop: low up to 20%, medium 20-40%, high deeper than 40%."
    ]
   }

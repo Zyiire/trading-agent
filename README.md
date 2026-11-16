@@ -285,6 +285,23 @@ scoring, then ranks them and picks a winner for each risk tier.
 - **Options** are priced with Black-Scholes from VIX (SPY) and VXN (QQQ) times 0.92, with 2% of
   the premium in costs. There is no free history of real option quotes, so these are estimates.
 - **Extra data** (sector ETFs, EFA, AGG, VIX, VXN, T-bill rate) downloads from Yahoo during training.
+- **Benchmarks** (Hold SPY, 3x QQQ always) are ranked but can never win a tier.
+- **Re-rank only:** `python -m agent.stan.arena` re-runs the arena without the whole school.
+
+### Choosing what the paper account trades
+
+```
+python -m agent.stan.paper --use low      # SPY sized to 15% volatility, at the arena's reduced size
+python -m agent.stan.paper --use medium   # SPY sized to 15% volatility, full size
+python -m agent.stan.paper --use high     # TQQQ while QQQ is above its 200-day average, else cash
+python -m agent.stan.paper --use selloff  # back to the selloff bounce
+```
+
+The choice is saved, so the nightly `run_shadow.bat` keeps using it. Switching away from the
+selloff bounce lets its open trades finish first. Orders are fractional market orders that fill
+at the next open, sent only when a holding is more than 5% away from its target. The 20% kill
+switch still sells everything and stops. While a tier is on, Stan manages the account's whole
+SPY and TQQQ positions. Try `--dry-run` first to see the orders without sending them.
 
 ## Notes
 

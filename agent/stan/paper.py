@@ -28,6 +28,7 @@ import numpy as np
 import pandas as pd
 
 from agent.broker.base import Broker
+from agent.stan import tiers
 from agent.stan.shadow import ET, MARKET, complete_bars, latest_day, now_iso
 from agent.stan.strategies import BASE_RULE, SelloffRule
 from agent.stan.study import rsi
@@ -186,8 +187,10 @@ def run_evening(broker: Broker, book: PaperBook, history: dict[str, pd.DataFrame
     if book.get("start_equity") is None and not dry_run:
         book.set("start_equity", account.equity)
         book.set("started", d)
-        say("milestone", f"Paper trading starts with ${account.equity:,.2f} of paper money. Rule: the selloff bounce. "
-                         f"Each trade gets {cfg.position_pct:.0%} of the account, up to {cfg.max_positions} at once. "
+        strat = book.get("strategy", "selloff")
+        rule = (f"the selloff bounce. Each trade gets {cfg.position_pct:.0%} of the account, up to "
+                f"{cfg.max_positions} at once." if strat == "selloff" else f"the {strat}-risk arena winner.")
+        say("milestone", f"Paper trading starts with ${account.equity:,.2f} of paper money. Rule: {rule} "
                          f"Kill switch at {cfg.kill_switch_drawdown:.0%} below the start.")
     start = book.get("start_equity", account.equity)
     if not dry_run:
@@ -246,6 +249,8 @@ def run_evening(broker: Broker, book: PaperBook, history: dict[str, pd.DataFrame
     if account.equity <= floor and not book.get("halted", False):
         if not dry_run:
             broker.cancel_open_orders()
+        tiers.sell_all(broker, d, say, dry_run)
+        if not dry_run:
             for t in book.trades(["open"]):
                 oid = order_id(t["symbol"], t["signal_date"], "sell" + d.replace("-", ""))
                 ok, err = safe_submit(broker, t["symbol"], t["qty"], "sell", oid)
@@ -279,7 +284,24 @@ def run_evening(broker: Broker, book: PaperBook, history: dict[str, pd.DataFrame
                             exit_signal_date=d, exit_reason=why)
             say("thought", f"Selling {t['qty']} {t['symbol']} at tomorrow's open: {why}.")
 
-    # 5. entries
+    strategy = book.get("strategy", "selloff")
+    open_selloff = book.trades(["pending_entry", "open", "pending_exit"])
+
+    # 5a. a tier strategy (once the selloff trades have closed)
+    if strategy in ("low", "medium", "high"):
+        if open_selloff:
+            say("thought", f"Switching to the {strategy}-risk strategy: waiting for {len(open_selloff)} selloff "
+                           "trade(s) to finish first. No new selloff trades.")
+        else:
+            prices = {s: float(df["close"].iloc[-1]) for s, df in history.items() if s in tiers.TIER_SYMBOLS}
+            tiers.run_tier(broker, book, history, strategy, d, account.equity, prices, say, dry_run,
+                           low_fraction=book.get("low_fraction", tiers.DEFAULT_LOW_FRACTION))
+        if not dry_run:
+            book.set("last_day", d)
+        return {"day": d, "halted": False, "equity": account.equity, "start": start, "floor": floor,
+                "actions": actions, "strategy": strategy}
+
+    # 5b. selloff entries
     if book.get("last_entries_day") != d:
         active = book.trades(["pending_entry", "open", "pending_exit"])
         busy = {t["symbol"] for t in active}
@@ -329,6 +351,8 @@ def snapshot(book: PaperBook, broker_positions: dict | None = None) -> dict:
     return {
         "enabled": start is not None,
         "approved_by": "Zy",
+        "strategy": book.get("strategy", "selloff"),
+        "tier_plan": book.get("tier_plan"),
         "started": book.get("started"),
         "start_equity": start,
         "equity": last,
@@ -351,6 +375,23 @@ def snapshot(book: PaperBook, broker_positions: dict | None = None) -> dict:
 
 
 # ---------------------------------------------------------------- command line
+def _low_fraction_from_arena(journal_path: str) -> float | None:
+    """The size the last arena run chose for the low-risk tier, if it sized down volatility target."""
+    try:
+        with sqlite3.connect(journal_path) as db:
+            row = db.execute("SELECT value FROM meta WHERE key='arena'").fetchone()
+        if not row:
+            return None
+        arena = json.loads(row[0])
+        key = arena["winners"].get("low")
+        hit = next((x for x in arena["strategies"] if x.get("key") == key), None)
+        if hit and hit.get("base") == "vol_target" and hit.get("fraction"):
+            return float(hit["fraction"])
+    except (sqlite3.Error, KeyError, ValueError, TypeError):
+        pass
+    return None
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     from agent.broker.alpaca import AlpacaBroker
     from agent.config import ConfigError, load_settings
@@ -362,7 +403,27 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--dry-run", action="store_true", help="show what Stan would do; send no orders")
     parser.add_argument("--status", action="store_true", help="print the paper account and Stan's positions")
     parser.add_argument("--resume", action="store_true", help="restart after the kill switch or a mismatch")
+    parser.add_argument("--use", choices=["selloff", "low", "medium", "high"],
+                        help="choose what the paper account trades from now on (your call)")
     args = parser.parse_args(argv)
+
+    if args.use:
+        book = PaperBook(args.journal)
+        try:
+            frac = tiers.DEFAULT_LOW_FRACTION
+            if args.use == "low":
+                frac = _low_fraction_from_arena(args.journal) or frac
+                book.set("low_fraction", frac)
+            old = book.get("strategy", "selloff")
+            book.set("strategy", args.use)
+            book.log(datetime.now(ET).date().isoformat(), "milestone",
+                     f"Zy switched the paper account from {old} to {args.use}"
+                     + (f" ({frac:.0%} size)" if args.use == "low" else "") + ".")
+            print(f"Paper account set to: {args.use}" + (f" (low risk at {frac:.0%} size)" if args.use == "low" else "")
+                  + ". It takes effect at the next evening run; open selloff trades finish first.")
+            return 0
+        finally:
+            book.close()
 
     try:
         settings = load_settings()
@@ -389,7 +450,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                       + (f", bought at ${t['entry_price']:.2f}" if t["entry_price"] else ""))
             print("  Halted: " + (snap["halt_reason"] or "yes") if snap["halted"] else "  Running.")
             return 0
-        history, source = real_history(list(DEFAULT_SYMBOLS), 2, args.db)
+        history, source = real_history(list(DEFAULT_SYMBOLS) + ["TQQQ"], 2, args.db)
         if MARKET not in history:
             print(f"Could not load prices from {source}; nothing done.")
             return 1

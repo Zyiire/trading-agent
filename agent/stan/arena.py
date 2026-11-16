@@ -19,7 +19,7 @@ No lookahead: signals use closes up to the day before a trade. Cash earns the 13
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from typing import Callable
 
 import numpy as np
@@ -212,6 +212,7 @@ class Strategy:
     needs: tuple[str, ...]
     run: Callable[[Data, ArenaConfig, float], pd.Series]   # (data, config, cost multiplier) -> daily returns
     survivorship: bool = False
+    benchmark: bool = False     # a yardstick with no rule of its own: shown, ranked, never a winner
 
 
 def _w(d: Data, cols: dict[str, pd.Series | float]) -> pd.DataFrame:
@@ -334,7 +335,7 @@ def s_trend_options(d, cfg, m):
 
 STRATEGIES = [
     Strategy("hold_spy", "Hold SPY", "buy the S&P 500 and hold it", "the benchmark every strategy has to beat",
-             ("SPY",), s_hold),
+             ("SPY",), s_hold, benchmark=True),
     Strategy("sixty_forty", "60/40 stocks and bonds", "60% SPY, 40% AGG bonds, rebalanced daily",
              "the classic balanced portfolio", ("SPY", "AGG"), s_6040),
     Strategy("trend_core", "Trend core", "SPY while above its 10-month average at a month end, else T-bills",
@@ -356,7 +357,7 @@ STRATEGIES = [
     Strategy("lev_trend", "3x QQQ with a 200-day trend switch", "a 3x Nasdaq fund while QQQ is above its 200-day "
              "average, else T-bills", "Gayed & Bilello, Leverage for the Long Run", ("QQQ",), s_lev_trend),
     Strategy("lev_hold", "3x QQQ, always", "hold a 3x Nasdaq fund (like TQQQ) no matter what",
-             "no edge: shows what raw leverage does", ("QQQ",), s_lev_hold),
+             "no edge: shows what raw leverage does", ("QQQ",), s_lev_hold, benchmark=True),
     Strategy("buy_calls", "Buy SPY calls", "spend 5% a month on 1-month at-the-money SPY calls, rest in T-bills",
              "option buyers pay the volatility risk premium", ("SPY",), s_calls),
     Strategy("buy_puts", "Buy QQQ puts", "spend 5% a month on 1-month at-the-money QQQ puts, rest in T-bills",
@@ -407,10 +408,12 @@ def run_arena(history: dict[str, pd.DataFrame], cfg: ArenaConfig = ArenaConfig()
         mid = len(r) // 2
         h1, h2 = stats(r.iloc[:mid], d.rf), stats(r.iloc[mid:], d.rf)
         s2 = stats(r2, d.rf)
-        eligible = all(x["sharpe"] is not None and x["sharpe"] > 0 for x in (h1, h2, s2)) and not st.survivorship
+        eligible = (all(x["sharpe"] is not None and x["sharpe"] > 0 for x in (h1, h2, s2))
+                    and not st.survivorship and not st.benchmark)
         res = {"key": st.key, "name": st.name, "how": st.how, "evidence": st.evidence, **s,
                "sharpe_halves": [h1["sharpe"], h2["sharpe"]], "sharpe_2x_costs": s2["sharpe"],
-               "tier": tier_of(s["max_dd"]), "eligible": eligible, "survivorship": st.survivorship}
+               "tier": tier_of(s["max_dd"]), "eligible": eligible, "survivorship": st.survivorship,
+               "benchmark": st.benchmark}
         results.append(res)
         if on_result:
             on_result(res)
@@ -418,7 +421,7 @@ def run_arena(history: dict[str, pd.DataFrame], cfg: ArenaConfig = ArenaConfig()
     spy = next((x for x in ran if x["key"] == "hold_spy"), None)
     winners = {}
     for tier in ("low", "medium", "high"):
-        pool = [x for x in ran if x["tier"] == tier and x["eligible"] and x["key"] != "hold_spy"]
+        pool = [x for x in ran if x["tier"] == tier and x["eligible"]]
         if tier == "high":
             pool = [x for x in pool if (x["sharpe"] or 0) >= 0.4]
             pool.sort(key=lambda x: -(x["cagr"] or -9))
@@ -428,7 +431,7 @@ def run_arena(history: dict[str, pd.DataFrame], cfg: ArenaConfig = ArenaConfig()
     sized = None
     if winners["low"] is None:
         # risk is mostly position size: run the best eligible strategy smaller, rest in T-bills
-        best = max((x for x in ran if x["eligible"] and x["key"] != "hold_spy" and x["max_dd"]),
+        best = max((x for x in ran if x["eligible"] and x["max_dd"]),
                    key=lambda x: x["sharpe"] or -9, default=None)
         if best:
             st = next(z for z in STRATEGIES if z.key == best["key"])
@@ -444,7 +447,7 @@ def run_arena(history: dict[str, pd.DataFrame], cfg: ArenaConfig = ArenaConfig()
             sized = {"key": f"{best['key']}_sized", "name": f"{best['name']} at {frac:.0%} size",
                      "how": f"{best['how']}; only {frac:.0%} of the account, the rest in T-bills",
                      "evidence": best["evidence"], **s_mix, "base": best["key"], "fraction": round(frac, 3),
-                     "tier": "low", "eligible": True, "survivorship": False,
+                     "tier": "low", "eligible": True, "survivorship": False, "benchmark": False,
                      "sharpe_halves": best["sharpe_halves"], "sharpe_2x_costs": best["sharpe_2x_costs"]}
             ran.append(sized)
             winners["low"] = sized["key"]
@@ -462,5 +465,49 @@ def run_arena(history: dict[str, pd.DataFrame], cfg: ArenaConfig = ArenaConfig()
             "notes": ["Options are priced from VIX/VXN with Black-Scholes, not real quotes, so treat their results "
                       "as estimates.",
                       "Stock momentum and the selloff bounce use today's well-known stocks, so they can't win a tier.",
+                      "Hold SPY and 3x QQQ always are yardsticks with no rule of their own, so they can't win either.",
                       "Tiers come from each strategy's measured worst drop: low up to 20%, medium 20-40%, "
                       "high deeper than 40%."]}
+
+
+# ---------------------------------------------------------------- re-run just the arena
+def main(argv=None) -> int:
+    """python -m agent.stan.arena: re-rank the strategies without re-running the whole school."""
+    import argparse
+
+    from agent.stan.journal import Journal
+    from agent.stan.train import DEFAULT_SYMBOLS, demo_history, real_history
+
+    p = argparse.ArgumentParser(description="Re-run Stan's strategy arena.")
+    p.add_argument("--journal", default="data/stan.db")
+    p.add_argument("--db", default="data/agent.db")
+    p.add_argument("--years", type=int, default=15)
+    p.add_argument("--demo", action="store_true")
+    args = p.parse_args(argv)
+    history = demo_history(list(DEFAULT_SYMBOLS), args.years) if args.demo else \
+        real_history(list(DEFAULT_SYMBOLS), args.years, args.db)[0]
+    if "SPY" not in history:
+        print("Couldn't load SPY history; nothing done.")
+        return 1
+    pool = {**load_extras(args.years, args.demo, history), **history}
+    result = run_arena(pool)
+    j = Journal(args.journal)
+    j.set_meta("arena", result)
+    j.close()
+    by = {x["key"]: x for x in result["strategies"]}
+    print(f"Strategy arena, {result['first_day']} to {result['last_day']}")
+    for x in result["strategies"]:
+        if "skipped" in x:
+            print(f"    {x['name']}: skipped ({x['skipped']})")
+            continue
+        tag = "benchmark" if x.get("benchmark") else ("survivorship" if x["survivorship"] else
+                                                      ("eligible" if x["eligible"] else "failed a check"))
+        print(f"{x['rank']:>3}. {x['name']:<44} {x['tier']:<6} {x['cagr'] * 100:6.1f}% a year  Sharpe "
+              f"{x['sharpe']:5.2f}  worst {x['max_dd'] * 100:6.1f}%  [{tag}]")
+    for t, k in result["winners"].items():
+        print(f"Best {t} risk: {by[k]['name'] if k else 'none passed'}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

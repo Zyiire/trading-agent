@@ -46,6 +46,11 @@ class FakeAlpaca:
                                         "filled_qty": 0.0, "price": None, "at": None}
         return self.get_order(client_order_id)
 
+    def submit_fractional_order(self, symbol, qty, side, client_order_id):
+        out = self.submit_open_order(symbol, qty, side, client_order_id)
+        self.orders[client_order_id]["frac"] = True
+        return out
+
     def get_order(self, cid):
         o = self.orders.get(cid)
         if o is None:
@@ -66,7 +71,7 @@ class FakeAlpaca:
                 continue
             px = opens[o["symbol"]]
             share = self.partial.get(o["symbol"], 1.0)
-            q = int(o["qty"] * share)
+            q = o["qty"] * share if o.get("frac") else int(o["qty"] * share)
             sign = 1 if o["side"] == "buy" else -1
             self.positions[o["symbol"]] = self.positions.get(o["symbol"], 0) + sign * q
             self.cash -= sign * q * px

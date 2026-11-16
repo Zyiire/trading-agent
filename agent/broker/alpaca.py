@@ -203,6 +203,20 @@ class AlpacaBroker:
         ))
         return self._order_info(order)
 
+    def submit_fractional_order(self, symbol: str, qty: float, side: str, client_order_id: str) -> OrderInfo:
+        """A market order for a fractional quantity. Alpaca allows fractions only as day orders; sent
+        after the close, it waits and fills when the market opens."""
+        if not self._paper:
+            raise RuntimeError("Live trading is locked.")
+        qty = round(float(qty), 6)
+        if qty <= 0:
+            raise ValueError("Quantity must be positive.")
+        order = self._trading.submit_order(MarketOrderRequest(
+            symbol=symbol, qty=qty, side=OrderSide.BUY if side == "buy" else OrderSide.SELL,
+            time_in_force=TimeInForce.DAY, client_order_id=client_order_id,
+        ))
+        return self._order_info(order)
+
     def get_order(self, client_order_id: str) -> OrderInfo | None:
         try:
             return self._order_info(self._trading.get_order_by_client_id(client_order_id))
