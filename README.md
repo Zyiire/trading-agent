@@ -10,21 +10,21 @@ read-only, and live mode is locked in `agent/config.py`.
 
 ## Stan on your PC (the web app)
 
-Double-click `stan.bat` (or run `python -m agent.web`). Your browser opens http://127.0.0.1:8000:
+Double-click `stan.bat` (or run `python -m agent.web`). Your browser opens http://127.0.0.1:8000.
 
-- **Stan** (in his duck shirt) tells you his plan and how the day is going.
-- **The paper account**, live from Alpaca: equity, today's change, cash, and the kill-switch level.
-- **Stan's trade:** pick Low, Medium, High or Selloff bounce, press **Preview** to see exactly what
-  he would do, then **Send these orders**. Nothing is sent until you press Send.
-- **Trading on/off** switch: off pauses everything, including the nightly scheduled run.
-- **Live chart** of the account or any holding, with Stan's average entry marked.
-- **Positions**, his notes, and a calendar of daily results.
+| Page | What it does |
+|---|---|
+| **Overview** | Classroom progress, the live paper account with Today / 1W / 1M / All, what Stan is thinking (a preview of his next trade, refreshed on its own), his latest lessons, and the current plan |
+| **Classroom** | The term's curriculum, Stan's notes as he works, strategy rankings, exam verdicts. **Start a new term** runs his school in the background (press twice to confirm) |
+| **Trade journal** | Lessons, trading notes, daily results calendar, finished trades |
+| **Paper account** | Live chart of the account or any holding, positions, and **Stan's trade**: pick Steady, Balanced, Aggressive or Selloff bounce, **Preview**, then **Send these orders** |
+| **Settings** | Trading on/off (off also stops the scheduled morning run), plan, auto-stop level, link to Alpaca |
 
-`python -m agent.web --demo` (or `stan.bat --demo`) opens the same page with a made-up account
-and prices, so you can click around safely.
-
-Paper account only. The buttons that change anything answer only requests from this computer.
-When switching tiers, buys are capped at the cash on hand; the rest follows on the next run.
+- Nothing is sent until you press Send, and Send only unlocks after a preview that contains orders.
+- `stan.bat --demo` opens the same pages on a made-up account and prices.
+- `stan.bat --phone` also lets phones on your Wi-Fi open the page (the address is printed). Other
+  devices can look but not change anything: the trade buttons and switches are hidden there.
+- Paper account only. Stan's portrait is `agent/webapp/stan.png`; replace that file to change it.
 
 ## Watch Stan study (start here)
 
