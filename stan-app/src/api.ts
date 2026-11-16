@@ -89,6 +89,30 @@ export type Portfolio = {
   verdict: 'real_edge' | 'promising' | 'not_proven';
 };
 
+export type ArenaEntry = PortfolioStats & {
+  key: string;
+  name: string;
+  how: string;
+  evidence: string;
+  rank?: number;
+  tier?: 'low' | 'medium' | 'high' | 'n/a';
+  eligible?: boolean;
+  survivorship?: boolean;
+  beats_spy?: boolean;
+  sharpe_halves?: (number | null)[];
+  skipped?: string;
+};
+
+export type Arena = {
+  name: string;
+  first_day: string;
+  last_day: string;
+  strategies: ArenaEntry[];
+  winners: { low: string | null; medium: string | null; high: string | null };
+  spy: ArenaEntry | null;
+  notes: string[];
+};
+
 export type Strategy = {
   name: string;
   source?: string;
@@ -130,6 +154,7 @@ export type StanProfile = {
   trend_exam?: Strategy | null;
   price_action_exam?: Strategy | null;
   portfolio?: Portfolio | null;
+  arena?: Arena | null;
 };
 
 export type ThoughtKind = 'thought' | 'progress' | 'win' | 'fail' | 'lesson' | 'milestone';

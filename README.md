@@ -262,6 +262,30 @@ selloff sleeves look better here than they would have in real time.
 
 The paper account keeps trading the selloff bounce until the portfolio passes on real data.
 
+## Strategy arena (low, medium, high risk)
+
+`agent/stan/arena.py` runs 16 strategies on the same daily history with the same costs and
+scoring, then ranks them and picks a winner for each risk tier.
+
+| Family | Strategies |
+|---|---|
+| Benchmarks | Hold SPY; 60/40 SPY/AGG; 3x QQQ always (raw leverage) |
+| Trend and risk control | Trend core; volatility target; dual momentum (GEM); sector momentum |
+| Option selling | Cash-secured SPY puts (like Cboe PUT); covered calls on SPY (like Cboe BXM) |
+| Option buying | SPY calls; QQQ puts; SPY calls + QQQ puts; calls in uptrends / puts in downtrends |
+| Stan's own | Selloff bounce; stock momentum (both flagged for survivorship bias) |
+| Leverage | 3x QQQ with a 200-day trend switch (Gayed & Bilello) |
+
+- **Tiers** come from the measured worst drop: low up to 20%, medium 20-40%, high deeper than 40%.
+- **To win a tier**, a strategy must beat T-bills in both halves of the history and at double
+  costs, and not be flagged for survivorship bias. Low and medium winners have the best Sharpe
+  ratio; the high winner has the best yearly return with a Sharpe of 0.4+.
+- **If nothing is low risk on its own**, Stan runs the best eligible strategy at a smaller size
+  (rest in T-bills) so its worst drop stays within 20%.
+- **Options** are priced with Black-Scholes from VIX (SPY) and VXN (QQQ) times 0.92, with 2% of
+  the premium in costs. There is no free history of real option quotes, so these are estimates.
+- **Extra data** (sector ETFs, EFA, AGG, VIX, VXN, T-bill rate) downloads from Yahoo during training.
+
 ## Notes
 
 - Free Alpaca data: stock bars come from the IEX feed (history starts around 2016),

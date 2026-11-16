@@ -23,8 +23,8 @@
   "mode": "demo",
   "state": "finished",
   "current_task": null,
-  "tasks_done": 11,
-  "tasks_total": 11,
+  "tasks_done": 13,
+  "tasks_total": 13,
   "summary": {
    "years_tested": 10,
    "years_passed": 5,
@@ -570,6 +570,423 @@
    "checks_passed": 0,
    "checks_total": 9,
    "verdict": "not_proven"
+  },
+  "arena": {
+   "name": "Strategy arena",
+   "first_day": "2013-05-23",
+   "last_day": "2026-11-16",
+   "strategies": [
+    {
+     "key": "putwrite",
+     "name": "Sell SPY puts (cash-secured)",
+     "how": "sell a 1-month at-the-money SPY put every month, backed fully by cash",
+     "evidence": "the Cboe PutWrite index and the volatility risk premium",
+     "cagr": 0.1178,
+     "vol": 0.16,
+     "sharpe": 0.651,
+     "max_dd": -0.2989,
+     "growth": 4.733,
+     "worst_year": -0.109,
+     "sharpe_halves": [
+      0.732,
+      0.567
+     ],
+     "sharpe_2x_costs": 0.596,
+     "tier": "medium",
+     "eligible": true,
+     "survivorship": false,
+     "rank": 1,
+     "beats_spy": true
+    },
+    {
+     "key": "putwrite_sized",
+     "name": "Sell SPY puts (cash-secured) at 60% size",
+     "how": "sell a 1-month at-the-money SPY put every month, backed fully by cash; only 60% of the account, the rest in T-bills",
+     "evidence": "the Cboe PutWrite index and the volatility risk premium",
+     "cagr": 0.0812,
+     "vol": 0.0964,
+     "sharpe": 0.651,
+     "max_dd": -0.187,
+     "growth": 2.975,
+     "worst_year": -0.0535,
+     "base": "putwrite",
+     "fraction": 0.602,
+     "tier": "low",
+     "eligible": true,
+     "survivorship": false,
+     "sharpe_halves": [
+      0.732,
+      0.567
+     ],
+     "sharpe_2x_costs": 0.596,
+     "rank": 2,
+     "beats_spy": true
+    },
+    {
+     "key": "covered_call",
+     "name": "Covered calls on SPY",
+     "how": "hold SPY and sell a 1-month at-the-money call every month",
+     "evidence": "the Cboe BuyWrite index",
+     "cagr": 0.091,
+     "vol": 0.1603,
+     "sharpe": 0.499,
+     "max_dd": -0.3075,
+     "growth": 3.372,
+     "worst_year": -0.1305,
+     "sharpe_halves": [
+      0.582,
+      0.412
+     ],
+     "sharpe_2x_costs": 0.291,
+     "tier": "medium",
+     "eligible": true,
+     "survivorship": false,
+     "rank": 3,
+     "beats_spy": true
+    },
+    {
+     "key": "vol_target",
+     "name": "Volatility target",
+     "how": "SPY sized to 15% volatility, monthly",
+     "evidence": "volatility-managed portfolios (Moreira & Muir)",
+     "cagr": 0.0852,
+     "vol": 0.1598,
+     "sharpe": 0.466,
+     "max_dd": -0.3301,
+     "growth": 3.132,
+     "worst_year": -0.0993,
+     "sharpe_halves": [
+      0.668,
+      0.261
+     ],
+     "sharpe_2x_costs": 0.459,
+     "tier": "medium",
+     "eligible": true,
+     "survivorship": false,
+     "rank": 4,
+     "beats_spy": true
+    },
+    {
+     "key": "stock_momentum",
+     "name": "Stock momentum",
+     "how": "top 5 of Stan's stocks by 12-1 month return, if positive; monthly",
+     "evidence": "Jegadeesh & Titman momentum",
+     "cagr": 0.0995,
+     "vol": 0.2233,
+     "sharpe": 0.447,
+     "max_dd": -0.4751,
+     "growth": 3.757,
+     "worst_year": -0.4067,
+     "sharpe_halves": [
+      0.312,
+      0.594
+     ],
+     "sharpe_2x_costs": 0.42,
+     "tier": "high",
+     "eligible": false,
+     "survivorship": true,
+     "rank": 5,
+     "beats_spy": true
+    },
+    {
+     "key": "lev_hold",
+     "name": "3x QQQ, always",
+     "how": "hold a 3x Nasdaq fund (like TQQQ) no matter what",
+     "evidence": "no edge: shows what raw leverage does",
+     "cagr": 0.01,
+     "vol": 0.862,
+     "sharpe": 0.422,
+     "max_dd": -0.9842,
+     "growth": 1.149,
+     "worst_year": -0.87,
+     "sharpe_halves": [
+      -0.018,
+      0.892
+     ],
+     "sharpe_2x_costs": 0.422,
+     "tier": "high",
+     "eligible": false,
+     "survivorship": false,
+     "rank": 6,
+     "beats_spy": true
+    },
+    {
+     "key": "lev_trend",
+     "name": "3x QQQ with a 200-day trend switch",
+     "how": "a 3x Nasdaq fund while QQQ is above its 200-day average, else T-bills",
+     "evidence": "Gayed & Bilello, Leverage for the Long Run",
+     "cagr": 0.0051,
+     "vol": 0.6629,
+     "sharpe": 0.311,
+     "max_dd": -0.9386,
+     "growth": 1.074,
+     "worst_year": -0.6225,
+     "sharpe_halves": [
+      -0.153,
+      0.697
+     ],
+     "sharpe_2x_costs": 0.296,
+     "tier": "high",
+     "eligible": false,
+     "survivorship": false,
+     "rank": 7,
+     "beats_spy": true
+    },
+    {
+     "key": "sixty_forty",
+     "name": "60/40 stocks and bonds",
+     "how": "60% SPY, 40% AGG bonds, rebalanced daily",
+     "evidence": "the classic balanced portfolio",
+     "cagr": 0.0568,
+     "vol": 0.1672,
+     "sharpe": 0.294,
+     "max_dd": -0.3957,
+     "growth": 2.161,
+     "worst_year": -0.1267,
+     "sharpe_halves": [
+      0.447,
+      0.13
+     ],
+     "sharpe_2x_costs": 0.294,
+     "tier": "medium",
+     "eligible": true,
+     "survivorship": false,
+     "rank": 8,
+     "beats_spy": true
+    },
+    {
+     "key": "hold_spy",
+     "name": "Hold SPY",
+     "how": "buy the S&P 500 and hold it",
+     "evidence": "the benchmark every strategy has to beat",
+     "cagr": 0.0614,
+     "vol": 0.2876,
+     "sharpe": 0.282,
+     "max_dd": -0.6058,
+     "growth": 2.299,
+     "worst_year": -0.2579,
+     "sharpe_halves": [
+      0.43,
+      0.122
+     ],
+     "sharpe_2x_costs": 0.282,
+     "tier": "high",
+     "eligible": true,
+     "survivorship": false,
+     "rank": 9,
+     "beats_spy": false
+    },
+    {
+     "key": "trend_core",
+     "name": "Trend core",
+     "how": "SPY while above its 10-month average at a month end, else T-bills",
+     "evidence": "a century of trend-following evidence (AQR)",
+     "cagr": 0.0534,
+     "vol": 0.2167,
+     "sharpe": 0.256,
+     "max_dd": -0.3555,
+     "growth": 2.067,
+     "worst_year": -0.1777,
+     "sharpe_halves": [
+      0.455,
+      0.056
+     ],
+     "sharpe_2x_costs": 0.248,
+     "tier": "medium",
+     "eligible": true,
+     "survivorship": false,
+     "rank": 10,
+     "beats_spy": false
+    },
+    {
+     "key": "sectors",
+     "name": "Sector momentum",
+     "how": "top 3 of 9 sector ETFs by 12-1 month return, if positive; monthly",
+     "evidence": "momentum across industries",
+     "cagr": 0.052,
+     "vol": 0.24,
+     "sharpe": 0.248,
+     "max_dd": -0.5076,
+     "growth": 2.029,
+     "worst_year": -0.2498,
+     "sharpe_halves": [
+      0.317,
+      0.176
+     ],
+     "sharpe_2x_costs": 0.228,
+     "tier": "high",
+     "eligible": true,
+     "survivorship": false,
+     "rank": 11,
+     "beats_spy": false
+    },
+    {
+     "key": "selloff",
+     "name": "Selloff bounce",
+     "how": "Stan's rule: buy after RSI under 30, sell at 50 or 10 days; 10% a position",
+     "evidence": "short-term reversal; passed 9 of 10 of Stan's stress tests",
+     "cagr": 0.0376,
+     "vol": 0.1185,
+     "sharpe": 0.202,
+     "max_dd": -0.311,
+     "growth": 1.674,
+     "worst_year": -0.1835,
+     "sharpe_halves": [
+      0.202,
+      0.204
+     ],
+     "sharpe_2x_costs": -0.018,
+     "tier": "medium",
+     "eligible": false,
+     "survivorship": true,
+     "rank": 12,
+     "beats_spy": false
+    },
+    {
+     "key": "gem",
+     "name": "Dual momentum (GEM)",
+     "how": "SPY or EFA, whichever rose more in 12 months, if SPY beat T-bills; else AGG bonds; monthly",
+     "evidence": "Antonacci's Global Equities Momentum",
+     "cagr": 0.0304,
+     "vol": 0.2176,
+     "sharpe": 0.155,
+     "max_dd": -0.4182,
+     "growth": 1.52,
+     "worst_year": -0.3061,
+     "sharpe_halves": [
+      0.264,
+      0.038
+     ],
+     "sharpe_2x_costs": 0.123,
+     "tier": "high",
+     "eligible": true,
+     "survivorship": false,
+     "rank": 13,
+     "beats_spy": false
+    },
+    {
+     "key": "buy_calls",
+     "name": "Buy SPY calls",
+     "how": "spend 5% a month on 1-month at-the-money SPY calls, rest in T-bills",
+     "evidence": "option buyers pay the volatility risk premium",
+     "cagr": -0.0227,
+     "vol": 0.2348,
+     "sharpe": -0.066,
+     "max_dd": -0.6121,
+     "growth": 0.726,
+     "worst_year": -0.2697,
+     "sharpe_halves": [
+      0.149,
+      -0.298
+     ],
+     "sharpe_2x_costs": -0.116,
+     "tier": "high",
+     "eligible": false,
+     "survivorship": false,
+     "rank": 14,
+     "beats_spy": false
+    },
+    {
+     "key": "trend_options",
+     "name": "Calls in uptrends, puts in downtrends",
+     "how": "5% a month: SPY calls when SPY is above its 10-month average, QQQ puts when QQQ is below it, else nothing",
+     "evidence": "Zy's idea with a trend filter",
+     "cagr": -0.0215,
+     "vol": 0.2,
+     "sharpe": -0.109,
+     "max_dd": -0.616,
+     "growth": 0.738,
+     "worst_year": -0.2182,
+     "sharpe_halves": [
+      0.126,
+      -0.364
+     ],
+     "sharpe_2x_costs": -0.158,
+     "tier": "high",
+     "eligible": false,
+     "survivorship": false,
+     "rank": 15,
+     "beats_spy": false
+    },
+    {
+     "key": "calls_and_puts",
+     "name": "SPY calls + QQQ puts together",
+     "how": "2.5% a month on SPY calls and 2.5% on QQQ puts",
+     "evidence": "Zy's idea: profits when SPY rises or QQQ falls",
+     "cagr": -0.1251,
+     "vol": 0.1238,
+     "sharpe": -1.179,
+     "max_dd": -0.8699,
+     "growth": 0.155,
+     "worst_year": -0.2599,
+     "sharpe_halves": [
+      -0.742,
+      -1.629
+     ],
+     "sharpe_2x_costs": -1.272,
+     "tier": "high",
+     "eligible": false,
+     "survivorship": false,
+     "rank": 16,
+     "beats_spy": false
+    },
+    {
+     "key": "buy_puts",
+     "name": "Buy QQQ puts",
+     "how": "spend 5% a month on 1-month at-the-money QQQ puts, rest in T-bills",
+     "evidence": "option buyers pay the volatility risk premium",
+     "cagr": -0.2374,
+     "vol": 0.1663,
+     "sharpe": -1.666,
+     "max_dd": -0.9783,
+     "growth": 0.023,
+     "worst_year": -0.4257,
+     "sharpe_halves": [
+      -1.34,
+      -2.005
+     ],
+     "sharpe_2x_costs": -1.736,
+     "tier": "high",
+     "eligible": false,
+     "survivorship": false,
+     "rank": 17,
+     "beats_spy": false
+    }
+   ],
+   "winners": {
+    "low": "putwrite_sized",
+    "medium": "putwrite",
+    "high": null
+   },
+   "spy": {
+    "key": "hold_spy",
+    "name": "Hold SPY",
+    "how": "buy the S&P 500 and hold it",
+    "evidence": "the benchmark every strategy has to beat",
+    "cagr": 0.0614,
+    "vol": 0.2876,
+    "sharpe": 0.282,
+    "max_dd": -0.6058,
+    "growth": 2.299,
+    "worst_year": -0.2579,
+    "sharpe_halves": [
+     0.43,
+     0.122
+    ],
+    "sharpe_2x_costs": 0.282,
+    "tier": "high",
+    "eligible": true,
+    "survivorship": false,
+    "rank": 9,
+    "beats_spy": false
+   },
+   "cost": 0.001,
+   "opt_cost": 0.02,
+   "notes": [
+    "Options are priced from VIX/VXN with Black-Scholes, not real quotes, so treat their results as estimates.",
+    "Stock momentum and the selloff bounce use today's well-known stocks, so they can't win a tier.",
+    "Tiers come from each strategy's measured worst drop: low up to 20%, medium 20-40%, high deeper than 40%."
+   ]
   }
  },
  "/tasks": [
@@ -674,7 +1091,17 @@
    "finished_at": "2026-11-15T06:43:00+00:00"
   },
   {
-   "id": 11,
+   "id": 12,
+   "key": "arena",
+   "title": "Strategy arena: rank 16 strategies by risk tier",
+   "status": "done",
+   "progress": 1.0,
+   "detail": "low: Sell SPY puts (cash-secured) at 60% size; medium: Sell SPY puts (cash-secured)",
+   "started_at": "2026-11-15T06:43:00+00:00",
+   "finished_at": "2026-11-15T06:43:00+00:00"
+  },
+  {
+   "id": 13,
    "key": "report",
    "title": "Write my report card",
    "status": "done",

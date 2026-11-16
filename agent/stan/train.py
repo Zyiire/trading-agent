@@ -22,7 +22,7 @@ from agent.stan.journal import Journal
 from agent.stan.persona import pct, signed_pct
 from agent.stan import daytrade, qqq_trend
 from agent.stan.price_action.exam import price_action_exam
-from agent.stan import portfolio
+from agent.stan import arena, portfolio
 from agent.stan.strategies import stress_test
 from agent.stan.study import StudyConfig, build_panel, find_lessons, luck_test, summarize, walk_forward
 
@@ -48,6 +48,7 @@ CURRICULUM = [
     ("trend", "Day-trading exam: the QQQ trend bot from the reel"),
     ("priceaction", "Day-trading exam: price action at key levels"),
     ("portfolio", "Build my portfolio, one tested stage at a time"),
+    ("arena", "Strategy arena: rank 16 strategies by risk tier"),
     ("report", "Write my report card"),
 ]
 
@@ -127,6 +128,7 @@ def run_training(
     cfg: StudyConfig = StudyConfig(),
     pace: float = 0.0,
     intraday: dict[str, str] | None = None,
+    extras: dict[str, pd.DataFrame] | None = None,
 ) -> dict:
     """Run every task, writing progress and thoughts to the journal. Returns the summary."""
 
@@ -453,7 +455,48 @@ def run_training(
             journal.think("The portfolio didn't beat simply holding SPY. Holding is a tough benchmark in a mostly "
                           "bull market, and I'd rather know that than pretend.", "lesson")
 
-    # 11. report
+    # 11. the arena: every strategy on the same history, ranked by risk tier
+    journal.start_task("arena", "Loading ETFs, the VIX and T-bill rates")
+    pool = {**(extras or {}), **history}
+    if "SPY" not in pool:
+        journal.finish_task("arena", "No SPY history, so I couldn't run the arena", failed=True)
+    else:
+        journal.think(
+            "Arena day. Zy asked me to test buying QQQ puts and SPY calls, and to rank the best-known strategies "
+            "from safest to riskiest. Same history, same costs, same scoring for all of them. The options are "
+            "priced from the VIX, since there's no free history of real option prices.", "milestone")
+        n_total = len(arena.STRATEGIES) + 1
+        done_a = {"n": 0}
+
+        def on_result(res: dict) -> None:
+            done_a["n"] += 1
+            journal.update_task("arena", min(1.0, done_a["n"] / n_total), res["name"])
+            ok = res["eligible"] and (res["sharpe"] or 0) > 0
+            journal.think(
+                f"{res['name']}: {pct(res['cagr'])} a year, worst drop {pct(res['max_dd'])}, Sharpe {res['sharpe']} "
+                f"({res['tier']} risk){'' if res['eligible'] else ', not eligible to win'}.",
+                "win" if ok else "fail")
+            pause()
+
+        result = arena.run_arena(pool, on_result=on_result)
+        journal.set_meta("arena", result)
+        by_key = {x["key"]: x for x in result["strategies"]}
+        picks = [f"{t}: {by_key[k]['name']}" for t, k in result["winners"].items() if k]
+        journal.finish_task("arena", "; ".join(picks) if picks else "No strategy won a tier")
+        for t, k in result["winners"].items():
+            if k:
+                w = by_key[k]
+                journal.think(f"Best {t}-risk strategy: {w['name']}, {pct(w['cagr'])} a year with a worst drop of "
+                              f"{pct(w['max_dd'])} (Sharpe {w['sharpe']}).", "milestone")
+            else:
+                journal.think(f"No strategy earned the {t}-risk spot: none passed every check.", "lesson")
+        for k in ("buy_calls", "buy_puts", "calls_and_puts"):
+            x = by_key.get(k)
+            if x and "skipped" not in x:
+                journal.think(f"{x['name']}: $1 became ${x['growth']:.2f}. Option buyers pay for the insurance "
+                              "built into option prices, month after month.", "lesson")
+
+    # 12. report
     journal.start_task("report", "Adding it all up")
     journal.set_meta("summary", summary)
     edge = summary["accuracy"] - summary["baseline_up"]
@@ -524,8 +567,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     pace = args.pace if args.pace is not None else (0.6 if args.demo else 0.2)
 
     intraday = daytrade.load_charts(symbols, demo=args.demo)
+    extras = arena.load_extras(args.years, args.demo, history) if "SPY" in history else {}
     journal = Journal(args.journal)
-    summary = run_training(journal, history, source, demo=args.demo, pace=pace, intraday=intraday)
+    summary = run_training(journal, history, source, demo=args.demo, pace=pace, intraday=intraday, extras=extras)
     for t in journal.thoughts(limit=1000):
         print(f"[{t['kind']:>9}] {t['text']}")
     journal.close()
