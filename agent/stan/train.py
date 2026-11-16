@@ -22,6 +22,7 @@ from agent.stan.journal import Journal
 from agent.stan.persona import pct, signed_pct
 from agent.stan import daytrade, qqq_trend
 from agent.stan.price_action.exam import price_action_exam
+from agent.stan import portfolio
 from agent.stan.strategies import stress_test
 from agent.stan.study import StudyConfig, build_panel, find_lessons, luck_test, summarize, walk_forward
 
@@ -46,6 +47,7 @@ CURRICULUM = [
     ("daytrade", "Day-trading exam: opening-range breakout"),
     ("trend", "Day-trading exam: the QQQ trend bot from the reel"),
     ("priceaction", "Day-trading exam: price action at key levels"),
+    ("portfolio", "Build my portfolio, one tested stage at a time"),
     ("report", "Write my report card"),
 ]
 
@@ -413,7 +415,45 @@ def run_training(
                           "On these 60 days, the playbook as written doesn't pay. Next I can test its settings "
                           "one at a time, carefully, without fitting them to this one stretch.", "lesson")
 
-    # 10. report
+    # 10. the portfolio: four documented edges, each kept only if it helps
+    journal.start_task("portfolio", "Stage 1: the trend core")
+    if "SPY" not in history:
+        journal.finish_task("portfolio", "No SPY history, so I couldn't build it", failed=True)
+    else:
+        journal.think(
+            "Day trading hasn't worked for me, and the research says it rarely works for anyone. So I'm building a "
+            "portfolio from edges with decades of evidence, one stage at a time: a trend core on SPY, volatility "
+            "sizing, my selloff bounce, then momentum. Each stage stays only if it makes the whole thing better, "
+            "in both halves of my history, after costs.", "milestone")
+        done_s = {"n": 0}
+
+        def on_stage(item: dict) -> None:
+            done_s["n"] += 1
+            journal.update_task("portfolio", done_s["n"] / 6, item["name"])
+            journal.think(f"{item['name']}: {item['detail']}.", "win" if item["passed"] else "fail")
+            pause()
+
+        port = portfolio.build(history, on_check=on_stage)
+        journal.set_meta("portfolio", port)
+        f, h = port["final"], port["spy"]
+        journal.finish_task("portfolio", "Kept: " + (", ".join(port["kept"]) or "nothing, SPY alone"))
+        journal.think(
+            f"My portfolio: {pct(f['cagr'])} a year with a worst drop of {pct(f['max_dd'])}. Holding SPY: "
+            f"{pct(h['cagr'])} a year, worst drop {pct(h['max_dd'])}. $1 became ${f['growth']:.2f} vs "
+            f"${h['growth']:.2f}.", "progress")
+        journal.think("One caution: my 43 stocks are today's well-known names, so momentum and the selloff bounce "
+                      "look better on this history than they would have in real time.", "lesson")
+        if port["verdict"] == "real_edge":
+            journal.think("The portfolio beat holding SPY on risk-adjusted return in both halves, with a much "
+                          "smaller worst drop. That earns it shadow practice and then the paper account.", "milestone")
+        elif port["verdict"] == "promising":
+            journal.think("The portfolio passed one of its two final tests against SPY. Promising, not proven.",
+                          "lesson")
+        else:
+            journal.think("The portfolio didn't beat simply holding SPY. Holding is a tough benchmark in a mostly "
+                          "bull market, and I'd rather know that than pretend.", "lesson")
+
+    # 11. report
     journal.start_task("report", "Adding it all up")
     journal.set_meta("summary", summary)
     edge = summary["accuracy"] - summary["baseline_up"]
@@ -437,7 +477,8 @@ def run_training(
                          f"{signed_pct(summary['per_day_hold'], 3)} per day holding")
         if extra:
             journal.think("Fair comparison: " + "; ".join(extra) + ".", "progress")
-    if summary["ready_for_paper"] or strategy["verdict"] == "real_edge":
+    port_ok = (journal.meta().get("portfolio") or {}).get("verdict") == "real_edge"
+    if summary["ready_for_paper"] or strategy["verdict"] == "real_edge" or port_ok:
         journal.set_meta("stage", "paper_candidate")
     if summary["ready_for_paper"]:
         verdict = ("I cleared my bar: I win at least half my trades, make more than I lose, and beat "
