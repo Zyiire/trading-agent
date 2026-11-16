@@ -74,3 +74,35 @@ def test_demo_label_is_really_hidden_in_real_mode():
     from agent.web import WEBAPP
     html = (WEBAPP / "index.html").read_text()
     assert "[hidden] { display: none !important; }" in html
+
+
+def test_other_devices_can_look_but_not_touch(tmp_path):
+    journal = str(tmp_path / "stan.db")
+    broker, loader = demo_setup(journal)
+    phone = TestClient(create_web_app(journal, broker, loader, demo=True), client=("192.168.1.50", 50000))
+    live = phone.get("/live").json()
+    assert live["can_control"] is False and live["equity"] > 0
+    assert phone.get("/assets/stan.png").status_code == 200
+    for path, body in [("/paper/use", {"strategy": "high"}), ("/paper/run", {"dry_run": True}), ("/paper/pause", {}),
+                       ("/paper/resume", {}), ("/train/start", {})]:
+        assert phone.post(path, json=body).status_code == 403
+
+
+def test_start_a_term_runs_once(tmp_path):
+    journal = str(tmp_path / "stan.db")
+    broker, loader = demo_setup(journal)
+    started = []
+
+    class Proc:
+        def poll(self):
+            return None            # still running
+
+    def starter():
+        started.append(1)
+        return Proc()
+
+    c = TestClient(create_web_app(journal, broker, loader, demo=True, train_starter=starter))
+    assert c.get("/live").json()["can_control"] is True
+    assert c.post("/train/start").status_code == 200
+    assert c.get("/train/status").json()["running"] is True
+    assert c.post("/train/start").status_code == 409 and len(started) == 1

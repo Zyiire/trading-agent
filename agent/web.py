@@ -18,6 +18,8 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import subprocess
+import sys
 import threading
 import time as _time
 import webbrowser
@@ -177,7 +179,8 @@ def _seed_demo_arena(journal_path: str) -> None:
 # ---------------------------------------------------------------- the app
 def create_web_app(journal_path: str | Path, broker, history_loader: Callable[[list[str]], dict],
                    demo: bool = False, token: str | None = None,
-                   chart_loader: Callable[[str], list[dict]] | None = None) -> FastAPI:
+                   chart_loader: Callable[[str], list[dict]] | None = None,
+                   train_starter: Callable[[], object] | None = None) -> FastAPI:
     app = create_app(journal_path, token)
     journal_path = str(journal_path)
     ticks: deque = deque(maxlen=3000)
@@ -200,8 +203,47 @@ def create_web_app(journal_path: str | Path, broker, history_loader: Callable[[l
     def index() -> FileResponse:
         return FileResponse(WEBAPP / "index.html", headers={"Cache-Control": "no-store"})
 
+    @app.get("/assets/{name}", include_in_schema=False)
+    def asset(name: str) -> FileResponse:
+        path = WEBAPP / name
+        if name not in ("stan.png",) or not path.exists():
+            raise HTTPException(status_code=404, detail="Not found")
+        return FileResponse(path, headers={"Cache-Control": "max-age=3600"})
+
+    training = {"proc": None}
+
+    def _start_training():
+        cmd = [sys.executable, "-m", "agent.stan.train", "--journal", journal_path]
+        if demo:
+            cmd += ["--demo", "--pace", "0.4"]
+        return subprocess.Popen(cmd, cwd=str(Path(__file__).parents[1]), stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL)
+
+    def _training_running() -> bool:
+        proc = training["proc"]
+        return proc is not None and proc.poll() is None
+
+    @app.get("/train/status")
+    def train_status() -> dict:
+        return {"running": _training_running()}
+
+    @app.post("/train/start", dependencies=[Depends(local_only)])
+    def train_start() -> dict:
+        """Start a new school term in the background. It rewrites Stan's study notes, not his trades."""
+        if _training_running():
+            raise HTTPException(status_code=409, detail="Stan is already in class.")
+        training["proc"] = (train_starter or _start_training)()
+        return {"ok": True}
+
+    def _is_local(request: Request) -> bool:
+        return (request.client.host if request.client else "") in ("127.0.0.1", "::1", "localhost", "testclient")
+
     @app.get("/live")
-    def live() -> dict:
+    def live(request: Request) -> dict:
+        """Account, positions and clock. `can_control` tells the page whether this device may change anything."""
+        return {**_live(), "can_control": _is_local(request)}
+
+    def _live() -> dict:
         now = _time.time()
         if cache["live"] is not None and now - cache["at"] < 3:
             return cache["live"]
@@ -361,6 +403,17 @@ def yahoo_5m(symbol: str) -> list[dict]:
     return pts
 
 
+def _lan_ip() -> str:
+    import socket
+
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+            sock.connect(("10.255.255.255", 1))   # no packet is sent; this just picks the outgoing interface
+            return sock.getsockname()[0]
+    except OSError:
+        return "this-computer's-IP"
+
+
 def main(argv=None) -> int:
     import uvicorn
 
@@ -373,6 +426,8 @@ def main(argv=None) -> int:
     parser.add_argument("--demo", action="store_true", help="made-up account and prices; no Alpaca keys needed")
     parser.add_argument("--port", type=int, default=int(os.getenv("STAN_API_PORT", "8000")))
     parser.add_argument("--host", default=os.getenv("STAN_WEB_HOST", "127.0.0.1"))
+    parser.add_argument("--phone", action="store_true",
+                        help="also let phones on your Wi-Fi view the page (view only; changes stay on this PC)")
     parser.add_argument("--journal", default=None)
     parser.add_argument("--db", default="data/agent.db")
     parser.add_argument("--no-browser", action="store_true")
@@ -397,8 +452,13 @@ def main(argv=None) -> int:
             return real_history(symbols, 2, args.db)[0]
 
     app = create_web_app(journal, broker, loader, demo=args.demo, token=os.getenv("STAN_API_TOKEN") or None)
+    if args.phone:
+        args.host = "0.0.0.0"
     url = f"http://{'127.0.0.1' if args.host in ('0.0.0.0', '127.0.0.1') else args.host}:{args.port}"
-    print(f"Stan is at {url}" + ("  (demo: made-up account and prices)" if args.demo else "") + "\nPress Ctrl+C to stop.")
+    print(f"Stan is at {url}" + ("  (demo: made-up account and prices)" if args.demo else ""))
+    if args.phone:
+        print(f"On your phone (same Wi-Fi), open http://{_lan_ip()}:{args.port}  (view only)")
+    print("Press Ctrl+C to stop.")
     if not args.no_browser:
         threading.Timer(1.0, lambda: webbrowser.open(url)).start()
     uvicorn.run(app, host=args.host, port=args.port, log_level="warning")

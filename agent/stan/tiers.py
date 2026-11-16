@@ -117,7 +117,7 @@ def run_tier(broker: Broker, book, history: dict[str, pd.DataFrame], tier: str, 
         return
     todo = orders_for(p, equity, held, prices)
     if not todo:
-        say("thought", "Holdings are within 5% of the plan, so no trade tonight.")
+        say("thought", "Holdings are within 5% of the plan, so no trade is needed.")
     spendable = None if cash is None else max(0.0, cash) * 0.98
     for sym, side, qty in todo:
         short = False
@@ -126,12 +126,12 @@ def run_tier(broker: Broker, book, history: dict[str, pd.DataFrame], tier: str, 
             if afford < qty:
                 qty, short = afford, True
             if qty * prices[sym] < 1:   # Alpaca's minimum order is $1
-                say("thought", f"I want more {sym}, but the cash from tonight's sale isn't free until it fills. "
+                say("thought", f"I want more {sym}, but the cash from today's sale isn't free until it fills. "
                                "I'll buy it on the next run.")
                 continue
             spendable -= qty * prices[sym]
         oid = tier_order_id(sym, day, side, tier)
-        tail = " The rest follows on the next run, once tonight's sale has filled." if short else ""
+        tail = " The rest follows on the next run, once today's sale has filled." if short else ""
         if dry_run:
             say("thought", f"Would {side} {qty:g} {sym} (about ${qty * prices[sym]:,.0f}).{tail}")
             continue
