@@ -331,6 +331,38 @@ at the next open, sent only when a holding is more than 5% away from its target.
 switch still sells everything and stops. While a tier is on, Stan manages the account's whole
 SPY and TQQQ positions. Try `--dry-run` first to see the orders without sending them.
 
+## 0DTE QQQ options bot (tz.fund style), in phases
+
+Built from `claude_prompt_tzfund.md`: buy calls and puts on same-day QQQ options at key levels,
+using put/call flow and gamma walls, with strict risk rules. Each phase stops for review.
+
+**Phase 2 (done): the data pipeline, free sources only.** Everything lands in `data\zerodte.db`.
+
+| Data | Source (free) | Notes |
+|---|---|---|
+| QQQ 1-minute bars, rolled into 3-minute bars with session VWAP | Alpaca full-market history since 2016 (the backfill starts in 2021); live from Alpaca IEX, Yahoo as backup | The free plan skips the latest 15 minutes of full-market data, so live bars come from IEX |
+| Option chain: bid/ask, IV, greeks, day volume | Alpaca indicative feed, Yahoo as backup | Indicative quotes are delayed about 15 minutes: fine for levels and put/call, not for fill prices |
+| Open interest by strike | Alpaca contracts list (previous close), Yahoo as backup | Saved once a day |
+| Put/call volume and premium, per expiry and through the day | Computed from the snapshots | Intraday history only builds from the day collection starts |
+| GEX: call wall, put wall, zero-gamma flip | Computed from open interest and IV | A model: real dealer positions aren't public |
+| Key levels | $10 and $5 round numbers, prior day high/low/close, today's open, GEX walls, top open interest strikes | Levels within 0.1% merge and keep every reason |
+| CPI, jobs report, FOMC days | Official BLS and Fed dates, 2021 to 2027, in `zerodte/calendar.py` | |
+
+Not covered by free data: option price and open interest history before collection starts, and
+the $200K sweep filter (needs every option trade). Those wait for ThetaData if the free tests earn it.
+
+```
+python -m agent.stan.zerodte.collect backfill    # one time: QQQ minute bars since 2021 (takes a while)
+python -m agent.stan.zerodte.collect snapshot    # one snapshot now
+python -m agent.stan.zerodte.collect levels      # today's levels, GEX and put/call table
+python -m agent.stan.zerodte.collect status      # what has been collected
+```
+
+`schedule_trading.bat` now also adds a "Stan 0DTE data" task that runs the collector every
+weekday from 9:25 AM to the close (log: `data\collect.log`). Nothing in Phase 2 places orders.
+
+Next: Phase 3, the backtest with realistic option fills, testing each level and trigger alone.
+
 ## Notes
 
 - Free Alpaca data: stock bars come from the IEX feed (history starts around 2016),
