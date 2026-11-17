@@ -11,8 +11,8 @@ his own after his scheduled jobs.
 
 ### Success looks like
 
-1. Zy sends Stan a DM such as "how did today go?" or "what did you learn last night?" and gets a
-   short, correct answer built from real data.
+1. Zy writes in Stan's channel, for example "how did today go?" or "what did you learn last
+   night?", and gets a short, correct answer built from real data.
 2. After each scheduled job, a report arrives in Discord with no action from Zy.
 3. Day-to-day use needs no terminal.
 
@@ -20,7 +20,7 @@ his own after his scheduled jobs.
 
 | Question | Decision |
 |---|---|
-| Where to chat | Discord, direct messages only |
+| Where to chat | Discord: one channel (for example `#stan`) in Zy's private server. Stan doesn't use DMs |
 | What Stan may do | Talk and report only. No trading, pausing, tier changes or study runs from Discord |
 | AI model | Free and local: a tool-calling model in Ollama on Zy's GPU (RTX 3060, 12 GB). Default `qwen3:8b`, changeable with `STAN_MODEL`. No API key, no cost per message, nothing leaves the PC |
 | Proactive posts | Yes: after the 9:35 AM trade, after the 6 PM study term, when a job fails, and when a job did not run |
@@ -28,7 +28,8 @@ his own after his scheduled jobs.
 
 ### Assumptions
 
-- Only Zy can talk to Stan. Messages from any other Discord user are ignored.
+- Only Zy can talk to Stan, and only in his channel. Messages from any other user, from bots, or
+  from any other channel are ignored.
 - The bot runs on the same Windows PC as everything else and starts when Zy logs in.
 - Stan reads the same data the web app uses. Nothing on the PC is opened to the internet: the bot
   connects out to Discord.
@@ -51,6 +52,7 @@ A shared `config` piece reads the new `.env` settings:
 |---|---|---|
 | `DISCORD_BOT_TOKEN` | Yes | none |
 | `DISCORD_OWNER_ID` | Yes | none |
+| `DISCORD_CHANNEL_ID` | Yes | none |
 | `STAN_MODEL` | No | `qwen3:8b` |
 | `OLLAMA_URL` | No | `http://127.0.0.1:11434` |
 
@@ -79,8 +81,9 @@ are trimmed (for example, at most 20 trades) so one answer can't flood the model
 
 ## How a conversation works
 
-1. Zy sends Stan a DM. `bot.py` drops any message whose author ID is not `DISCORD_OWNER_ID`, any
-   message from a bot, and any message that is not a DM.
+1. Zy writes in Stan's channel. No @mention is needed. `bot.py` drops any message whose author ID
+   is not `DISCORD_OWNER_ID`, any message from a bot, and any message outside
+   `DISCORD_CHANNEL_ID`.
 2. The bot shows "Stan is typing..." and calls `brain.reply(history, message)`. That call runs in a
    worker thread, so the Discord connection stays alive while the model thinks.
 3. `brain.py` sends the local model, through Ollama's `/api/chat` endpoint:
@@ -142,9 +145,9 @@ Discord settings are missing, `notify` writes "Discord not set up, skipping repo
 If sending fails, it writes the error to the same log and exits 0. Either way, a report can never
 make a job look failed.
 
-`notify.py` sends DMs through Discord's REST API with the bot token: it opens a DM channel with
-the owner, then posts the message. It never opens the realtime Discord connection, so it works
-whether or not `bot.py` is running.
+All reports, including missed-run notices, go to Stan's channel. `notify.py` posts them through
+Discord's REST API (`POST /channels/{DISCORD_CHANNEL_ID}/messages`) with the bot token. It never
+opens the realtime Discord connection, so it works whether or not `bot.py` is running.
 
 ## Errors
 
@@ -173,16 +176,17 @@ whether or not `bot.py` is running.
 
 The README gets step-by-step instructions:
 
-1. In the Discord Developer Portal, create an application, add a bot, and copy its token. No
-   privileged intents are needed, because Discord sends a bot the text of its own DMs without the
-   Message Content intent.
-2. Create a private server and invite the bot to it. Discord lets a bot DM only people it shares a
-   server with.
-3. In Discord, turn on Developer Mode, then copy your user ID.
+1. In the Discord Developer Portal, create an application, add a bot, and copy its token. Turn
+   off **Public Bot**, and turn on **Message Content Intent**. Discord requires that intent for a
+   bot to read normal channel messages.
+2. Create a private server and a channel in it (for example `#stan`). Invite the bot with the
+   View Channels, Send Messages and Read Message History permissions.
+3. In Discord, turn on Developer Mode. Copy your user ID (right-click your name, then Copy User
+   ID) and the channel's ID (right-click the channel, then Copy Channel ID).
 4. Download the model once: `ollama pull qwen3:8b` (about 5 GB). Ollama is already installed and
    starts with Windows.
-5. Add `DISCORD_BOT_TOKEN` and `DISCORD_OWNER_ID` to `.env`. The `.env.example` file gets all four
-   new settings, with the two optional ones commented out.
+5. Add `DISCORD_BOT_TOKEN`, `DISCORD_OWNER_ID` and `DISCORD_CHANNEL_ID` to `.env`. The
+   `.env.example` file gets all five new settings, with the two optional ones commented out.
 
 `requirements.txt` gains `discord.py`. Ollama is called with `httpx`, which is already a
 dependency.
@@ -204,7 +208,7 @@ access.
 | Read-only guarantee | A test fails if `agent/discord/` imports order, pause, resume or training functions. |
 | Brain | A fake Ollama endpoint returns scripted tool calls. Checks that the loop runs tools and returns the final text, stops at 8 tool calls, turns a tool error or an unknown tool into a failed tool result, and turns "Ollama not running" and "model not downloaded" into the right replies. |
 | Splitting | Long replies split into chunks of at most 2,000 characters, on line breaks where possible. |
-| Owner check | Messages from other users, from bots, or outside DMs get no reply. |
+| Owner check | Messages from other users, from bots, or from other channels get no reply. |
 | Reports | Fixed wording for: trade made, no trade, study done, job failed, settings missing. |
 | Missed runs | With a log that has no entry for today, the check reports the missing run. With an entry, it says nothing. |
 
@@ -221,6 +225,6 @@ Manual checks:
 ## Out of scope
 
 - Any action from Discord that changes something: trading, pausing, tier changes, study runs.
-- More than one user, or channels in a server.
+- More than one user, more than one channel, or DMs.
 - Remembering conversations across bot restarts.
 - Voice or images.
