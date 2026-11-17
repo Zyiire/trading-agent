@@ -22,7 +22,7 @@ his own after his scheduled jobs.
 |---|---|
 | Where to chat | Discord, direct messages only |
 | What Stan may do | Talk and report only. No trading, pausing, tier changes or study runs from Discord |
-| AI model | Claude Sonnet 5.5 (`claude-sonnet-5-5`) |
+| AI model | Free and local: a tool-calling model in Ollama on Zy's GPU (RTX 3060, 12 GB). Default `qwen3:8b`, changeable with `STAN_MODEL`. No API key, no cost per message, nothing leaves the PC |
 | Proactive posts | Yes: after the 9:35 AM trade, after the 6 PM study term, when a job fails, and when a job did not run |
 | Architecture | A bot process on Zy's PC that reads Stan's data directly (approach A) |
 
@@ -41,12 +41,20 @@ A new package, `agent/discord/`, with four modules. Each can be tested on its ow
 | Module | Purpose | Depends on |
 |---|---|---|
 | `tools.py` | Stan's read-only tools: plain functions that return small JSON-safe dictionaries | `Journal`, `PaperBook` and `paper.snapshot`, the broker's read methods, `zerodte.collect.today_view`, log files, Windows Task Scheduler (read only) |
-| `brain.py` | Turns a message plus recent history into Stan's reply, using Claude with the tools | `tools.py`, `anthropic`, `persona.py` |
+| `brain.py` | Turns a message plus recent history into Stan's reply, using the local model with the tools | `tools.py`, Ollama's chat API at `OLLAMA_URL` (called with `httpx`), `persona.py` |
 | `bot.py` | Discord connection: owner check, typing indicator, reply splitting, missed-run checks | `brain.py`, `notify.py`, `discord.py` |
 | `notify.py` | `python -m agent.discord.notify <job> <exit code>`: sends one report through Discord's REST API, then exits | `tools.py`, `httpx` |
 
-A shared `config` piece reads three new `.env` settings: `DISCORD_BOT_TOKEN`, `DISCORD_OWNER_ID`
-and `ANTHROPIC_API_KEY`. Like the Alpaca keys, they are never printed or logged.
+A shared `config` piece reads the new `.env` settings:
+
+| Setting | Required | Default |
+|---|---|---|
+| `DISCORD_BOT_TOKEN` | Yes | none |
+| `DISCORD_OWNER_ID` | Yes | none |
+| `STAN_MODEL` | No | `qwen3:8b` |
+| `OLLAMA_URL` | No | `http://127.0.0.1:11434` |
+
+Like the Alpaca keys, the bot token is never printed or logged.
 
 ### Tools
 
@@ -75,14 +83,17 @@ are trimmed (for example, at most 20 trades) so one answer can't flood the model
    message from a bot, and any message that is not a DM.
 2. The bot shows "Stan is typing..." and calls `brain.reply(history, message)`. That call runs in a
    worker thread, so the Discord connection stays alive while the model thinks.
-3. `brain.py` sends Claude:
-   - a system prompt (persona plus rules, below), cached;
-   - the tool definitions, cached and always in the same order;
+3. `brain.py` sends the local model, through Ollama's `/api/chat` endpoint:
+   - a system prompt (persona plus rules, below);
+   - the tool definitions;
    - the last 20 messages of this conversation.
 
-   Request settings: model `claude-sonnet-5-5`, effort `low` (this is chat), default thinking,
-   `tool_choice` `auto`, and at most 8 tool calls per reply. After the 8th, Stan answers with what
-   he has.
+   Request settings: model `STAN_MODEL`, `stream: false`, the model's thinking mode turned off
+   (`think: false`) for faster replies, and at most 8 tool calls per reply. After the 8th, Stan
+   answers with what he has.
+
+   A small local model is easier to confuse than a large hosted one, so tool results stay short:
+   only the fields that answer the question, numbers already rounded, and dates in plain form.
 4. Tool calls run locally. A tool that raises an exception returns its error to the model as a
    failed tool result, so Stan can say which data he couldn't reach.
 5. The bot sends the reply, split into chunks under Discord's 2,000-character limit, on line
@@ -104,8 +115,8 @@ are trimmed (for example, at most 20 trades) so one answer can't flood the model
 ## Daily reports
 
 Reports are built from the numbers with fixed wording, the same way journal entries are. They
-don't use the AI model, so they cost nothing, can't misstate a number, and still arrive if the
-Anthropic API is down.
+don't use the AI model, so they can't misstate a number and still arrive when Ollama isn't
+running.
 
 | Trigger | Sent by | Content |
 |---|---|---|
@@ -139,8 +150,9 @@ whether or not `bot.py` is running.
 
 | Situation | What Stan does |
 |---|---|
-| Anthropic API error, rate limit or out of credit | Replies "I can't think right now:" followed by the error type. No crash. |
-| The model stops because of a refusal or `max_tokens` | Replies with what it has, or a short "I couldn't finish that answer." |
+| Ollama isn't running | Replies "My brain isn't running. Start Ollama and ask again." No crash. |
+| The model isn't downloaded | Replies with the exact command to fix it: `ollama pull <STAN_MODEL>`. |
+| The model returns no text, or calls a tool that doesn't exist | Unknown tools get a failed tool result. An empty answer becomes "I couldn't finish that answer. Try asking another way." |
 | One tool fails (for example, Alpaca is unreachable) | That tool returns its error. Stan answers with the rest and names what he couldn't reach. |
 | Discord connection drops | `discord.py` reconnects on its own. If the process exits, `run_discord.bat` restarts it after 30 seconds. |
 | Settings missing from `.env` | The bot prints which setting is missing and exits. `notify` skips its report, as above. |
@@ -167,22 +179,30 @@ The README gets step-by-step instructions:
 2. Create a private server and invite the bot to it. Discord lets a bot DM only people it shares a
    server with.
 3. In Discord, turn on Developer Mode, then copy your user ID.
-4. On console.anthropic.com, create an API key and set a monthly spending limit (suggested: $5).
-5. Add `DISCORD_BOT_TOKEN`, `DISCORD_OWNER_ID` and `ANTHROPIC_API_KEY` to `.env`. The
-   `.env.example` file gets the three names with empty values.
+4. Download the model once: `ollama pull qwen3:8b` (about 5 GB). Ollama is already installed and
+   starts with Windows.
+5. Add `DISCORD_BOT_TOKEN` and `DISCORD_OWNER_ID` to `.env`. The `.env.example` file gets all four
+   new settings, with the two optional ones commented out.
 
-`requirements.txt` gains `discord.py` and `anthropic`.
+`requirements.txt` gains `discord.py`. Ollama is called with `httpx`, which is already a
+dependency.
+
+### Using the GPU
+
+The model takes about 6 GB of the RTX 3060's 12 GB while loaded. Ollama unloads it after about
+5 idle minutes, so the first answer after a quiet spell takes a few extra seconds while it loads
+again. Nothing else in Stan uses the GPU.
 
 ## Testing
 
-All of these run offline as part of `python -m pytest`, with no Discord, Anthropic or Alpaca
+All of these run offline as part of `python -m pytest`, with no Discord, Ollama or Alpaca
 access.
 
 | Area | Test |
 |---|---|
 | Tools | Each tool returns the expected fields from a temporary journal and paper book and a fake broker. |
 | Read-only guarantee | A test fails if `agent/discord/` imports order, pause, resume or training functions. |
-| Brain | A fake Claude client returns scripted tool calls. Checks that the loop runs tools and returns the final text, stops at 8 tool calls, turns a tool error into a failed tool result, and turns an API error into the "can't think" reply. |
+| Brain | A fake Ollama endpoint returns scripted tool calls. Checks that the loop runs tools and returns the final text, stops at 8 tool calls, turns a tool error or an unknown tool into a failed tool result, and turns "Ollama not running" and "model not downloaded" into the right replies. |
 | Splitting | Long replies split into chunks of at most 2,000 characters, on line breaks where possible. |
 | Owner check | Messages from other users, from bots, or outside DMs get no reply. |
 | Reports | Fixed wording for: trade made, no trade, study done, job failed, settings missing. |
@@ -191,7 +211,11 @@ access.
 Manual checks:
 
 - `python -m agent.discord.brain "how did today go?"` asks Stan one question from a terminal,
-  without Discord. It needs `ANTHROPIC_API_KEY` and makes one real API call.
+  without Discord, using the real local model.
+- A short list of sample questions (account, today's trades, last report card, levels, "did
+  everything run?") is asked once before going live, and each answer is checked against the
+  data, to confirm the chosen model reads its tools correctly. If it doesn't, try another model
+  with `STAN_MODEL`.
 - After setup, start the bot and send Stan a DM.
 
 ## Out of scope
