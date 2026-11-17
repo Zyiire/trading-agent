@@ -1,0 +1,103 @@
+"""Fixed-wording reports, message splitting and the missed-run check."""
+from __future__ import annotations
+
+from datetime import date, datetime
+
+import pytest
+
+from agent.discord_bot import reports as R
+from agent.discord_bot import tools as T
+
+NOW = datetime(2026, 11, 17, 9, 40, tzinfo=T.ET)
+
+
+def fake_tools(monkeypatch, answers):
+    monkeypatch.setattr(R, "run_tool", lambda ctx, name, args: answers[name])
+
+
+@pytest.fixture
+def ctx(tmp_path):
+    return T.ToolContext(data_dir=tmp_path, now=lambda: NOW)
+
+
+def test_split_message_on_lines_and_hard_cuts():
+    assert R.split_message("") == []
+    assert R.split_message("short") == ["short"]
+    parts = R.split_message("a" * 1500 + "\n" + "b" * 1500)
+    assert parts == ["a" * 1500, "b" * 1500]
+    long = R.split_message("x" * 4500)
+    assert [len(p) for p in long] == [2000, 2000, 500]
+    assert all(len(p) <= 2000 for p in R.split_message(("word " * 900).strip()))
+
+
+ACCOUNT = {"facts": [], "data": {"equity": 100412.37, "day_change": 0.0041, "halted": False}}
+
+
+def test_open_report_with_orders_today(ctx, monkeypatch):
+    fake_tools(monkeypatch, {
+        "recent_trades": {"facts": [], "data": {"orders": [
+            {"day": "2026-11-17", "fact": "On Nov 17 Stan bought 52.31 SPY at $663.57 (filled)."},
+            {"day": "2026-11-13", "fact": "On Nov 13 Stan bought 1 QQQ at $600.00 (filled)."}]}},
+        "trading_log": {"facts": [], "data": {"notes": []}},
+        "account": ACCOUNT})
+    assert R.job_report(ctx, "open", 0) == (
+        "Trading run for Nov 17:\n"
+        "On Nov 17 Stan bought 52.31 SPY at $663.57 (filled).\n"
+        "Equity is $100,412.37, up 0.41% today. Paper money only.")
+
+
+def test_open_report_without_orders_uses_todays_notes(ctx, monkeypatch):
+    fake_tools(monkeypatch, {
+        "recent_trades": {"facts": ["No orders yet."], "data": {"orders": []}},
+        "trading_log": {"facts": [], "data": {"notes": [
+            {"day": "2026-11-17", "text": "Holdings are within 5% of the plan, so no trade is needed."},
+            {"day": "2026-11-16", "text": "old note"}]}},
+        "account": {"facts": [], "data": {"equity": 99000.0, "day_change": -0.01, "halted": True}}})
+    assert R.job_report(ctx, "open", 0) == (
+        "Trading run for Nov 17:\n"
+        "No orders today. Holdings are within 5% of the plan, so no trade is needed.\n"
+        "Trading is paused, so no orders go out until it's switched back on in the web app.\n"
+        "Equity is $99,000.00, down 1.00% today. Paper money only.")
+
+
+def test_open_report_when_alpaca_is_down(ctx, monkeypatch):
+    fake_tools(monkeypatch, {"recent_trades": {"error": "ConnectionError: down"},
+                             "trading_log": {"facts": [], "data": {"notes": []}},
+                             "account": {"error": "ConnectionError: down"}})
+    text = R.job_report(ctx, "open", 0)
+    assert "I couldn't read today's orders (ConnectionError: down)." in text
+    assert "I couldn't read the account (ConnectionError: down)." in text
+
+
+def test_study_report(ctx, monkeypatch):
+    fake_tools(monkeypatch, {
+        "study_report": {"facts": ["Last study term: Nov 17.", "Verdict: not ready yet."], "data": {}},
+        "lessons": {"facts": ["Strength: I do best after a sharp selloff."], "data": {}}})
+    assert R.job_report(ctx, "study", 0) == (
+        "School's out for today.\nLast study term: Nov 17.\nVerdict: not ready yet.\n"
+        "Newest lesson: Strength: I do best after a sharp selloff.")
+
+
+def test_failure_report_includes_the_log_tail(ctx):
+    (ctx.data_dir / "collect.log").write_text("==== Tue 11/17/2026  9:25:00.00 ====\nTraceback: boom\nExit code: 1\n")
+    text = R.job_report(ctx, "collect", 1)
+    assert text.startswith("Problem: the 0DTE data collector failed with exit code 1.")
+    assert "Traceback: boom" in text and "data/collect.log" in text
+
+
+def test_collect_success_sends_nothing(ctx):
+    assert R.job_report(ctx, "collect", 0) is None
+
+
+def test_unknown_job(ctx):
+    with pytest.raises(ValueError):
+        R.job_report(ctx, "dance", 0)
+
+
+def test_missed_run_message(tmp_path):
+    today = date(2026, 11, 17)
+    assert "hasn't run today" in R.missed_run_message("open", tmp_path, today)
+    (tmp_path / "open.log").write_text("==== Mon 11/16/2026  9:35:00.00 ====\nExit code: 0\n")
+    assert "the 9:35 AM trading run hasn't run today" in R.missed_run_message("open", tmp_path, today)
+    (tmp_path / "open.log").write_text("==== Tue 11/17/2026  9:35:00.00 ====\n")
+    assert R.missed_run_message("open", tmp_path, today) is None
