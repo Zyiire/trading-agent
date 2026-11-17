@@ -190,6 +190,7 @@ class AlpacaBroker:
             filled_qty=_f(o.filled_qty) or 0.0,
             filled_avg_price=_f(o.filled_avg_price),
             filled_at=o.filled_at,
+            submitted_at=getattr(o, "submitted_at", None),
         )
 
     def submit_open_order(self, symbol: str, qty: int, side: str, client_order_id: str) -> OrderInfo:
@@ -225,6 +226,11 @@ class AlpacaBroker:
             if "404" in str(err) or "not found" in str(err).lower():
                 return None
             raise
+
+    def recent_orders(self, limit: int = 20) -> list[OrderInfo]:
+        """Read-only: the account's latest orders of any status, newest first."""
+        orders = self._trading.get_orders(GetOrdersRequest(status=QueryOrderStatus.ALL, limit=int(limit)))
+        return [self._order_info(o) for o in orders]
 
     def cancel_open_orders(self) -> int:
         open_orders = self._trading.get_orders(GetOrdersRequest(status=QueryOrderStatus.OPEN))
