@@ -320,3 +320,14 @@ def test_store_upserts_and_drops_nan():
     assert len(rows) == 1 and rows[0][1] == 601
     store.save_bars("QQQ", [minute(1, v=float("nan"))], "x")
     assert store.bars("QQQ")[1][5] is None
+
+
+def test_levels_finds_a_snapshot_taken_late_at_night():
+    """A snapshot saved at 11 PM New York time still counts for that day, not the next one."""
+    store, cfg = ZeroStore(":memory:"), ZeroDteConfig()
+    late = datetime.combine(DAY, time(23, 0), tzinfo=B.ET)
+    collect.snapshot(store, FakeSources(), cfg, late)
+    view = collect.today_view(store, cfg, DAY)
+    assert view is not None and view["day"] == DAY and view["spot"] == 600.0
+    assert "No snapshot" not in collect.report(view, DAY)
+    assert collect.today_view(store, cfg, DAY + timedelta(days=1)) is None

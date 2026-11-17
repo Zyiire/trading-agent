@@ -72,7 +72,7 @@ def test_other_websites_cannot_change_anything(client):
 def test_demo_label_is_really_hidden_in_real_mode():
     """The pill's display style must not override the hidden attribute."""
     from agent.web import WEBAPP
-    html = (WEBAPP / "index.html").read_text()
+    html = (WEBAPP / "index.html").read_text(encoding="utf-8")
     assert "[hidden] { display: none !important; }" in html
 
 
