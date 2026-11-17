@@ -138,8 +138,10 @@ def discord_env(monkeypatch, ready=True):
 
 def test_notify_skips_without_settings(monkeypatch, capsys, ctx):
     discord_env(monkeypatch, ready=False)
-    assert N.main(["open", "0"], ctx=ctx, post=FakePost()) == 0
+    post = FakePost()
+    assert N.main(["open", "0"], ctx=ctx, post=post) == 0
     assert "Discord not set up, skipping report." in capsys.readouterr().out
+    assert post.calls == []
 
 
 def test_notify_sends_a_failure_and_survives_a_discord_error(monkeypatch, capsys, ctx):
@@ -162,6 +164,6 @@ def test_notify_collect_success_sends_nothing(monkeypatch, ctx):
 def test_bat_files_save_the_code_then_notify(bat, job):
     text = (ROOT / bat).read_text()
     assert 'set "CODE=%errorlevel%"' in text
-    assert f"echo Exit code: %CODE% >> data\{R.LOG_FILES[job]}" in text
-    assert f"%PY% -m agent.discord_bot.notify {job} %CODE% >> data\{R.LOG_FILES[job]} 2>&1" in text
+    assert f"echo Exit code: %CODE% >> data\\{R.LOG_FILES[job]}" in text
+    assert f"%PY% -m agent.discord_bot.notify {job} %CODE% >> data\\{R.LOG_FILES[job]} 2>&1" in text
     assert text.index('set "CODE=%errorlevel%"') < text.index("agent.discord_bot.notify")
