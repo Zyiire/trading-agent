@@ -37,14 +37,23 @@ his own after his scheduled jobs.
 
 ## Components
 
-A new package, `agent/discord/`, with four modules. Each can be tested on its own.
+A new package, `agent/discord_bot/`, with the modules below. Each can be tested on its own. The
+package isn't called `agent/discord/`, so that it can never be confused with the `discord`
+library itself.
 
 | Module | Purpose | Depends on |
 |---|---|---|
-| `tools.py` | Stan's read-only tools: plain functions that return small JSON-safe dictionaries | `Journal`, `PaperBook` and `paper.snapshot`, the broker's read methods, `zerodte.collect.today_view`, log files, Windows Task Scheduler (read only) |
+| `config.py` | Reads the new `.env` settings (table below) | `python-dotenv` |
+| `tools.py` | Stan's read-only tools: plain functions that return small JSON-safe dictionaries | `Journal`, `PaperBook`, the broker's read methods, `zerodte.collect.today_view` and `report`, log files, Windows Task Scheduler (read only) |
 | `brain.py` | Turns a message plus recent history into Stan's reply, using the local model with the tools | `tools.py`, Ollama's chat API at `OLLAMA_URL` (called with `httpx`), `persona.py` |
-| `bot.py` | Discord connection: owner check, typing indicator, reply splitting, missed-run checks | `brain.py`, `notify.py`, `discord.py` |
-| `notify.py` | `python -m agent.discord.notify <job> <exit code>`: sends one report through Discord's REST API, then exits | `tools.py`, `httpx` |
+| `reports.py` | Fixed-wording report text, splitting text into 2,000-character messages, and the missed-run check | `tools.py` |
+| `notify.py` | `python -m agent.discord_bot.notify <job> <exit code>`: sends one report through Discord's REST API, then exits | `reports.py`, `httpx` |
+| `bot.py` | Discord connection: owner check, typing indicator, reply splitting, missed-run checks | `brain.py`, `reports.py`, `discord.py` |
+
+One read-only method is added to the broker: `recent_orders(limit)` lists the account's latest
+Alpaca orders. The tier strategies trade only through Alpaca orders that are never written to
+Stan's `paper_trades` table, so without this method Stan couldn't say what he bought. `OrderInfo`
+gains an optional `submitted_at` field, so an order that hasn't filled yet still has a date.
 
 A shared `config` piece reads the new `.env` settings:
 
@@ -67,7 +76,7 @@ training code.
 | Tool | Returns | Built on |
 |---|---|---|
 | `account` | Equity, cash, day change, positions, selected tier, whether trading is paused and why | Broker `get_account` and `get_positions`, `PaperBook` meta |
-| `recent_trades` | The last N orders and trades with status, side, quantity and price | `PaperBook.trades()` |
+| `recent_trades` | The last N Alpaca orders with status, side, quantity and price | Broker `recent_orders` |
 | `trading_log` | Stan's notes from recent runs ("no trade needed...") | `PaperBook.logs()` |
 | `study_report` | Date of the last term, verdict, report card, comparison with simply holding | `Journal.meta()` and `Journal.thoughts()` |
 | `exams` | Year-by-year exam results | `Journal.exams()` |
@@ -167,7 +176,7 @@ both the log line and the report:
 %PY% -m agent.stan.paper >> data\open.log 2>&1
 set "CODE=%errorlevel%"
 echo Exit code: %CODE% >> data\open.log
-%PY% -m agent.discord.notify open %CODE% >> data\open.log 2>&1
+%PY% -m agent.discord_bot.notify open %CODE% >> data\open.log 2>&1
 ```
 
 This way the report carries the job's own result, not the result of a later command. If
@@ -195,7 +204,7 @@ opens the realtime Discord connection, so it works whether or not `bot.py` is ru
 ### Keeping the bot running
 
 - `run_discord.bat` uses the same Python lookup as the other `.bat` jobs. It runs
-  `python -m agent.discord.bot` in a loop: when the bot exits, it waits 30 seconds and starts it
+  `python -m agent.discord_bot.bot` in a loop: when the bot exits, it waits 30 seconds and starts it
   again. Output goes to `data\discord.log`.
 - A scheduled task, **Stan Discord**, starts `run_discord.bat` when Zy logs in. It is created with
   PowerShell (`Register-ScheduledTask`) so that it has no time limit (Windows otherwise stops tasks
@@ -248,7 +257,7 @@ access.
 | Area | Test |
 |---|---|
 | Tools | Each tool returns the expected fields from a temporary journal and paper book and a fake broker. |
-| Read-only guarantee | A test fails if `agent/discord/` imports order, pause, resume or training functions. |
+| Read-only guarantee | A test fails if `agent/discord_bot/` imports order, pause, resume or training functions. |
 | Brain | A fake Ollama endpoint returns scripted tool calls. Checks that the loop runs tools and returns the final text, stops at 8 tool calls, turns a tool error or an unknown tool into a failed tool result, and turns "Ollama not running" and "model not downloaded" into the right replies. |
 | Splitting | Long replies split into chunks of at most 2,000 characters, on line breaks where possible. |
 | Owner check | Messages from other users, from bots, or from other channels get no reply. |
@@ -257,7 +266,7 @@ access.
 
 Manual checks:
 
-- `python -m agent.discord.brain "how did today go?"` asks Stan one question from a terminal,
+- `python -m agent.discord_bot.brain "how did today go?"` asks Stan one question from a terminal,
   without Discord, using the real local model.
 - A short list of sample questions (account, today's trades, last report card, levels, "did
   everything run?") is asked once before going live, and each answer is checked against the
