@@ -220,7 +220,7 @@ Manual checks:
   everything run?") is asked once before going live, and each answer is checked against the
   data, to confirm the chosen model reads its tools correctly. If it doesn't, try another model
   with `STAN_MODEL`.
-- After setup, start the bot and send Stan a DM.
+- After setup, start the bot and write to Stan in his channel.
 
 ## Out of scope
 
