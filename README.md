@@ -22,6 +22,34 @@ paper trade at 9:35 AM every weekday, with no end date, using the same Python as
   strategy Stan ranks best, and that is what the next 9:35 AM run trades. Check the Classroom page.
   To stop it: `schtasks /Delete /TN "Stan nightly study" /F`
 
+## Talk to Stan on Discord
+
+Write to Stan in his Discord channel in plain English: "how did today go?", "what did you learn
+last night?", "what are the QQQ levels?", "did everything run?". He answers from his real data
+with a free AI model that runs on this PC (Ollama), and he posts a short report after the
+9:35 AM trade, after the 6 PM study term, and if a job fails or didn't run.
+
+He can only talk and report. Trading, pausing, changing tier and studying stay in the web app
+and the automatic schedule.
+
+One-time setup:
+
+1. Ollama: install it from https://ollama.com and run `ollama pull qwen3:14b` (about 9.3 GB).
+2. Discord Developer Portal (https://discord.com/developers/applications): **New Application**
+   "Stan" > **Bot** > **Reset Token** > copy it. On the same page, turn on **Message Content Intent**.
+3. **OAuth2** > **URL Generator**: tick **bot**, then **View Channels**, **Send Messages** and **Read
+   Message History**. Open the link and add Stan to your private server.
+4. In Discord: **User Settings** > **Advanced** > **Developer Mode** on. Right-click your name >
+   **Copy User ID**; right-click Stan's channel > **Copy Channel ID**.
+5. Put the three values in `.env`: `DISCORD_BOT_TOKEN`, `DISCORD_OWNER_ID`, `DISCORD_CHANNEL_ID`.
+6. Double-click `schedule_trading.bat` once more. It adds the **Stan Discord** task, which starts
+   the bot now and whenever you log in.
+
+- Stan answers only you, only in that channel.
+- Ask a question from a terminal without Discord: `python -m agent.discord_bot.brain "how did today go?"`
+- Faster but less careful brain: set `STAN_MODEL=qwen3:8b` in `.env`.
+- The bot's log is `data/discord.log`. To stop it for good: `schtasks /Delete /TN "Stan Discord" /F`
+
 ## Stan on your PC (the web app)
 
 Double-click `stan.bat` (or run `python -m agent.web`). Your browser opens http://127.0.0.1:8000.

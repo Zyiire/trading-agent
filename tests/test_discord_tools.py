@@ -78,9 +78,21 @@ def test_recent_trades_filled_and_waiting(ctx):
         OrderInfo("2", "QQQ", "sell", 3.0, "accepted", 0.0, None, None, t),
     ])
     r = T.recent_trades(ctx)
-    assert r["facts"] == ["On Nov 17 Stan bought 52.31 SPY at $663.57 (filled).",
-                          "On Nov 17 Stan placed an order to sell 3 QQQ; status: accepted."]
+    assert r["facts"] == ["On Nov 17 (today) Stan bought 52.31 SPY at $663.57 (filled).",
+                          "On Nov 17 (today) Stan placed an order to sell 3 QQQ; status: accepted."]
     assert r["data"]["orders"][0]["day"] == "2026-11-17"
+
+
+def test_recent_trades_labels_yesterday_and_leaves_older_days_plain(ctx):
+    t = datetime(2026, 11, 16, 14, 35, tzinfo=timezone.utc)
+    old = datetime(2026, 11, 10, 14, 35, tzinfo=timezone.utc)
+    ctx.broker_factory = lambda: FakeBroker(orders=[
+        OrderInfo("1", "SPY", "buy", 1.0, "filled", 1.0, 700.0, t, t),
+        OrderInfo("2", "SPY", "buy", 1.0, "filled", 1.0, 700.0, old, old),
+    ])
+    facts = T.recent_trades(ctx)["facts"]
+    assert facts[0].startswith("On Nov 16 (yesterday) Stan bought")
+    assert facts[1].startswith("On Nov 10 Stan bought")
 
 
 def test_recent_trades_when_there_are_none(ctx):

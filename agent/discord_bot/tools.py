@@ -38,6 +38,11 @@ def nice_day(d: date) -> str:
     return f"{d:%b} {d.day}"
 
 
+def _relative(d: date, today: date) -> str:
+    """' (today)' or ' (yesterday)' after a day, so the model can't call an older day 'today'."""
+    return {0: " (today)", 1: " (yesterday)"}.get((today - d).days, "")
+
+
 def clock_time(dt: datetime) -> str:
     if dt.tzinfo is not None:
         dt = dt.astimezone(ET)
@@ -163,7 +168,7 @@ def recent_trades(ctx: ToolContext, limit: int = 10) -> dict:
     for o in orders:
         when = o.filled_at or o.submitted_at
         d = when.astimezone(ET).date() if when else None
-        on = f"On {nice_day(d)}" if d else "On an unknown day"
+        on = f"On {nice_day(d)}{_relative(d, ctx.now().date())}" if d else "On an unknown day"
         if o.status == "filled":
             verb = "bought" if o.side == "buy" else "sold"
             fact = f"{on} Stan {verb} {qty(o.filled_qty)} {o.symbol} at {money(o.filled_avg_price)} (filled)."
@@ -382,7 +387,7 @@ TOOLS = [
          "high), and the latest plan. Use for 'what are you trading', 'why SPY', 'which tier'.", _params(), strategy),
     Tool("levels", "The QQQ 0DTE options levels for a day: price levels, GEX (gamma exposure), call and put walls, "
          "and the put/call table. Use for levels, GEX, walls, put/call, QQQ options questions.",
-         _params(day={"type": "string", "description": "A date like 2026-11-17 (optional, default today)."}), levels),
+         _params(day={"type": "string", "description": "A date like 2026-01-15. Leave it out for the latest saved day."}), levels),
     Tool("schedule", "Stan's automatic jobs: when each scheduled task last ran and runs next, and whether each "
          "job's last run finished OK. Use for 'did everything run', 'did you trade this morning', 'is school "
          "tonight', 'is something broken'.", _params(), schedule),
