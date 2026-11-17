@@ -15,6 +15,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Callable
 
+from agent.stan.journal import Journal
 from agent.stan.paper import PaperBook
 from agent.stan.zerodte.bars import ET
 
@@ -230,3 +231,93 @@ def schedule(ctx: ToolContext) -> dict:
             ok = "OK" if e.exit_code == 0 else "failed"
             facts.append(f"The {label} log was last written on {nice_day(e.day)}, exit code {e.exit_code} ({ok}).")
     return result(facts, {"tasks": tasks})
+
+
+def _journal_meta(ctx: ToolContext) -> dict:
+    j = Journal(ctx.journal_path)
+    try:
+        return j.meta()
+    finally:
+        j.close()
+
+
+def study_report(ctx: ToolContext) -> dict:
+    meta = _journal_meta(ctx)
+    s = meta.get("summary")
+    if not s:
+        return result(["Stan hasn't finished a study term yet."])
+    facts = []
+    run = str(meta.get("run_id", ""))
+    if re.match(r"\d{8}", run):
+        facts.append(f"Last study term: {nice_day(datetime.strptime(run[:8], '%Y%m%d').date())}.")
+    if meta.get("state") == "training":
+        facts.append("He is in class right now, so these are the results of the last finished term.")
+    if meta.get("mode") == "demo":
+        facts.append("These results come from made-up practice data, not real market history.")
+    stan, hold = s.get("stan_growth"), s.get("hold_growth")
+    if s.get("ready_for_paper"):
+        facts.append("Verdict: he passed school.")
+    elif stan is not None and hold is not None and hold > stan:
+        facts.append("Verdict: not ready yet, because simply holding beat him.")
+    else:
+        facts.append("Verdict: not ready yet.")
+    if stan is not None and hold is not None:
+        better = "Holding" if hold > stan else "Stan"
+        facts.append(f"$1 with Stan became {money(stan)}. $1 simply held became {money(hold)}. "
+                     f"{better} did better by {money(abs(hold - stan))}.")
+    if s.get("trades") is not None and s.get("win_rate") is not None:
+        facts.append(f"He won {s['win_rate'] * 100:.1f}% of {s['trades']:,} practice trades.")
+    if s.get("years_tested"):
+        facts.append(f"He passed {s.get('years_passed', 0)} of {s['years_tested']} yearly exams and beat simply "
+                     f"holding in {s.get('years_beat_hold', 0)} of them.")
+    if s.get("max_dd") is not None and s.get("hold_max_dd") is not None:
+        facts.append(f"His worst drop was {s['max_dd'] * 100:.1f}%; simply holding's worst drop was "
+                     f"{s['hold_max_dd'] * 100:.1f}%.")
+    facts.append("Real money stays locked until the go-live checks pass.")
+    return result(facts, {"summary": s, "state": meta.get("state"), "mode": meta.get("mode")})
+
+
+def exams(ctx: ToolContext, limit: int = 15) -> dict:
+    j = Journal(ctx.journal_path)
+    try:
+        rows = j.exams()[-max(1, min(int(limit), 20)):]
+    finally:
+        j.close()
+    if not rows:
+        return result(["Stan hasn't sat any yearly exams yet."], {"exams": []})
+    facts = [f"{e['year']}: {'passed' if e['passed'] else 'failed'}. Stan {e['stan_return'] * 100:+.1f}% vs simply "
+             f"holding {e['hold_return'] * 100:+.1f}%; {e['trades']:,} trades, won {e['win_rate'] * 100:.1f}%."
+             for e in rows]
+    return result(facts, {"exams": rows})
+
+
+def lessons(ctx: ToolContext, limit: int = 10) -> dict:
+    j = Journal(ctx.journal_path)
+    try:
+        rows = list(reversed(j.lessons()))[:max(1, min(int(limit), 20))]
+    finally:
+        j.close()
+    if not rows:
+        return result(["Stan hasn't written any lessons yet."], {"lessons": []})
+    facts = [f"{'Mistake' if r['kind'] == 'mistake' else 'Strength'}: {r['title']}. {r['text']}" for r in rows]
+    return result(facts, {"lessons": [{"kind": r["kind"], "title": r["title"]} for r in rows]})
+
+
+def strategy(ctx: ToolContext) -> dict:
+    book = PaperBook(ctx.journal_path)
+    try:
+        name, plan = book.get("strategy", "selloff"), book.get("tier_plan")
+    finally:
+        book.close()
+    facts = [f"The paper account trades {STRATEGY_NAMES.get(name, name)}."]
+    arena = _journal_meta(ctx).get("arena") or {}
+    by_key = {x.get("key"): x for x in arena.get("strategies", [])}
+    for tier in ("low", "medium", "high"):
+        w = by_key.get((arena.get("winners") or {}).get(tier))
+        if w and w.get("cagr") is not None and w.get("max_dd") is not None:
+            facts.append(f"Best {tier}-risk strategy: {w['name']}, {w['cagr'] * 100:.1f}% a year, "
+                         f"worst drop {w['max_dd'] * 100:.1f}%.")
+    if plan and plan.get("reason"):
+        day = f" ({nice_day(date.fromisoformat(plan['day']))})" if plan.get("day") else ""
+        facts.append(f"Latest plan{day}: {plan['reason']}.")
+    return result(facts, {"strategy": name, "tier_plan": plan})

@@ -134,3 +134,71 @@ def test_schedule_reports_tasks_and_logs(ctx, tmp_path):
 
 def test_schedule_with_no_tasks(ctx):
     assert "No Stan tasks are scheduled in Windows." in T.schedule(ctx)["facts"]
+
+
+from agent.stan.journal import Journal
+
+
+def seed_journal(path, state="finished", mode="real"):
+    j = Journal(path)
+    j.set_meta("run_id", "20261116-231341-818600")
+    j.set_meta("state", state)
+    j.set_meta("mode", mode)
+    j.set_meta("summary", {"stan_growth": 1.12, "hold_growth": 6.29, "trades": 8818, "win_rate": 0.575,
+                           "years_tested": 11, "years_passed": 9, "years_beat_hold": 2, "max_dd": -0.1784,
+                           "hold_max_dd": -0.3514, "ready_for_paper": False})
+    j.set_meta("arena", {"winners": {"low": "vt_s", "medium": "vt", "high": "lev"}, "strategies": [
+        {"key": "vt_s", "name": "Volatility target at 73% size", "cagr": 0.0972, "max_dd": -0.1844},
+        {"key": "vt", "name": "Volatility target", "cagr": 0.1248, "max_dd": -0.2459},
+        {"key": "lev", "name": "3x QQQ with a 200-day trend switch", "cagr": 0.3131, "max_dd": -0.6128}]})
+    j.record_exam({"year": 2016, "n_calls": 100, "accuracy": 0.52, "baseline_up": 0.53, "trades": 753,
+                   "win_rate": 0.5976, "profit_factor": 1.26, "stan_return": 0.0382, "hold_return": 0.2513,
+                   "passed": True, "beat_hold": False})
+    j.add_lesson("mistake", "I do worse when the stock is overbought", "Across 373 trades I won 53.3%.")
+    j.add_lesson("strength", "I do best after a sharp selloff", "Across 291 trades I won 69.4%.")
+    j.close()
+
+
+def test_study_report_facts(ctx):
+    seed_journal(ctx.journal_path)
+    facts = T.study_report(ctx)["facts"]
+    assert facts[0] == "Last study term: Nov 16."
+    assert "Verdict: not ready yet, because simply holding beat him." in facts
+    assert "$1 with Stan became $1.12. $1 simply held became $6.29. Holding did better by $5.17." in facts
+    assert "He won 57.5% of 8,818 practice trades." in facts
+    assert "He passed 9 of 11 yearly exams and beat simply holding in 2 of them." in facts
+    assert "His worst drop was -17.8%; simply holding's worst drop was -35.1%." in facts
+    assert "Real money stays locked until the go-live checks pass." in facts
+
+
+def test_study_report_while_in_class_and_in_demo_mode(ctx):
+    seed_journal(ctx.journal_path, state="training", mode="demo")
+    facts = T.study_report(ctx)["facts"]
+    assert "He is in class right now, so these are the results of the last finished term." in facts
+    assert "These results come from made-up practice data, not real market history." in facts
+
+
+def test_study_report_before_any_term(ctx):
+    assert T.study_report(ctx)["facts"] == ["Stan hasn't finished a study term yet."]
+
+
+def test_exams_and_lessons(ctx):
+    seed_journal(ctx.journal_path)
+    assert T.exams(ctx)["facts"] == [
+        "2016: passed. Stan +3.8% vs simply holding +25.1%; 753 trades, won 59.8%."]
+    assert T.lessons(ctx)["facts"] == [
+        "Strength: I do best after a sharp selloff. Across 291 trades I won 69.4%.",
+        "Mistake: I do worse when the stock is overbought. Across 373 trades I won 53.3%."]
+    assert len(T.lessons(ctx, limit=1)["facts"]) == 1
+
+
+def test_strategy_facts(ctx):
+    seed_journal(ctx.journal_path)
+    book = PaperBook(ctx.journal_path)
+    book.set("tier_plan", {"tier": "medium", "reason": "hold 100% SPY", "day": "2026-11-13"})
+    book.close()
+    facts = T.strategy(ctx)["facts"]
+    assert facts[0] == "The paper account trades the medium-risk tier."
+    assert "Best medium-risk strategy: Volatility target, 12.5% a year, worst drop -24.6%." in facts
+    assert "Best high-risk strategy: 3x QQQ with a 200-day trend switch, 31.3% a year, worst drop -61.3%." in facts
+    assert "Latest plan (Nov 13): hold 100% SPY." in facts
