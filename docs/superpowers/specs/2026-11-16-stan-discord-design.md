@@ -22,7 +22,7 @@ his own after his scheduled jobs.
 |---|---|
 | Where to chat | Discord: one channel (for example `#stan`) in Zy's private server. Stan doesn't use DMs |
 | What Stan may do | Talk and report only. No trading, pausing, tier changes or study runs from Discord |
-| AI model | Free and local: a tool-calling model in Ollama on Zy's GPU (RTX 3060, 12 GB). Default `qwen3:8b`, changeable with `STAN_MODEL`. No API key, no cost per message, nothing leaves the PC |
+| AI model | Free and local: a tool-calling model in Ollama on Zy's GPU (RTX 3060, 12 GB). Default `qwen3:14b`, changeable with `STAN_MODEL` (`qwen3:8b` is the faster fallback). No API key, no cost per message, nothing leaves the PC |
 | Proactive posts | Yes: after the 9:35 AM trade, after the 6 PM study term, when a job fails, and when a job did not run |
 | Architecture | A bot process on Zy's PC that reads Stan's data directly (approach A) |
 
@@ -53,7 +53,7 @@ A shared `config` piece reads the new `.env` settings:
 | `DISCORD_BOT_TOKEN` | Yes | none |
 | `DISCORD_OWNER_ID` | Yes | none |
 | `DISCORD_CHANNEL_ID` | Yes | none |
-| `STAN_MODEL` | No | `qwen3:8b` |
+| `STAN_MODEL` | No | `qwen3:14b` |
 | `OLLAMA_URL` | No | `http://127.0.0.1:11434` |
 | `STAN_THINK` | No | `false` |
 
@@ -113,7 +113,10 @@ and real money.
    - the tool definitions;
    - the last 20 messages of this conversation.
 
-   Request settings: model `STAN_MODEL`, `stream: false`, and at most 8 tool calls per reply.
+   Request settings: model `STAN_MODEL`, `stream: false`, a context window of 8,192 tokens
+   (`options.num_ctx`), and at most 8 tool calls per reply. Ollama's default window is 4,096
+   tokens, which ten tool definitions plus 20 messages can overflow, and Ollama then silently
+   drops the start of the conversation.
    After the 8th, Stan answers with what he has. Thinking mode is controlled by `STAN_THINK`
    (default off). In the 8B test, thinking off answered in 1 to 2 seconds. Thinking on took 5 to
    10 seconds and chose tools more reliably, but still made arithmetic mistakes, which the
@@ -211,8 +214,8 @@ The README gets step-by-step instructions:
    View Channels, Send Messages and Read Message History permissions.
 3. In Discord, turn on Developer Mode. Copy your user ID (right-click your name, then Copy User
    ID) and the channel's ID (right-click the channel, then Copy Channel ID).
-4. Download the model once: `ollama pull qwen3:8b` (about 5 GB). Ollama is already installed and
-   starts with Windows.
+4. Download the model once: `ollama pull qwen3:14b` (about 9.3 GB). This is already done on
+   Zy's PC, along with `qwen3:8b`. Ollama is already installed and starts with Windows.
 5. Add `DISCORD_BOT_TOKEN`, `DISCORD_OWNER_ID` and `DISCORD_CHANNEL_ID` to `.env`. The
    `.env.example` file gets all six new settings, with the three optional ones commented out.
 
@@ -221,9 +224,21 @@ dependency.
 
 ### Using the GPU
 
-The model takes about 6 GB of the RTX 3060's 12 GB while loaded. Ollama unloads it after about
-5 idle minutes, so the first answer after a quiet spell takes a few extra seconds while it loads
-again. Nothing else in Stan uses the GPU.
+`qwen3:14b` takes about 10 GB of the RTX 3060's 12 GB while loaded, or about 6 GB for `qwen3:8b`.
+Ollama unloads the model after about 5 idle minutes. The first answer after a quiet spell
+therefore waits while it loads again: about a minute for the 14B model in testing. While it
+loads, the bot shows "Stan is typing...". Nothing else in Stan uses the GPU.
+
+### Model comparison (2026-11-17, sample data, ready-made facts, thinking off)
+
+| | `qwen3:14b` (default) | `qwen3:8b` (fallback) |
+|---|---|---|
+| Correct answers | 7 of 7 | 7 of 7 |
+| Time per answer once loaded | 2 to 4.5 s | 1.5 to 2.5 s |
+| Tone | Plain about bad results | Correct, but sometimes rosy ("School went okay") |
+
+Seven questions on sample data is a small test. The check against real data before going live
+(see Testing) is what confirms the choice.
 
 ## Testing
 
