@@ -321,3 +321,89 @@ def strategy(ctx: ToolContext) -> dict:
         day = f" ({nice_day(date.fromisoformat(plan['day']))})" if plan.get("day") else ""
         facts.append(f"Latest plan{day}: {plan['reason']}.")
     return result(facts, {"strategy": name, "tier_plan": plan})
+
+
+def levels(ctx: ToolContext, day: str | None = None) -> dict:
+    from agent.stan.zerodte import collect
+    from agent.stan.zerodte.config import ZeroDteConfig
+    from agent.stan.zerodte.store import ZeroStore
+
+    cfg = ZeroDteConfig()
+    store = ZeroStore(ctx.zerodte_db)
+    try:
+        target = date.fromisoformat(day) if day else ctx.now().date()
+        view = collect.today_view(store, cfg, target)
+        if view is None and not day:
+            saved = sorted(store.snapshot_days(cfg.symbol))
+            if saved and date.fromisoformat(saved[-1]) != target:
+                target = date.fromisoformat(saved[-1])
+                view = collect.today_view(store, cfg, target)
+        if view is None:
+            return result([f"No QQQ options snapshot is saved for {nice_day(target)}."])
+        lines = [line.strip() for line in collect.report(view, target).splitlines() if line.strip()]
+        return result(lines[:25], {"day": target.isoformat()})
+    finally:
+        store.close()
+
+
+@dataclass(frozen=True)
+class Tool:
+    name: str
+    description: str
+    params: dict
+    func: Callable[..., dict]
+
+
+def _params(**props) -> dict:
+    return {"type": "object", "properties": props}
+
+
+LIMIT = {"type": "integer", "description": "How many to show (optional)."}
+
+TOOLS = [
+    Tool("account", "Right now in the paper account: equity, cash, today's change, what Stan holds (positions), "
+         "which risk tier it trades, and whether trading is paused. Use for money, balance, cash, holdings, "
+         "'how much do I have', 'how's the account', paused questions.", _params(), account),
+    Tool("recent_trades", "What Stan bought or sold recently: his latest orders with day, symbol, side, quantity, "
+         "price and status. Use for 'what did you buy', 'what did you sell', 'any trades today'.",
+         _params(limit=LIMIT), recent_trades),
+    Tool("trading_log", "Stan's own notes from his recent trading runs, including why he did or didn't trade. "
+         "Use for 'why didn't you trade', 'what happened this morning', 'what's the plan today'.",
+         _params(limit=LIMIT), trading_log),
+    Tool("study_report", "Stan's school: his last study term (he studies market history every evening). Verdict, "
+         "report card, practice-trade results and whether his strategy beats simply holding. Use for school, "
+         "studying, class, learning, report card, readiness, and real money questions.", _params(), study_report),
+    Tool("exams", "Stan's yearly exams from school: for each year, passed or failed, his return vs simply holding. "
+         "Use for 'how did you do in 2022', 'which years did you fail'.", _params(limit=LIMIT), exams),
+    Tool("lessons", "The lessons Stan wrote from his wins and losses (mistakes and strengths). Use for "
+         "'what have you learned', 'what are your weaknesses', 'what are you good at'.",
+         _params(limit=LIMIT), lessons),
+    Tool("strategy", "Which strategy the paper account trades, the best strategy in each risk tier (low, medium, "
+         "high), and the latest plan. Use for 'what are you trading', 'why SPY', 'which tier'.", _params(), strategy),
+    Tool("levels", "The QQQ 0DTE options levels for a day: price levels, GEX (gamma exposure), call and put walls, "
+         "and the put/call table. Use for levels, GEX, walls, put/call, QQQ options questions.",
+         _params(day={"type": "string", "description": "A date like 2026-11-17 (optional, default today)."}), levels),
+    Tool("schedule", "Stan's automatic jobs: when each scheduled task last ran and runs next, and whether each "
+         "job's last run finished OK. Use for 'did everything run', 'did you trade this morning', 'is school "
+         "tonight', 'is something broken'.", _params(), schedule),
+    Tool("market_clock", "Whether the stock market is open now, and when it next opens or closes. Use for "
+         "'is the market open', 'when does it open'.", _params(), market_clock),
+]
+BY_NAME = {t.name: t for t in TOOLS}
+
+
+def tool_specs() -> list[dict]:
+    return [{"type": "function", "function": {"name": t.name, "description": t.description, "parameters": t.params}}
+            for t in TOOLS]
+
+
+def run_tool(ctx: ToolContext, name: str, args: dict | None) -> dict:
+    tool = BY_NAME.get(name)
+    if tool is None:
+        return {"error": f"There is no tool called {name}."}
+    allowed = set(tool.params.get("properties", {}))
+    kwargs = {k: v for k, v in (args or {}).items() if k in allowed and v not in (None, "")}
+    try:
+        return tool.func(ctx, **kwargs)
+    except Exception as err:  # one bad data source must not break the whole answer
+        return {"error": f"{type(err).__name__}: {err}"}

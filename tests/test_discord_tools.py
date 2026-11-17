@@ -202,3 +202,57 @@ def test_strategy_facts(ctx):
     assert "Best medium-risk strategy: Volatility target, 12.5% a year, worst drop -24.6%." in facts
     assert "Best high-risk strategy: 3x QQQ with a 200-day trend switch, 31.3% a year, worst drop -61.3%." in facts
     assert "Latest plan (Nov 13): hold 100% SPY." in facts
+
+
+import ast
+
+from agent.discord_bot import brain as Bmod
+
+
+def test_levels_without_any_snapshot(ctx):
+    assert T.levels(ctx)["facts"] == ["No QQQ options snapshot is saved for Nov 17."]
+
+
+def test_levels_uses_the_latest_saved_day(ctx, monkeypatch):
+    from agent.stan.zerodte import collect
+
+    seen = []
+
+    def fake_view(store, cfg, day):
+        seen.append(day)
+        return {"day": day} if day == date(2026, 11, 16) else None
+
+    monkeypatch.setattr(collect, "today_view", fake_view)
+    monkeypatch.setattr(collect, "report", lambda view, day: "QQQ 661.63 at 2026-11-16 23:01 ET\n\nLevels:\n  660.00  below")
+    monkeypatch.setattr("agent.stan.zerodte.store.ZeroStore.snapshot_days", lambda self, sym: {"2026-11-16": 1})
+    r = T.levels(ctx)
+    assert seen == [date(2026, 11, 17), date(2026, 11, 16)]
+    assert r["facts"] == ["QQQ 661.63 at 2026-11-16 23:01 ET", "Levels:", "660.00  below"]
+
+
+def test_registry_specs_and_errors(ctx):
+    names = [s["function"]["name"] for s in T.tool_specs()]
+    assert names == ["account", "recent_trades", "trading_log", "study_report", "exams", "lessons", "strategy",
+                     "levels", "schedule", "market_clock"]
+    assert "school" in next(s for s in T.tool_specs() if s["function"]["name"] == "study_report")["function"]["description"]
+    assert T.run_tool(ctx, "place_order", {}) == {"error": "There is no tool called place_order."}
+    assert T.run_tool(ctx, "trading_log", {"limit": 1, "symbol": "SPY"})["facts"] == ["Nov 17: Buy 52.31 SPY (about $34,700)."]
+    ctx.broker_factory = lambda: (_ for _ in ()).throw(ConnectionError("Alpaca down"))
+    assert T.run_tool(ctx, "account", {}) == {"error": "ConnectionError: Alpaca down"}
+
+
+FORBIDDEN = {"submit_open_order", "submit_fractional_order", "cancel_open_orders", "safe_submit", "run_evening",
+             "run_tier", "sell_all", "set_strategy", "run_training", "record_equity", "add_trade", "set_meta",
+             "think", "set", "Popen", "train"}
+
+
+def test_discord_package_is_read_only():
+    pkg = Path(T.__file__).parent
+    for src in pkg.glob("*.py"):
+        tree = ast.parse(src.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Attribute):
+                assert node.attr not in FORBIDDEN, f"{src.name} uses .{node.attr}"
+            if isinstance(node, ast.ImportFrom):
+                assert node.module not in ("agent.stan.train", "agent.stan.tiers"), f"{src.name} imports {node.module}"
+                assert not {a.name for a in node.names} & FORBIDDEN, f"{src.name} imports a write function"
