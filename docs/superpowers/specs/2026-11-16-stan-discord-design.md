@@ -55,6 +55,7 @@ A shared `config` piece reads the new `.env` settings:
 | `DISCORD_CHANNEL_ID` | Yes | none |
 | `STAN_MODEL` | No | `qwen3:8b` |
 | `OLLAMA_URL` | No | `http://127.0.0.1:11434` |
+| `STAN_THINK` | No | `false` |
 
 Like the Alpaca keys, the bot token is never printed or logged.
 
@@ -79,6 +80,27 @@ training code.
 Tools take only simple arguments, such as a `limit` for list tools or a `day` for `levels`. Results
 are trimmed (for example, at most 20 trades) so one answer can't flood the model's context.
 
+### Tool results carry ready-made facts
+
+A test of `qwen3:8b` with sample data (2026-11-17) showed that a small local model gets numbers
+wrong when it has to compute or reword them. For example, it said holding "beat me by $6.29"
+when the gap was $5.17, and it leaked raw field names such as `dollar_held`. So every tool result
+has two parts:
+
+- `facts`: short plain-English sentences written by the tool, with every number already
+  computed and formatted. For example: "$1 with Stan became $1.12. $1 simply held became $6.29.
+  Holding did better by $5.17."
+- `data`: the numbers behind those sentences, for follow-up questions.
+
+The model is told to answer from `facts` and never to do arithmetic itself.
+
+### Tool descriptions use Stan's words
+
+The same test showed that the model picks tools by matching words. With plain descriptions, it
+didn't connect "school" to the study report. Each tool description therefore lists the words Zy
+is likely to use. For example, `study_report` mentions school, studying, report card, readiness
+and real money.
+
 ## How a conversation works
 
 1. Zy writes in Stan's channel. No @mention is needed. `bot.py` drops any message whose author ID
@@ -91,9 +113,11 @@ are trimmed (for example, at most 20 trades) so one answer can't flood the model
    - the tool definitions;
    - the last 20 messages of this conversation.
 
-   Request settings: model `STAN_MODEL`, `stream: false`, the model's thinking mode turned off
-   (`think: false`) for faster replies, and at most 8 tool calls per reply. After the 8th, Stan
-   answers with what he has.
+   Request settings: model `STAN_MODEL`, `stream: false`, and at most 8 tool calls per reply.
+   After the 8th, Stan answers with what he has. Thinking mode is controlled by `STAN_THINK`
+   (default off). In the 8B test, thinking off answered in 1 to 2 seconds. Thinking on took 5 to
+   10 seconds and chose tools more reliably, but still made arithmetic mistakes, which the
+   ready-made facts below are meant to prevent.
 
    A small local model is easier to confuse than a large hosted one, so tool results stay short:
    only the fields that answer the question, numbers already rounded, and dates in plain form.
@@ -107,8 +131,11 @@ are trimmed (for example, at most 20 trades) so one answer can't flood the model
 ### System prompt rules
 
 - You are Stan, using the name, goal, bio and principles from `persona.py`.
-- Only state numbers and facts that a tool returned in this conversation. If no tool covers the
-  question, say you don't know.
+- Always call the tools that answer the question before replying. Never say you will check
+  later. Any question about money, holdings, trades, school results or readiness for real money
+  needs at least one tool call.
+- Only state numbers and facts that a tool returned in this conversation, preferably word for
+  word from `facts`. Never do arithmetic. If no tool covers the question, say you don't know.
 - Keep replies short and in plain language. Use a short list only for several items.
 - Be honest when results are bad, as your journal is.
 - You can't trade, pause, change tier or start a study term from Discord. If asked, say so and
@@ -177,8 +204,9 @@ opens the realtime Discord connection, so it works whether or not `bot.py` is ru
 The README gets step-by-step instructions:
 
 1. In the Discord Developer Portal, create an application, add a bot, and copy its token. Turn
-   off **Public Bot**, and turn on **Message Content Intent**. Discord requires that intent for a
-   bot to read normal channel messages.
+   on **Message Content Intent**. Discord requires that intent for a bot to read normal channel
+   messages. Zy has chosen to leave **Public Bot** on. That's safe, because Stan only answers his
+   owner in his one channel, so any other server that adds him gets no replies and no data.
 2. Create a private server and a channel in it (for example `#stan`). Invite the bot with the
    View Channels, Send Messages and Read Message History permissions.
 3. In Discord, turn on Developer Mode. Copy your user ID (right-click your name, then Copy User
@@ -186,7 +214,7 @@ The README gets step-by-step instructions:
 4. Download the model once: `ollama pull qwen3:8b` (about 5 GB). Ollama is already installed and
    starts with Windows.
 5. Add `DISCORD_BOT_TOKEN`, `DISCORD_OWNER_ID` and `DISCORD_CHANNEL_ID` to `.env`. The
-   `.env.example` file gets all five new settings, with the two optional ones commented out.
+   `.env.example` file gets all six new settings, with the three optional ones commented out.
 
 `requirements.txt` gains `discord.py`. Ollama is called with `httpx`, which is already a
 dependency.
