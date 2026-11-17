@@ -2,11 +2,16 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from pathlib import Path
 
+import httpx
 import pytest
 
+from agent.discord_bot import notify as N
 from agent.discord_bot import reports as R
 from agent.discord_bot import tools as T
+
+ROOT = Path(__file__).resolve().parents[1]
 
 NOW = datetime(2026, 11, 17, 9, 40, tzinfo=T.ET)
 
@@ -101,3 +106,62 @@ def test_missed_run_message(tmp_path):
     assert "the 9:35 AM trading run hasn't run today" in R.missed_run_message("open", tmp_path, today)
     (tmp_path / "open.log").write_text("==== Tue 11/17/2026  9:35:00.00 ====\n")
     assert R.missed_run_message("open", tmp_path, today) is None
+
+
+class FakePost:
+    def __init__(self, status=200):
+        self.calls, self.status = [], status
+
+    def __call__(self, url, headers=None, json=None, timeout=None):
+        self.calls.append((url, headers, json))
+        return httpx.Response(self.status, json={}, request=httpx.Request("POST", url))
+
+
+def test_send_posts_each_chunk_without_pinging_anyone():
+    post = FakePost()
+    assert N.send("tok", 222, "a" * 2500, post=post) == 2
+    url, headers, body = post.calls[0]
+    assert url == "https://discord.com/api/v10/channels/222/messages"
+    assert headers["Authorization"] == "Bot tok" and headers["User-Agent"].startswith("DiscordBot (")
+    assert body["allowed_mentions"] == {"parse": []} and len(body["content"]) == 2000
+
+
+def discord_env(monkeypatch, ready=True):
+    for k in ("DISCORD_BOT_TOKEN", "DISCORD_OWNER_ID", "DISCORD_CHANNEL_ID"):
+        monkeypatch.delenv(k, raising=False)
+    if ready:
+        monkeypatch.setenv("DISCORD_BOT_TOKEN", "tok")
+        monkeypatch.setenv("DISCORD_OWNER_ID", "1")
+        monkeypatch.setenv("DISCORD_CHANNEL_ID", "222")
+    monkeypatch.setattr("agent.discord_bot.config.load_dotenv", None)
+
+
+def test_notify_skips_without_settings(monkeypatch, capsys, ctx):
+    discord_env(monkeypatch, ready=False)
+    assert N.main(["open", "0"], ctx=ctx, post=FakePost()) == 0
+    assert "Discord not set up, skipping report." in capsys.readouterr().out
+
+
+def test_notify_sends_a_failure_and_survives_a_discord_error(monkeypatch, capsys, ctx):
+    discord_env(monkeypatch)
+    ok = FakePost()
+    assert N.main(["collect", "1"], ctx=ctx, post=ok) == 0
+    assert ok.calls and "failed with exit code 1" in ok.calls[0][2]["content"]
+    assert N.main(["collect", "1"], ctx=ctx, post=FakePost(status=500)) == 0
+    assert "Couldn't send the Discord report" in capsys.readouterr().out
+
+
+def test_notify_collect_success_sends_nothing(monkeypatch, ctx):
+    discord_env(monkeypatch)
+    post = FakePost()
+    assert N.main(["collect", "0"], ctx=ctx, post=post) == 0 and post.calls == []
+
+
+@pytest.mark.parametrize("bat,job", [("run_open.bat", "open"), ("run_study.bat", "study"),
+                                     ("run_collect.bat", "collect")])
+def test_bat_files_save_the_code_then_notify(bat, job):
+    text = (ROOT / bat).read_text()
+    assert 'set "CODE=%errorlevel%"' in text
+    assert f"echo Exit code: %CODE% >> data\{R.LOG_FILES[job]}" in text
+    assert f"%PY% -m agent.discord_bot.notify {job} %CODE% >> data\{R.LOG_FILES[job]} 2>&1" in text
+    assert text.index('set "CODE=%errorlevel%"') < text.index("agent.discord_bot.notify")

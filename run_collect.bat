@@ -9,4 +9,6 @@ if not defined PY if exist data\python_path.txt set /p PY=<data\python_path.txt
 if not defined PY (where py >nul 2>&1 && set "PY=py -3")
 if not defined PY set "PY=python"
 %PY% -m agent.stan.zerodte.collect watch >> data\collect.log 2>&1
-echo Exit code: %errorlevel% >> data\collect.log
+set "CODE=%errorlevel%"
+echo Exit code: %CODE% >> data\collect.log
+%PY% -m agent.discord_bot.notify collect %CODE% >> data\collect.log 2>&1
