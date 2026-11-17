@@ -17,6 +17,10 @@ paper trade at 9:35 AM every weekday, with no end date, using the same Python as
 - To pause Stan, flip **Trading** off in the web app. The scheduled run then places no orders.
 - To remove the schedule: `schtasks /Delete /TN "Stan open run" /F`
 - Each run is logged in `data/open.log`, including which Python ran and its exit code.
+- It also schedules **Stan nightly study** at 6 PM every weekday (`run_study.bat`): a new school
+  term on real history, logged in `data/study.log`. It places no orders, but it can change which
+  strategy Stan ranks best, and that is what the next 9:35 AM run trades. Check the Classroom page.
+  To stop it: `schtasks /Delete /TN "Stan nightly study" /F`
 
 ## Stan on your PC (the web app)
 
