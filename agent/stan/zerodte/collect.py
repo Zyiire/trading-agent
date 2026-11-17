@@ -114,7 +114,10 @@ def snapshot(store: ZeroStore, src, cfg: ZeroDteConfig, now: datetime | None = N
 def today_view(store: ZeroStore, cfg: ZeroDteConfig, day: date) -> dict | None:
     """Levels, GEX and the put/call table from the latest snapshot saved on `day`."""
     start, end = B.day_bounds(day)
-    times = store.snapshot_times(cfg.symbol, start - 6 * 3600, end + 3600)
+    # Any snapshot saved on `day` in New York time counts, including one taken late at night.
+    midnight = datetime.combine(day, datetime.min.time(), tzinfo=B.ET)
+    next_midnight = datetime.combine(day + timedelta(days=1), datetime.min.time(), tzinfo=B.ET)
+    times = store.snapshot_times(cfg.symbol, int(midnight.timestamp()), int(next_midnight.timestamp()))
     if not times:
         return None
     ts = times[-1]
