@@ -99,3 +99,9 @@ def test_timeout():
 def test_system_prompt_has_persona_and_rules():
     p = B.system_prompt()
     assert "You are Stan" in p and "Never do arithmetic." in p and "stan.bat" in p
+
+
+def test_non_dict_arguments_do_not_break_the_loop():
+    fake = FakeOllama(reply_msg(tool_calls=[call("trading_log", "[1]")]), reply_msg("Done."))
+    assert B.Brain(T.ToolContext(), post=fake).reply([], "?") == "Done."
+    assert "tool" in [m["role"] for m in fake.payloads[1]["messages"]]

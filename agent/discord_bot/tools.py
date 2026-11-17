@@ -402,8 +402,9 @@ def run_tool(ctx: ToolContext, name: str, args: dict | None) -> dict:
     if tool is None:
         return {"error": f"There is no tool called {name}."}
     allowed = set(tool.params.get("properties", {}))
-    kwargs = {k: v for k, v in (args or {}).items() if k in allowed and v not in (None, "")}
     try:
+        given = args if isinstance(args, dict) else {}
+        kwargs = {k: v for k, v in given.items() if k in allowed and v not in (None, "")}
         return tool.func(ctx, **kwargs)
     except Exception as err:  # one bad data source must not break the whole answer
         return {"error": f"{type(err).__name__}: {err}"}

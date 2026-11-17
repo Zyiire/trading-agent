@@ -256,3 +256,8 @@ def test_discord_package_is_read_only():
             if isinstance(node, ast.ImportFrom):
                 assert node.module not in ("agent.stan.train", "agent.stan.tiers"), f"{src.name} imports {node.module}"
                 assert not {a.name for a in node.names} & FORBIDDEN, f"{src.name} imports a write function"
+
+
+@pytest.mark.parametrize("bad", [[1], "5", 5, "[1]"])
+def test_run_tool_tolerates_non_dict_arguments(ctx, bad):
+    assert "facts" in T.run_tool(ctx, "trading_log", bad)
