@@ -375,6 +375,10 @@ def _box_headline(exam: dict | None) -> str | None:
             f"averaging {h['avg_r']:+.3f}R a trade.")
 
 
+EXIT_WORDS = {"stop": "hit the stop", "target": "hit the 3R target", "time": "closed at 3:55",
+              "early": "closed the next morning"}
+
+
 def _box_today_fact(state: dict | None, today: date) -> tuple[str, dict]:
     """One sentence about the newest box_today record, marked (today)/(yesterday)."""
     if not state or not state.get("day"):
@@ -400,7 +404,7 @@ def _box_today_fact(state: dict | None, today: date) -> tuple[str, dict]:
             side = "long" if r.get("side") == "buy" else "short"
             rr = f" Result {r['r']:+.2f}R" if r.get("r") is not None else " Result"
             text = (f"On {on} the box trade was {side} {qty(r.get('qty') or 0)} QQQ from {money(r['entry'])} to "
-                    f"{money(r.get('exit'))} (exit: {r.get('reason')}).{rr}, {money(r.get('pnl'))}.{box}")
+                    f"{money(r.get('exit'))} ({EXIT_WORDS.get(r.get('reason'), r.get('reason'))}).{rr}, {money(r.get('pnl'))}.{box}")
     elif status in ("no_box", "no_signal", "blocked", "skipped", "failed"):
         text = f"On {on} Stan made no box trade: {reason}.{box}"
     else:

@@ -99,9 +99,9 @@ Stan re-runs this report card in his evening study term; ask him on Discord ("ho
     python -m agent.stan.box.data backfill
 
 **Two scheduled jobs** (created by `schedule_trading.bat`)
-- "Stan box run", 9:31 AM weekdays (`run_box.bat`): watches until 10:31 and sends one bracket order. Log: `dataox.log`.
+- "Stan box run", 9:31 AM weekdays (`run_box.bat`): watches until 10:31 and sends one bracket order. Log: `data\box.log`.
 - "Stan box flatten", 3:55 PM weekdays (`run_flatten.bat`): cancels what is left, closes the position and records the R.
-  Log: `datalatten.log`.
+  Log: `data\flatten.log`.
 
 If either job doesn't run, Stan tells you on Discord (9:45 AM and 4:05 PM checks).
 

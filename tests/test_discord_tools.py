@@ -333,7 +333,7 @@ def test_box_breakout_sent_closed_and_skipped_states(ctx):
             "reason": "stop"}
     box_ctx(ctx, {"day": "2026-11-16", "status": "closed", "order": order, "result": done}, [done])
     f = T.box_breakout(ctx)["facts"]
-    assert any("On Nov 16 (yesterday) the box trade was long 120 QQQ from $655.50 to $650.00 (exit: stop)" in x
+    assert any("On Nov 16 (yesterday) the box trade was long 120 QQQ from $655.50 to $650.00 (hit the stop)" in x
                and "-1.10R" in x for x in f)
     assert "Closed box trades so far: 1, totaling -1.10R." in f
     box_ctx(ctx, {"day": "2026-11-17", "status": "skipped", "reason": "half day"})
@@ -350,3 +350,21 @@ def test_strategy_names_box_and_adds_the_exam_headline(ctx):
                         "averaging +0.139R a trade.")
     box_ctx(ctx, exam=BOX_EXAM, strategy="medium")
     assert not any("Box breakout backtest" in f for f in T.strategy(ctx)["facts"])
+
+
+def test_box_breakout_more_states_and_exit_words(ctx):
+    base = {"day": "2026-11-17"}
+    box_ctx(ctx, {**base, "status": "flatten_failed", "reason": "no fill",
+                  "order": {"qty": 5, "side": "sell", "stop": 660.0, "target": 640.0}})
+    f = T.box_breakout(ctx)["facts"]
+    assert any("Stan shorted 5 QQQ" in x and "The 3:55 close ran into a problem: no fill." in x for x in f)
+    box_ctx(ctx, {**base, "status": "closed", "result": {"side": "buy", "qty": 0, "entry": None}})
+    assert "On Nov 17 (today) the box order never filled, so nothing was traded." in T.box_breakout(ctx)["facts"]
+    box_ctx(ctx, {**base, "status": "failed", "reason": "the order failed"})
+    assert "On Nov 17 (today) Stan made no box trade: the order failed." in T.box_breakout(ctx)["facts"]
+    box_ctx(ctx, {**base, "status": "blocked", "reason": "the trend is down"})
+    assert "On Nov 17 (today) Stan made no box trade: the trend is down." in T.box_breakout(ctx)["facts"]
+    for why, words in (("target", "hit the 3R target"), ("time", "closed at 3:55"), ("early", "closed the next morning")):
+        res = {"side": "buy", "qty": 1, "entry": 1.0, "exit": 2.0, "r": 1.0, "pnl": 1.0, "reason": why}
+        box_ctx(ctx, {**base, "status": "closed", "result": res})
+        assert any(f"({words})" in x for x in T.box_breakout(ctx)["facts"])
