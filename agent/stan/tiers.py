@@ -151,7 +151,9 @@ def run_tier(broker: Broker, book, history: dict[str, pd.DataFrame], tier: str, 
         book.set("tier_plan", {"tier": tier, "weights": p.weights, "reason": p.reason, "day": day})
 
 
-def sell_all(broker: Broker, day: str, say, dry_run: bool = False) -> None:
+def sell_all(broker: Broker, day: str, say, dry_run: bool = False) -> bool:
+    """Sell every tier holding. True if every sell was sent (or there was nothing to sell)."""
+    ok = True
     for pos in broker.get_positions():
         if pos.symbol in TIER_SYMBOLS and pos.qty > 0:
             oid = tier_order_id(pos.symbol, day, "sell")
@@ -160,8 +162,10 @@ def sell_all(broker: Broker, day: str, say, dry_run: bool = False) -> None:
                     broker.submit_fractional_order(pos.symbol, pos.qty, "sell", oid)
                 except Exception as err:
                     say("fail", f"Couldn't send the {pos.symbol} sell: {err}")
+                    ok = False
                     continue
             say("fail", f"Selling all {pos.qty:g} {pos.symbol} at the next open.")
+    return ok
 
 
 def now_et() -> datetime:

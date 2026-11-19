@@ -113,6 +113,8 @@ class OrderInfo:
     filled_at: datetime | None
     submitted_at: datetime | None = None
     order_type: str | None = None   # "market", "limit", "stop", ...
+    limit_price: float | None = None
+    stop_price: float | None = None
 
 
 class Broker(Protocol):
@@ -153,4 +155,4 @@ class Broker(Protocol):
 
     def cancel_orders(self, prefix: str) -> int: ...
 
-    def close_position(self, symbol: str, qty: float, client_order_id: str) -> OrderInfo | None: ...
+    def close_position(self, symbol: str, qty: float, side: str, client_order_id: str) -> OrderInfo: ...

@@ -122,7 +122,8 @@ def _flatten(ctx: ToolContext) -> str | None:
         return f"Box trade for {day}: still open after the flatten run; check the paper account."
     if not res.get("qty"):
         return f"Box trade for {day}: the entry order never filled, so there was nothing to close."
-    how = {"time": "closed at 3:55", "stop": "stopped out", "target": "hit the 3R target"}.get(res["reason"], "closed")
+    how = {"time": "closed at 3:55", "early": "closed early", "stop": "stopped out",
+           "target": "hit the 3R target"}.get(res["reason"], "closed")
     r = "" if res.get("r") is None else f"{res['r']:+.2f}R "
     return (f"Box trade for {day}: {'long' if res['side'] == 'buy' else 'short'} {res['qty']:g} QQQ from "
             f"${res['entry']:.2f}, {how} at ${res['exit']:.2f}: {r}({money(res.get('pnl'))}).\n"

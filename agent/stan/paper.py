@@ -304,9 +304,8 @@ def run_evening(broker: Broker, book: PaperBook, history: dict[str, pd.DataFrame
             say("thought", f"On the box breakout: {len(open_selloff)} selloff trade(s) finish first. "
                            "No new selloff trades.")
         if not book.get("box_tiers_sold"):
-            if any(p.symbol in tiers.TIER_SYMBOLS and p.qty > 0 for p in broker.get_positions()):
-                tiers.sell_all(broker, d, say, dry_run)
-            if not dry_run:
+            sold = tiers.sell_all(broker, d, say, dry_run)
+            if sold and not dry_run:            # a failed sell is retried at the next run
                 book.set("box_tiers_sold", d)
         if not dry_run:
             book.set("last_day", d)

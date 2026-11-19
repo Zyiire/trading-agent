@@ -207,6 +207,8 @@ class AlpacaBroker:
             filled_at=o.filled_at,
             submitted_at=getattr(o, "submitted_at", None),
             order_type=_enum_text(getattr(o, "order_type", None)) if getattr(o, "order_type", None) else None,
+            limit_price=_f(getattr(o, "limit_price", None)),
+            stop_price=_f(getattr(o, "stop_price", None)),
         )
 
     def submit_open_order(self, symbol: str, qty: int, side: str, client_order_id: str) -> OrderInfo:
@@ -295,22 +297,20 @@ class AlpacaBroker:
                     pass
         return count
 
-    def close_position(self, symbol: str, qty: float, client_order_id: str) -> OrderInfo | None:
-        """A day market order for `qty` shares the opposite way of the open position, with Stan's own
-        client id (so it can be found and cancelled). None if there is no position in `symbol`."""
+    def close_position(self, symbol: str, qty: float, side: str, client_order_id: str) -> OrderInfo:
+        """Close `qty` shares of one of Stan's trades: a day market order on `side` ("sell" closes a long,
+        "buy" covers a short), with Stan's own client id so it can be found and cancelled.
+
+        The side comes from the caller's trade, not from the account's net position: another of Stan's
+        trades may hold the same symbol the other way."""
         if not self._paper:
             raise RuntimeError("Live trading is locked.")
         if qty <= 0 or int(qty) != qty:
             raise ValueError("Closing needs a whole number of shares.")
-        try:
-            pos = self._trading.get_open_position(symbol)
-        except Exception as err:
-            if _not_found(err):
-                return None
-            raise
-        long = (_f(pos.qty) or 0.0) > 0
+        if side not in ("buy", "sell"):
+            raise ValueError(f"side must be buy or sell, not {side!r}")
         order = self._trading.submit_order(MarketOrderRequest(
-            symbol=symbol, qty=int(qty), side=OrderSide.SELL if long else OrderSide.BUY,
+            symbol=symbol, qty=int(qty), side=OrderSide.BUY if side == "buy" else OrderSide.SELL,
             time_in_force=TimeInForce.DAY, client_order_id=client_order_id,
         ))
         return self._order_info(order)

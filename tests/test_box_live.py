@@ -11,7 +11,7 @@ import pandas as pd
 import pytest
 
 from agent.broker.alpaca import AlpacaBroker
-from agent.broker.base import AccountInfo, OrderInfo, PositionInfo
+from agent.broker.base import AccountInfo, MarketClock, OrderInfo, PositionInfo
 from agent.config import Settings
 from agent.stan import paper as P
 from agent.stan.box import live as L
@@ -78,6 +78,13 @@ class FakeBroker:
         self.positions: dict[str, float] = {}
         self.mark = 0.0
         self.close_fills = True
+        self.close = time(16, 0)      # today's close; time(13, 0) on a half day
+        self.close_errors = 0         # close_position raises this many times first
+        self.on_close_error = None    # called on each such error (e.g. a leg fills meanwhile)
+
+    def get_clock(self):
+        when = datetime.combine(DAY, self.close, tzinfo=ET)
+        return MarketClock(when, True, when + timedelta(days=1), when)
 
     def get_account(self):
         return AccountInfo("a", "ACTIVE", self.paper, self.equity, self.equity, self.buying_power, None, None,
@@ -95,9 +102,9 @@ class FakeBroker:
             "symbol": symbol, "qty": qty, "side": side, "status": "accepted", "filled_qty": 0.0, "price": None,
             "type": "market",
             "legs": [{"cid": client_order_id + "-tp", "type": "limit", "side": exit_side, "qty": qty,
-                      "status": "held", "filled_qty": 0.0, "price": None},
+                      "status": "held", "filled_qty": 0.0, "price": None, "limit": round(target, 2)},
                      {"cid": client_order_id + "-sl", "type": "stop", "side": exit_side, "qty": qty,
-                      "status": "held", "filled_qty": 0.0, "price": None}]}
+                      "status": "held", "filled_qty": 0.0, "price": None, "stop": round(stop, 2)}]}
         return self.get_order(client_order_id)
 
     # test helpers
@@ -115,12 +122,12 @@ class FakeBroker:
                 leg.update(status="filled", filled_qty=float(leg["qty"]), price=price)
             else:
                 leg["status"] = "canceled"
-        self.positions[o["symbol"]] = 0
+        self.positions[o["symbol"]] -= o["qty"] if o["side"] == "buy" else -o["qty"]
 
     @staticmethod
     def _info(cid, o):
         return OrderInfo(cid, o.get("symbol", "QQQ"), o["side"], o["qty"], o["status"], o["filled_qty"], o["price"],
-                         None, order_type=o.get("type"))
+                         None, order_type=o.get("type"), limit_price=o.get("limit"), stop_price=o.get("stop"))
 
     def get_order(self, cid):
         o = self.orders.get(cid)
@@ -144,17 +151,18 @@ class FakeBroker:
                     n += 1
         return n
 
-    def close_position(self, symbol, qty, client_order_id):
-        held = self.positions.get(symbol, 0)
-        if not held:
-            return None
-        side = "sell" if held > 0 else "buy"
+    def close_position(self, symbol, qty, side, client_order_id):
+        if self.close_errors:
+            self.close_errors -= 1
+            if self.on_close_error:
+                self.on_close_error()
+            raise RuntimeError("insufficient qty available for order")
         self.closes.append((symbol, qty, side, client_order_id))
         o = {"symbol": symbol, "qty": qty, "side": side, "status": "accepted", "filled_qty": 0.0, "price": None,
              "type": "market"}
         if self.close_fills:
             o.update(status="filled", filled_qty=float(qty), price=self.mark)
-            self.positions[symbol] = held - qty if held > 0 else held + qty
+            self.positions[symbol] = self.positions.get(symbol, 0) + (qty if side == "buy" else -qty)
         self.orders[client_order_id] = o
         return self._info(client_order_id, o)
 
@@ -599,29 +607,31 @@ def test_cancel_orders_cancels_open_legs_with_the_prefix_only():
 
 def test_get_bracket_reads_the_legs():
     trading = FakeTrading()
+    trading.legs[0].limit_price, trading.legs[1].stop_price = "108", "100"
     parent, legs = alpaca(trading).get_bracket(CID)
     assert parent.filled_avg_price == 102.1 and parent.order_type == "market"
     assert [x.order_type for x in legs] == ["limit", "stop"]
+    assert legs[0].limit_price == 108.0 and legs[1].stop_price == 100.0 and parent.limit_price is None
     assert trading.by_id[0] == "P1" and trading.by_id[1].nested is True
     assert alpaca(trading).get_bracket("stan-box-nope") == (None, [])
 
 
-def test_close_position_sends_a_market_order_the_other_way():
+def test_close_position_sends_a_market_order_on_the_side_given():
     trading = FakeTrading()
-    o = alpaca(trading).close_position("QQQ", 500, CID + "-flat1")
+    o = alpaca(trading).close_position("QQQ", 500, "sell", CID + "-flat1")
     req = trading.submitted[0].to_request_fields()
     assert req["side"].value == "sell" and req["qty"] == 500 and req["client_order_id"] == CID + "-flat1"
     assert req["time_in_force"].value == "day" and o.client_order_id == CID + "-flat1"
-    assert alpaca(trading).close_position("SPY", 1, "stan-box-x") is None
-    trading.position.qty, trading.position.side = "-300", SimpleNamespace(value="short")
-    alpaca(trading).close_position("QQQ", 300, CID + "-flat2")
-    assert trading.submitted[-1].side.value == "buy"
+    alpaca(trading).close_position("QQQ", 300, "buy", CID + "-flat2")    # the account is net long: still buys
+    assert trading.submitted[-1].side.value == "buy" and trading.submitted[-1].qty == 300
+    with pytest.raises(ValueError):
+        alpaca(trading).close_position("QQQ", 1, "short", CID + "-flat3")
 
 
 @pytest.mark.parametrize("call", [
     lambda b: b.submit_bracket_order("QQQ", 1, "buy", 1.0, 2.0, CID),
     lambda b: b.cancel_orders("stan-box-"),
-    lambda b: b.close_position("QQQ", 1, CID + "-flat1"),
+    lambda b: b.close_position("QQQ", 1, "sell", CID + "-flat1"),
 ])
 def test_new_order_methods_refuse_a_live_account(call):
     trading = FakeTrading()
@@ -656,3 +666,132 @@ def test_cli_has_dry_run_for_both_commands():
     parser = L.build_parser()
     assert parser.parse_args(["watch", "--dry-run"]).dry_run
     assert parser.parse_args(["flatten", "--dry-run"]).dry_run
+
+
+# ---------------------------------------------------------------- fix round 1
+def test_half_day_is_skipped(book):
+    broker = FakeBroker()
+    broker.close = time(13, 0)
+    assert step(broker, book, at(9, 45, 5)) is True
+    assert broker.sent == []
+    state = book.get("box_today")
+    assert state["status"] == "skipped" and state["reason"].startswith("half day: the bracket would expire at the early close")
+
+
+def test_box_short_on_top_of_a_selloff_long_closes_by_buying_the_box_qty(book):
+    broker = FakeBroker()
+    assert step(broker, book, at(9, 45, 5), minutes=today("short"), hist=history("down")) is True
+    broker.positions["QQQ"] = 800.0                     # a selloff QQQ long of 800 ...
+    broker.fill_entry(CID, 99.0)                        # ... plus the box short of 500: net long 300
+    broker.mark = 98.0
+    state = L.flatten(broker, book, at(15, 55, 5), sleep=lambda s: None, log=lambda text: None)
+    assert broker.closes == [("QQQ", 500, "buy", CID + "-flat1")]
+    assert broker.positions["QQQ"] == 800.0 and state["status"] == "closed"
+
+
+def test_a_step_that_fails_once_is_retried_next_minute(book):
+    broker, minutes = FakeBroker(), today()
+    real, calls = broker.get_account, []
+
+    def flaky():
+        calls.append(1)
+        if len(calls) == 1:
+            raise ConnectionError("Alpaca hiccup")
+        return real()
+    broker.get_account = flaky
+    clock = iter([at(9, 45, 5), at(9, 46, 5), at(9, 47, 5)])
+    lines = []
+    state = L.watch(broker, book, rules.bars(history(), 15), lambda now: upto(minutes, now),
+                    clock=lambda: next(clock), sleep=lambda s: None, log=lines.append)
+    assert len(broker.sent) == 1 and state["status"] == "sent"
+    assert any("Alpaca hiccup" in x for x in lines)
+
+
+def test_watch_records_a_failure_if_it_never_decides(book):
+    broker = FakeBroker()
+    clock = iter([at(10, 31, 5)])
+
+    def down(now):
+        raise ConnectionError("no data")
+    state = L.watch(broker, book, rules.bars(history(), 15), down, clock=lambda: next(clock),
+                    sleep=lambda s: None, log=lambda text: None)
+    assert state["status"] == "failed" and "no data" in state["reason"] and broker.sent == []
+
+
+def test_restart_recovers_stop_target_and_risk_from_the_legs(book):
+    broker = FakeBroker()
+    assert step(broker, book, at(9, 45, 5)) is True
+    fresh = PaperBook(":memory:")
+    fresh.set("strategy", "box")
+    assert step(broker, fresh, at(9, 47, 5)) is True and len(broker.sent) == 1
+    order = fresh.get("box_today")["order"]
+    assert (order["stop"], order["target"], order["risk"]) == (100.0, 108.0, 2.0)
+    broker.fill_entry(CID, 102.1)
+    broker.mark = 104.1
+    state = L.flatten(broker, fresh, at(15, 55, 5), sleep=lambda s: None, log=lambda text: None)
+    assert state["result"]["r"] == pytest.approx(1.0)
+    assert L.weekly_r(fresh, DAY) == pytest.approx(1.0)
+
+
+def test_restart_keeps_a_record_that_knows_more(book):
+    broker = FakeBroker()
+    assert step(broker, book, at(9, 45, 5)) is True
+    state = {**book.get("box_today"), "status": "flatten_failed", "close_orders": [CID + "-flat1"]}
+    book.set("box_today", state)
+    assert step(broker, book, at(9, 50, 5)) is True
+    assert book.get("box_today") == state and len(broker.sent) == 1
+
+
+def test_close_retry_rereads_fills_so_it_never_over_closes(book):
+    broker = FakeBroker()
+    sent_book(broker, book)
+    broker.close_errors = 1
+    broker.on_close_error = lambda: broker.hit(CID, "stop", 99.9)   # the stop fills while the close is refused
+    state = L.flatten(broker, book, at(15, 55, 5), sleep=lambda s: None, log=lambda text: None)
+    assert broker.closes == [] and state["status"] == "closed" and state["result"]["reason"] == "stop"
+
+
+def test_next_morning_cleanup_is_not_reported_as_a_355_close(book):
+    broker = FakeBroker()
+    sent_book(broker, book)
+    broker.mark = 103.1
+    state = L.flatten(broker, book, at(9, 31, 5, d=DAY + timedelta(days=1)), sleep=lambda s: None,
+                      log=lambda text: None)
+    assert state["result"]["reason"] == "early" and "3:55" not in book.logs(1)[0]["text"]
+
+
+def test_tier_holdings_are_retried_if_a_sell_fails(book):
+    broker = TierFake()
+    broker.positions = {"SPY": 5.0}
+    real = broker.submit_fractional_order
+
+    def refuse(*a, **k):
+        raise RuntimeError("market closed")
+    broker.submit_fractional_order = refuse
+    evening(broker, book)
+    assert book.get("box_tiers_sold") is None
+    broker.submit_fractional_order = real
+    evening(broker, book, DAY + timedelta(days=1))
+    assert book.get("box_tiers_sold") == "2026-11-20" and len(broker.orders) == 1
+
+
+def test_trend_history_skips_the_top_up_for_a_missing_or_stale_db(tmp_path):
+    import sqlite3
+    from agent.stan.box import data
+    calls, start = [], at(9, 0)
+    fake_backfill = lambda client, db, log=None: calls.append(db) or 0
+    assert L.trend_history(None, tmp_path / "none.db", start, backfill=fake_backfill, log=lambda t: None).empty
+    stale = tmp_path / "stale.db"
+    with sqlite3.connect(stale) as db:
+        db.execute(data.SCHEMA)
+        db.execute("INSERT INTO bars_1m VALUES ('QQQ', ?, 1, 1, 1, 1, 1, 1, 'x')",
+                   (int(datetime(2026, 9, 1, 14, 0, tzinfo=timezone.utc).timestamp()),))
+    assert L.trend_history(None, stale, start, backfill=fake_backfill, log=lambda t: None).empty
+    assert calls == []
+    fresh = tmp_path / "fresh.db"
+    with sqlite3.connect(fresh) as db:
+        db.execute(data.SCHEMA)
+        db.execute("INSERT INTO bars_1m VALUES ('QQQ', ?, 1, 1, 1, 1, 1, 1, 'x')",
+                   (int(datetime(2026, 11, 18, 14, 0, tzinfo=timezone.utc).timestamp()),))
+    hist = L.trend_history(None, fresh, start, backfill=fake_backfill, log=lambda t: None)
+    assert calls == [fresh] and len(hist) == 1
