@@ -6,9 +6,12 @@ from datetime import date
 from pathlib import Path
 
 from agent.discord_bot.tools import ToolContext, last_log_entry, money, nice_day, run_tool
+from agent.stan.paper import PaperBook
 
-JOB_NAMES = {"open": "the 9:35 AM trading run", "study": "the 6 PM study term", "collect": "the 0DTE data collector"}
-LOG_FILES = {"open": "open.log", "study": "study.log", "collect": "collect.log"}
+JOB_NAMES = {"open": "the 9:35 AM trading run", "study": "the 6 PM study term", "collect": "the 0DTE data collector",
+             "box": "the 9:31 AM box breakout watch", "flatten": "the 3:55 PM box flatten"}
+LOG_FILES = {"open": "open.log", "study": "study.log", "collect": "collect.log", "box": "box.log",
+             "flatten": "flatten.log"}
 
 
 def split_message(text: str, limit: int = 2000) -> list[str]:
@@ -73,6 +76,60 @@ def _study(ctx: ToolContext) -> str:
     return "\n".join(lines)
 
 
+def _box_state(ctx: ToolContext) -> dict | None:
+    """Today's box breakout state from paper meta (read only)."""
+    book = PaperBook(ctx.journal_path)
+    try:
+        state = book.get("box_today")
+    finally:
+        book.close()
+    return state if state and state.get("day") == ctx.now().date().isoformat() else None
+
+
+def _box(ctx: ToolContext) -> str:
+    lines = [f"Box breakout for {nice_day(ctx.now().date())}:"]
+    state = _box_state(ctx)
+    if state is None:
+        return "\n".join(lines + ["No record of today's watch in the paper log."])
+    if state.get("box"):
+        hi, lo = state["box"]
+        lines.append(f"Box (9:00-9:30): high ${hi:.2f}, low ${lo:.2f}.")
+    order = state.get("order") or {}
+    if state.get("status") in ("sent", "closed", "flatten_failed") and order:
+        verb = "buy" if order.get("side") == "buy" else "short"
+        if order.get("stop") is not None:
+            risk = (order.get("risk") or 0) * (order.get("qty") or 0)
+            lines.append(f"Sent a bracket order to {verb} {order['qty']:g} QQQ at market: stop ${order['stop']:.2f}, "
+                         f"target ${order['target']:.2f} (3R), risking about {money(risk)}.")
+        else:
+            lines.append(f"Today's bracket order {order.get('id')} is with Alpaca.")
+    else:
+        lines.append(f"No trade today: {state.get('reason') or state.get('status')}.")
+    lines.append("Paper money only.")
+    return "\n".join(lines)
+
+
+def _flatten(ctx: ToolContext) -> str | None:
+    state = _box_state(ctx)
+    if state is None or not state.get("order"):
+        return None                    # no box trade today, nothing to say
+    day = nice_day(ctx.now().date())
+    if state.get("status") == "flatten_failed":
+        return (f"Problem: I couldn't close the box position for {day}: {state.get('reason')}. "
+                "It may still be open; check the paper account.")
+    res = state.get("result")
+    if state.get("status") != "closed" or not res:
+        return f"Box trade for {day}: still open after the flatten run; check the paper account."
+    if not res.get("qty"):
+        return f"Box trade for {day}: the entry order never filled, so there was nothing to close."
+    how = {"time": "closed at 3:55", "early": "closed early", "stop": "stopped out",
+           "target": "hit the 3R target"}.get(res["reason"], "closed")
+    r = "" if res.get("r") is None else f"{res['r']:+.2f}R "
+    return (f"Box trade for {day}: {'long' if res['side'] == 'buy' else 'short'} {res['qty']:g} QQQ from "
+            f"${res['entry']:.2f}, {how} at ${res['exit']:.2f}: {r}({money(res.get('pnl'))}).\n"
+            "Paper money only.")
+
+
 def job_report(ctx: ToolContext, job: str, code: int) -> str | None:
     if job not in JOB_NAMES:
         raise ValueError(f"unknown job {job}")
@@ -82,6 +139,10 @@ def job_report(ctx: ToolContext, job: str, code: int) -> str | None:
         return _open(ctx)
     if job == "study":
         return _study(ctx)
+    if job == "box":
+        return _box(ctx)
+    if job == "flatten":
+        return _flatten(ctx)
     return None
 
 

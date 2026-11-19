@@ -93,11 +93,12 @@ def fetch_alpaca(client, symbol: str, start: datetime, end: datetime, feed: str 
     return rows
 
 
-def fetch_yahoo(symbol: str) -> list[tuple]:
-    """The last ~7 days of 1-minute bars from Yahoo."""
+def fetch_yahoo(symbol: str, period: str = "7d", prepost: bool = False) -> list[tuple]:
+    """The last ~7 days (`period`) of 1-minute bars from Yahoo; `prepost` adds pre- and after-market minutes.
+    The newest row can be the current, unfinished minute."""
     import yfinance as yf
 
-    df = yf.download(symbol, period="7d", interval="1m", auto_adjust=False, progress=False, prepost=False)
+    df = yf.download(symbol, period=period, interval="1m", auto_adjust=False, progress=False, prepost=prepost)
     return frame_rows(df)
 
 

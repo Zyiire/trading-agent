@@ -189,7 +189,9 @@ def run_evening(broker: Broker, book: PaperBook, history: dict[str, pd.DataFrame
         book.set("started", d)
         strat = book.get("strategy", "selloff")
         rule = (f"the selloff bounce. Each trade gets {cfg.position_pct:.0%} of the account, up to "
-                f"{cfg.max_positions} at once." if strat == "selloff" else f"the {strat}-risk arena winner.")
+                f"{cfg.max_positions} at once." if strat == "selloff"
+                else "the box breakout on QQQ, risking 1% a trade." if strat == "box"
+                else f"the {strat}-risk arena winner.")
         say("milestone", f"Paper trading starts with ${account.equity:,.2f} of paper money. Rule: {rule} "
                          f"Kill switch at {cfg.kill_switch_drawdown:.0%} below the start.")
     start = book.get("start_equity", account.equity)
@@ -234,11 +236,21 @@ def run_evening(broker: Broker, book: PaperBook, history: dict[str, pd.DataFrame
                         + f". I'll sell the remaining {left} at the next open.")
 
     # 2. reconcile with Alpaca
-    held = {p.symbol: p.qty for p in broker.get_positions()}
+    from agent.stan.box import live as box_live   # late import: box.live imports this module
+    for _ in range(3):      # the box entry can fill between the two reads (the watch trades at 9:35 too)
+        box_qty = box_live.held_qty(broker, book)     # the box trade's QQQ isn't one of the selloff trades
+        held = {p.symbol: p.qty for p in broker.get_positions()}
+        if box_live.held_qty(broker, book) == box_qty:
+            break
+    if box_qty:
+        held[box_live.SYMBOL] = held.get(box_live.SYMBOL, 0) - box_qty
     mine: dict[str, float] = {}
     for t in book.trades(["open", "pending_exit"]):
         mine[t["symbol"]] = mine.get(t["symbol"], 0) + t["qty"]
-    mismatched = [s for s, q in mine.items() if abs(held.get(s, 0) - q) > 1e-6]
+    check = set(mine)
+    if book.get("strategy", "selloff") == "box":
+        check.add(box_live.SYMBOL)   # Alpaca's QQQ minus the box trade must be exactly the selloff trades' QQQ
+    mismatched = sorted(s for s in check if abs(held.get(s, 0) - mine.get(s, 0)) > 1e-6)
     if mismatched and not dry_run:
         book.set("halted", True)
         book.set("halt_reason", "My records don't match Alpaca for: " + ", ".join(mismatched))
@@ -249,14 +261,28 @@ def run_evening(broker: Broker, book: PaperBook, history: dict[str, pd.DataFrame
     if account.equity <= floor and not book.get("halted", False):
         if not dry_run:
             broker.cancel_open_orders()
-        tiers.sell_all(broker, d, say, dry_run)
+        tiers.sell_all(broker, d, say, dry_run, keep=mine)   # the selloff trades' shares are sold below
+        if box_qty:
+            try:
+                box_live.flatten(broker, book, now, dry_run=dry_run, log=lambda text: None)
+            except Exception as err:
+                say("fail", f"Couldn't close the box position: {type(err).__name__}: {err}")
         if not dry_run:
-            for t in book.trades(["open"]):
+            # pending_exit trades lost their exit orders to the cancel above, so they're sold here too
+            for t in book.trades(["open", "pending_exit"]):
+                qty = t["qty"]
+                if t["status"] == "pending_exit" and t.get("exit_order"):
+                    o = broker.get_order(t["exit_order"])
+                    qty = t["qty"] - int(o.filled_qty) if o is not None else qty
+                    if qty <= 0:
+                        continue      # step 1 records the fill at the next run
                 oid = order_id(t["symbol"], t["signal_date"], "sell" + d.replace("-", ""))
-                ok, err = safe_submit(broker, t["symbol"], t["qty"], "sell", oid)
+                if oid == t.get("exit_order"):
+                    oid += "k"        # today's exit order already used this id
+                ok, err = safe_submit(broker, t["symbol"], qty, "sell", oid)
                 if ok:
                     book.update(t["symbol"], t["signal_date"], status="pending_exit", exit_order=oid,
-                                exit_signal_date=d, exit_reason="kill switch")
+                                exit_signal_date=d, exit_reason="kill switch", qty=qty)
                 else:
                     say("fail", f"Couldn't send the kill-switch sell for {t['symbol']}: {err}")
             book.set("halted", True)
@@ -287,7 +313,21 @@ def run_evening(broker: Broker, book: PaperBook, history: dict[str, pd.DataFrame
     strategy = book.get("strategy", "selloff")
     open_selloff = book.trades(["pending_entry", "open", "pending_exit"])
 
-    # 5a. a tier strategy (once the selloff trades have closed)
+    # 5a. the box breakout trades during the day (agent.stan.box.live); this run only clears the tiers
+    if strategy == "box":
+        if open_selloff:
+            say("thought", f"On the box breakout: {len(open_selloff)} selloff trade(s) finish first. "
+                           "No new selloff trades.")
+        if not book.get("box_tiers_sold"):
+            sold = tiers.sell_all(broker, d, say, dry_run, keep=mine)   # not the shares selloff trades own
+            if sold and not dry_run:            # a failed sell is retried at the next run
+                book.set("box_tiers_sold", d)
+        if not dry_run:
+            book.set("last_day", d)
+        return {"day": d, "halted": False, "equity": account.equity, "start": start, "floor": floor,
+                "actions": actions, "strategy": strategy}
+
+    # 5b. a tier strategy (once the selloff trades have closed)
     if strategy in ("low", "medium", "high"):
         if open_selloff:
             say("thought", f"Switching to the {strategy}-risk strategy: waiting for {len(open_selloff)} selloff "
@@ -301,7 +341,7 @@ def run_evening(broker: Broker, book: PaperBook, history: dict[str, pd.DataFrame
         return {"day": d, "halted": False, "equity": account.equity, "start": start, "floor": floor,
                 "actions": actions, "strategy": strategy}
 
-    # 5b. selloff entries
+    # 5c. selloff entries
     if book.get("last_entries_day") != d:
         active = book.trades(["pending_entry", "open", "pending_exit"])
         busy = {t["symbol"] for t in active}
@@ -394,7 +434,7 @@ def _low_fraction_from_arena(journal_path: str) -> float | None:
 
 def set_strategy(book: PaperBook, journal_path: str, name: str) -> str:
     """Choose what the paper account trades from the next run on. Returns a one-line confirmation."""
-    if name not in ("selloff", "low", "medium", "high"):
+    if name not in ("selloff", "low", "medium", "high", "box"):
         raise ValueError(f"unknown strategy {name}")
     frac = tiers.DEFAULT_LOW_FRACTION
     if name == "low":
@@ -405,6 +445,8 @@ def set_strategy(book: PaperBook, journal_path: str, name: str) -> str:
         return f"Paper account is already on: {name}."
     book.set("strategy", name)
     book.set("tier_orders_day", None)   # a new choice may trade the same evening
+    if name == "box":
+        book.set("box_tiers_sold", None)   # the next run sells the tier holdings, once
     book.log(datetime.now(ET).date().isoformat(), "milestone",
              f"Zy switched the paper account from {old} to {name}" + (f" ({frac:.0%} size)" if name == "low" else "") + ".")
     return (f"Paper account set to: {name}" + (f" (low risk at {frac:.0%} size)" if name == "low" else "")
@@ -422,7 +464,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--dry-run", action="store_true", help="show what Stan would do; send no orders")
     parser.add_argument("--status", action="store_true", help="print the paper account and Stan's positions")
     parser.add_argument("--resume", action="store_true", help="restart after the kill switch or a mismatch")
-    parser.add_argument("--use", choices=["selloff", "low", "medium", "high"],
+    parser.add_argument("--use", choices=["selloff", "low", "medium", "high", "box"],
                         help="choose what the paper account trades from now on (your call)")
     args = parser.parse_args(argv)
 

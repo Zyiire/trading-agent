@@ -112,10 +112,13 @@ class OrderInfo:
     filled_avg_price: float | None
     filled_at: datetime | None
     submitted_at: datetime | None = None
+    order_type: str | None = None   # "market", "limit", "stop", ...
+    limit_price: float | None = None
+    stop_price: float | None = None
 
 
 class Broker(Protocol):
-    """Reads plus paper-only market-on-open orders (used by agent.stan.paper)."""
+    """Reads plus paper-only orders (used by agent.stan.paper and agent.stan.box.live)."""
 
     def get_account(self) -> AccountInfo: ...
 
@@ -143,3 +146,13 @@ class Broker(Protocol):
     def recent_orders(self, limit: int = 20) -> list[OrderInfo]: ...
 
     def cancel_open_orders(self) -> int: ...
+
+    # Box breakout (agent.stan.box.live): paper-only bracket orders on whole shares.
+    def submit_bracket_order(self, symbol: str, qty: int, side: str, stop: float, target: float,
+                             client_order_id: str) -> OrderInfo: ...
+
+    def get_bracket(self, client_order_id: str) -> tuple[OrderInfo | None, list[OrderInfo]]: ...
+
+    def cancel_orders(self, prefix: str) -> int: ...
+
+    def close_position(self, symbol: str, qty: float, side: str, client_order_id: str) -> OrderInfo: ...

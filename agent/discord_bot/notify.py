@@ -37,7 +37,7 @@ def main(argv: list[str] | None = None, ctx: ToolContext | None = None, post=Non
     try:
         args = parser.parse_args(argv)
     except SystemExit:
-        print("Couldn't send the Discord report: bad arguments (usage: notify open|study|collect EXITCODE).")
+        print("Couldn't send the Discord report: bad arguments (usage: notify open|study|collect|box|flatten EXITCODE).")
         return 0
     try:
         settings = load_chat_settings(require_discord=False)

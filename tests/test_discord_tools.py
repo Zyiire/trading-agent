@@ -253,7 +253,15 @@ def test_levels_uses_the_latest_saved_day(ctx, monkeypatch):
 def test_registry_specs_and_errors(ctx):
     names = [s["function"]["name"] for s in T.tool_specs()]
     assert names == ["account", "recent_trades", "trading_log", "study_report", "exams", "lessons", "strategy",
-                     "levels", "schedule", "market_clock"]
+                     "box_breakout", "levels", "schedule", "market_clock"]
+    assert len(names) == 11
+    desc = next(s for s in T.tool_specs() if s["function"]["name"] == "box_breakout")["function"]["description"]
+    assert all(w in desc for w in ("box", "breakout", "opening range", "QQQ trade today", "box backtest", "how did the box do",
+                                   "losing years", "which years", "costs", "fees", "double costs", "vs holding QQQ",
+                                   "better than holding", "box report card", "video"))
+    for name in ("study_report", "exams"):
+        d = next(s for s in T.tool_specs() if s["function"]["name"] == name)["function"]["description"]
+        assert "all-round study model" in d and "NOT the box breakout" in d
     assert "school" in next(s for s in T.tool_specs() if s["function"]["name"] == "study_report")["function"]["description"]
     assert T.run_tool(ctx, "place_order", {}) == {"error": "There is no tool called place_order."}
     assert T.run_tool(ctx, "trading_log", {"limit": 1, "symbol": "SPY"})["facts"] == ["Nov 17: Buy 52.31 SPY (about $34,700)."]
@@ -281,3 +289,108 @@ def test_discord_package_is_read_only():
 @pytest.mark.parametrize("bad", [[1], "5", 5, "[1]"])
 def test_run_tool_tolerates_non_dict_arguments(ctx, bad):
     assert "facts" in T.run_tool(ctx, "trading_log", bad)
+
+
+# ---------------------------------------------------------------- box breakout
+BOX_EXAM = {"span": [2016, 2026], "headline": {"trades": 1327, "win_rate": 0.362, "avg_r": 0.139},
+            "facts": ["I replayed the video's box breakout on QQQ.", "So the rules still paid on QQQ."]}
+
+
+def box_ctx(ctx, state=None, results=None, exam=None, strategy="box"):
+    book = PaperBook(ctx.journal_path)
+    book.set("strategy", strategy)
+    if state is not None:
+        book.set("box_today", state)
+    if results is not None:
+        book.set("box_results", results)
+    book.log("2026-11-17", "thought", "Box breakout: no trade today, nothing closed outside the box.")
+    book.close()
+    if exam is not None:
+        j = Journal(ctx.journal_path)
+        j.set_meta("box_exam", exam)
+        j.close()
+    return ctx
+
+
+def test_box_breakout_without_any_data(ctx):
+    box_ctx(ctx, strategy="medium")
+    facts = T.box_breakout(ctx)["facts"]
+    assert "No box trade has been recorded yet." in facts
+    assert any("hasn't run the box backtest" in f for f in facts)
+    assert any(f.startswith("Note from Nov 17 (today): Box breakout") for f in facts)
+    assert any("trades medium" in f or "medium-risk tier" in f for f in facts)   # not on the box right now
+
+
+def test_box_breakout_exam_facts_present(ctx):
+    box_ctx(ctx, exam=BOX_EXAM)
+    facts = T.box_breakout(ctx)["facts"]
+    assert "I replayed the video's box breakout on QQQ." in facts
+    assert not any("hasn't run the box backtest" in f for f in facts)
+
+
+def test_box_breakout_sent_closed_and_skipped_states(ctx):
+    order = {"id": "stan-box-20261117", "qty": 120, "side": "buy", "stop": 650.0, "target": 665.0, "risk": 5.0}
+    box_ctx(ctx, {"day": "2026-11-17", "status": "sent", "reason": "r", "box": [655.0, 650.0], "order": order})
+    f = T.box_breakout(ctx)["facts"]
+    assert any(x.startswith("On Nov 17 (today) Stan sent a bracket order to buy 120 QQQ") and "stop $650.00" in x
+               and "target $665.00" in x and "The box was $655.00 high to $650.00 low." in x
+               and "closes by 3:55 PM" in x for x in f)
+    assert not any("Stan bought" in x for x in f)
+    box_ctx(ctx, {"day": "2026-11-16", "status": "sent", "reason": "r", "order": order})      # yesterday's
+    f = T.box_breakout(ctx)["facts"]
+    line = next(x for x in f if x.startswith("On Nov 16 (yesterday) Stan sent a bracket order to buy 120 QQQ"))
+    assert "closes by 3:55 PM" not in line and "hasn't been recorded yet" in line
+    done = {"day": "2026-11-16", "side": "buy", "qty": 120, "entry": 655.5, "exit": 650.0, "r": -1.1, "pnl": -660.0,
+            "reason": "stop"}
+    box_ctx(ctx, {"day": "2026-11-16", "status": "closed", "order": order, "result": done}, [done])
+    f = T.box_breakout(ctx)["facts"]
+    assert any("On Nov 16 (yesterday) the box trade was long 120 QQQ from $655.50 to $650.00 (hit the stop)" in x
+               and "-1.10R" in x for x in f)
+    assert "Closed box trades so far: 1, totaling -1.10R." in f
+    box_ctx(ctx, {"day": "2026-11-17", "status": "skipped", "reason": "half day"})
+    assert "On Nov 17 (today) Stan made no box trade: half day." in T.box_breakout(ctx)["facts"]
+    box_ctx(ctx, {"day": "2026-11-17", "status": "no_box", "reason": "the box is incomplete"})
+    assert any("no box trade: the box is incomplete" in x for x in T.box_breakout(ctx)["facts"])
+
+
+def test_strategy_names_box_and_adds_the_exam_headline(ctx):
+    box_ctx(ctx, exam=BOX_EXAM)
+    facts = T.strategy(ctx)["facts"]
+    assert facts[0] == "The paper account trades the box breakout on QQQ."
+    assert facts[1] == ("Box breakout backtest on QQQ from 2016 to 2026: 1,327 trades, won 36.2%, "
+                        "averaging +0.139R a trade.")
+    box_ctx(ctx, exam=BOX_EXAM, strategy="medium")
+    assert not any("Box breakout backtest" in f for f in T.strategy(ctx)["facts"])
+
+
+def test_box_breakout_more_states_and_exit_words(ctx):
+    base = {"day": "2026-11-17"}
+    box_ctx(ctx, {**base, "status": "flatten_failed", "reason": "no fill",
+                  "order": {"qty": 5, "side": "sell", "stop": 660.0, "target": 640.0}})
+    f = T.box_breakout(ctx)["facts"]
+    assert any("Stan sent a bracket order to sell short 5 QQQ" in x and "The 3:55 close ran into a problem: no fill."
+               in x and "no stop" in x for x in f)
+    box_ctx(ctx, {**base, "status": "closed", "result": {"side": "buy", "qty": 0, "entry": None}})
+    assert "On Nov 17 (today) the box order never filled, so nothing was traded." in T.box_breakout(ctx)["facts"]
+    box_ctx(ctx, {**base, "status": "failed", "reason": "the order failed"})
+    assert "On Nov 17 (today) Stan made no box trade: the order failed." in T.box_breakout(ctx)["facts"]
+    box_ctx(ctx, {**base, "status": "blocked", "reason": "the trend is down"})
+    assert "On Nov 17 (today) Stan made no box trade: the trend is down." in T.box_breakout(ctx)["facts"]
+    for why, words in (("target", "hit the 3R target"), ("time", "closed at 3:55"), ("early", "closed early (kill switch or next-morning cleanup)")):
+        res = {"side": "buy", "qty": 1, "entry": 1.0, "exit": 2.0, "r": 1.0, "pnl": 1.0, "reason": why}
+        box_ctx(ctx, {**base, "status": "closed", "result": res})
+        assert any(f"({words})" in x for x in T.box_breakout(ctx)["facts"])
+
+
+def test_box_breakout_rebuilds_self_contained_facts_from_a_full_saved_exam(ctx):
+    from agent.stan.box import exam as E
+    from tests.test_box_exam import synthetic
+    full = E.box_exam(synthetic())
+    full["by_year"] = [{"year": 2017, "avg_r": -0.1}, {"year": 2018, "avg_r": 0.2}, {"year": 2020, "avg_r": -0.1}]
+    full["facts"] = ["an old saved sentence."]
+    box_ctx(ctx, exam=full)
+    facts = T.box_breakout(ctx)["facts"]
+    assert "The box breakout lost money in 2017 and 2020; every other year was positive (1 of 3 years from 2024 to 2024)." in facts
+    assert any(f.startswith("Versus simply holding QQQ:") for f in facts)
+    assert any(f.startswith("If costs (fees and slippage) double") for f in facts)
+    assert "an old saved sentence." not in facts

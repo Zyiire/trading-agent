@@ -71,6 +71,44 @@ Double-click `stan.bat` (or run `python -m agent.web`). Your browser opens http:
   devices can look but not change anything: the trade buttons and switches are hidden there.
 - Paper account only. Stan's portrait is `agent/webapp/stan.png`; replace that file to change it.
 
+## Box breakout (Stan's main strategy)
+
+The paper account trades the opening-range "box breakout" from a video, on QQQ.
+
+**The rules, in plain words** (all times New York)
+- The box is the highest high and lowest low of QQQ from 9:00 to 9:30 (six 5-minute bars; all six must exist).
+- Between 9:30 and 10:30, the first 5-minute bar that closes above the box is a long entry, and the first that
+  closes below it is a short. The entry is at that bar's close, as a market order.
+- The stop is the opposite side of the box. The distance from entry to stop is 1R. The target is 3R.
+- A trend filter allows longs only when the 15-minute EMA(50) is above EMA(200), and shorts only when below.
+- Anything still open is closed at 3:55 PM. One trade a day; no trade if nothing breaks out by 10:30.
+- Half days are skipped (the bracket order would expire at the early close). News days are traded.
+
+**Sizing:** 1R is 1% of the account's equity, in whole shares. If that many shares would cost more than 95% of buying
+power (a narrow box), Stan buys the most whole shares that fit, so that trade risks less than 1%. He skips the trade if
+that is under one share, after a loss of 3R in the same Monday-to-Friday week, or while trading is paused.
+The 20% kill switch still applies.
+
+**The 10-year backtest against the video** (QQQ 1-minute bars, 2016 to 2026): with the trend filter, 1,327 trades, 36.2% wins,
++0.139R a trade, profit factor 1.21, worst drop -32.9R, total +184R. The video claimed 1,371 trades, 37.3% wins, +0.17R, profit
+factor 1.23 to 1.26, worst drop -26R and +232R on NQ. So the rules still paid on QQQ, but a bit less per trade, and 9 of
+11 years were positive. At 1% risk, $1 became $5.27 (worst drop -29.3%) against $5.97 for just holding QQQ (worst drop -35.7%).
+Stan re-runs this report card in his evening study term; ask him on Discord ("how did the box do?").
+
+**Before the first day:** download the minute history once (resumable, takes a while):
+
+    python -m agent.stan.box.data backfill
+
+**Two scheduled jobs** (created by `schedule_trading.bat`)
+- "Stan box run", 9:31 AM weekdays (`run_box.bat`): watches until 10:31 and sends one bracket order. Log: `data\box.log`.
+- "Stan box flatten", 3:55 PM weekdays (`run_flatten.bat`): cancels what is left, closes the position and records the R.
+  Log: `data\flatten.log`.
+
+If either job doesn't run, Stan tells you on Discord (9:45 AM and 4:05 PM checks).
+
+**Switching back to the risk tiers:** `python -m agent.stan.paper --use medium` (or `low`, `high`, `selloff`), or click
+a card in the web app's Paper account picker. Switching to `box` sells any tier holdings once on the next 9:35 run.
+
 ## Watch Stan study (start here)
 
 Do the Python setup in the next section first (the Alpaca keys are only needed for the Alpaca commands, not for Stan's school).

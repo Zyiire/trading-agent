@@ -173,3 +173,58 @@ def test_notify_bad_arguments_exit_zero(capsys):
     assert N.main(["bogus", "x"]) == 0
     assert "bad arguments" in capsys.readouterr().out
     assert N.main([]) == 0
+
+
+# ---------------------------------------------------------------- the box breakout jobs
+def box_ctx(tmp_path, state=None, results=None):
+    from agent.stan.paper import PaperBook
+    journal = tmp_path / "stan.db"
+    book = PaperBook(journal)
+    if state is not None:
+        book.set("box_today", state)
+    if results is not None:
+        book.set("box_results", results)
+    book.close()
+    return T.ToolContext(journal_path=str(journal), data_dir=tmp_path, now=lambda: NOW)
+
+
+SENT = {"day": "2026-11-17", "status": "sent", "reason": "the 09:40 bar closed at $102.00, above the high of the box",
+        "box": [101.0, 100.0],
+        "order": {"id": "stan-box-20261117", "qty": 500, "side": "buy", "stop": 100.0, "target": 108.0, "risk": 2.0}}
+
+
+def test_box_report_when_the_order_went_out(tmp_path):
+    assert R.job_report(box_ctx(tmp_path, SENT), "box", 0) == (
+        "Box breakout for Nov 17:\n"
+        "Box (9:00-9:30): high $101.00, low $100.00.\n"
+        "Sent a bracket order to buy 500 QQQ at market: stop $100.00, target $108.00 (3R), "
+        "risking about $1,000.00.\n"
+        "Paper money only.")
+
+
+def test_box_report_with_no_trade(tmp_path):
+    state = {"day": "2026-11-17", "status": "no_signal", "box": [101.0, 100.0],
+             "reason": "nothing closed outside the box ($101.00 high, $100.00 low) by 10:30"}
+    text = R.job_report(box_ctx(tmp_path, state), "box", 0)
+    assert "No trade today: nothing closed outside the box ($101.00 high, $100.00 low) by 10:30." in text
+    assert R.job_report(box_ctx(tmp_path / "x"), "box", 0).startswith("Box breakout for Nov 17:\nNo record")
+
+
+def test_flatten_report(tmp_path):
+    done = {**SENT, "status": "closed", "result": {"day": "2026-11-17", "side": "buy", "qty": 500, "entry": 102.1,
+                                                   "exit": 104.1, "r": 1.0, "pnl": 1000.0, "reason": "time"}}
+    assert R.job_report(box_ctx(tmp_path, done), "flatten", 0) == (
+        "Box trade for Nov 17: long 500 QQQ from $102.10, closed at 3:55 at $104.10: +1.00R ($1,000.00).\n"
+        "Paper money only.")
+    failed = {**SENT, "status": "flatten_failed", "reason": "the closing order hasn't filled yet"}
+    assert "couldn't close the box position" in R.job_report(box_ctx(tmp_path / "f", failed), "flatten", 0)
+    assert R.job_report(box_ctx(tmp_path / "n", {"day": "2026-11-17", "status": "no_box", "reason": "x"}),
+                        "flatten", 0) is None
+
+
+def test_box_job_failure_uses_its_log(tmp_path):
+    ctx = box_ctx(tmp_path)
+    (tmp_path / "box.log").write_text("==== Tue 11/17/2026  9:31:00.00 ====\nTraceback: boom\nExit code: 1\n")
+    text = R.job_report(ctx, "box", 1)
+    assert text.startswith("Problem: the 9:31 AM box breakout watch failed with exit code 1.") and "boom" in text
+    assert R.LOG_FILES["flatten"] == "flatten.log"
