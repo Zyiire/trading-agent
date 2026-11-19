@@ -193,11 +193,12 @@ def test_size_under_one_share_is_zero():
     assert rules.size(10_000, 0.0, 1_000, 10.0) == 0
 
 
-def test_size_skips_when_over_95_percent_of_buying_power():
-    assert rules.size(100_000, 1.0, 100_000, 100.0) == 0       # 1,000 shares = $100k > $95k
-    assert rules.size(100_000, 1.0, 200_000, 100.0) == 1000    # $100k fits
-    assert rules.size(100_000, 1.0, 105_300, 100.0) == 1000    # $100k is under 95% of 105,300
-    assert rules.size(100_000, 1.0, 105_200, 100.0) == 0       # just over
+def test_size_down_to_95_percent_of_buying_power():
+    assert rules.size(100_000, 1.0, 100_000, 100.0) == 950      # 1,000 wanted; $95k buys 950 (risk 0.95%)
+    assert rules.size(100_000, 1.0, 200_000, 100.0) == 1000     # $100k fits
+    assert rules.size(100_000, 1.0, 105_300, 100.0) == 1000     # $100k is under 95% of 105,300
+    assert rules.size(100_000, 1.0, 105_200, 100.0) == 999      # just over: one share fewer
+    assert rules.size(100_000, 1.0, 100.0, 100.0) == 0          # not even one share fits
 
 
 def test_size_requires_price():

@@ -151,18 +151,19 @@ def simulate_exit(minutes_after: pd.DataFrame, sig: Signal, flat: time = FLAT) -
     return float(win["c"].iloc[-1]), "time"
 
 
+BP_CAP = 0.95                 # never spend more than this share of buying power on one position
+
+
 def size(equity: float, risk_per_share: float, buying_power: float, price: float,
          risk_pct: float = 0.01) -> int:
-    """Whole shares risking `risk_pct` of equity. 0 means skip.
+    """Whole shares risking `risk_pct` of equity, sized down to fit 95% of buying power. 0 means skip.
 
-    Skips (0) when under one share, or when the position (shares x `price`) would cost more
-    than 95% of buying power.
+    When the full 1% would cost more than 95% of buying power (a narrow box), the position is the
+    largest whole number of shares that fits, so the trade risks less than 1%. Skips (0) when under
+    one share either way.
     """
-    if equity <= 0 or risk_per_share <= 0:
+    if equity <= 0 or risk_per_share <= 0 or price <= 0:
         return 0
     qty = math.floor(equity * risk_pct / risk_per_share)
-    if qty < 1:
-        return 0
-    if qty * price > 0.95 * buying_power:
-        return 0
-    return qty
+    qty = min(qty, math.floor(BP_CAP * max(buying_power, 0.0) / price))
+    return max(qty, 0)

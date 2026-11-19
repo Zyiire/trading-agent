@@ -376,7 +376,7 @@ def _box_headline(exam: dict | None) -> str | None:
 
 
 EXIT_WORDS = {"stop": "hit the stop", "target": "hit the 3R target", "time": "closed at 3:55",
-              "early": "closed the next morning"}
+              "early": "closed early (kill switch or next-morning cleanup)"}
 
 
 def _box_today_fact(state: dict | None, today: date) -> tuple[str, dict]:
@@ -389,13 +389,16 @@ def _box_today_fact(state: dict | None, today: date) -> tuple[str, dict]:
     o, sig, bx = state.get("order") or {}, state.get("signal") or {}, state.get("box")
     box = f" The box was {money(bx[0])} high to {money(bx[1])} low." if bx and len(bx) == 2 else ""
     if status in ("sent", "flatten_failed") and o:
-        side = "bought" if o.get("side") == "buy" else "shorted"
-        text = (f"On {on} Stan {side} {qty(o.get('qty') or 0)} QQQ with a bracket order, stop {money(o.get('stop'))}, "
-                f"target {money(o.get('target'))}.{box}")
+        side = "buy" if o.get("side") == "buy" else "sell short"
+        text = (f"On {on} Stan sent a bracket order to {side} {qty(o.get('qty') or 0)} QQQ, stop "
+                f"{money(o.get('stop'))}, target {money(o.get('target'))}.{box}")
         if status == "flatten_failed":
-            text += f" The 3:55 close ran into a problem: {reason}."
+            text += f" The 3:55 close ran into a problem: {reason}. The position may still be open with no stop."
+        elif d == today:
+            text += " If it filled, it closes by 3:55 PM unless the stop or target hits first."
         else:
-            text += " It closes by 3:55 PM unless the stop or target hits first."
+            text += (" That trade's result hasn't been recorded yet; it should have closed at 3:55 PM that day, "
+                     "and the next run cleans it up if it is still open.")
     elif status == "closed":
         r = state.get("result") or {}
         if r.get("entry") is None:
@@ -442,10 +445,20 @@ def box_breakout(ctx: ToolContext) -> dict:
         d = date.fromisoformat(n["day"])
         facts.append(f"Note from {nice_day(d)}{_relative(d, today)}: {n['text']}")
     if exam and exam.get("facts"):
-        facts.extend(exam["facts"])
+        facts.extend(_box_exam_facts(exam))
     else:
         facts.append("Stan hasn't run the box backtest yet, so there are no backtest numbers.")
     return result(facts, {"strategy": strategy, "today": today_data, "results": len(done), "exam": exam or None})
+
+
+def _box_exam_facts(exam: dict) -> list[str]:
+    """The saved report card's sentences in today's self-contained wording; the saved ones if the
+    saved exam is too old or partial to rebuild them."""
+    from agent.stan.box import exam as box_exam_mod
+    try:
+        return box_exam_mod.facts(exam)
+    except Exception:
+        return list(exam["facts"])
 
 
 @dataclass(frozen=True)
@@ -472,20 +485,27 @@ TOOLS = [
     Tool("trading_log", "Stan's own notes from his recent trading runs, including why he did or didn't trade. "
          "Use for 'why didn't you trade', 'what happened this morning', 'what's the plan today'.",
          _params(limit=LIMIT), trading_log),
-    Tool("study_report", "Stan's school: his last study term (he studies market history every evening). Verdict, "
-         "report card, practice-trade results and whether his strategy beats simply holding. Use for school, "
-         "studying, class, learning, report card, readiness, and real money questions.", _params(), study_report),
-    Tool("exams", "Stan's yearly exams from school: for each year, passed or failed, his return vs simply holding. "
-         "Use for 'how did you do in 2022', 'which years did you fail'.", _params(limit=LIMIT), exams),
+    Tool("study_report", "Stan's school: his last study term of Stan's all-round study model (he studies market "
+         "history every evening). Verdict, report card, practice-trade results and whether the all-round study "
+         "model beats simply holding. NOT the box breakout: for anything about the box, use box_breakout. Use for "
+         "school, studying, class, learning, readiness, and real money questions.", _params(), study_report),
+    Tool("exams", "Stan's yearly school exams of Stan's all-round study model: for each year, passed or failed, its "
+         "return vs simply holding. NOT the box breakout (the box's good and losing years are in box_breakout). "
+         "Use for 'how did you do in school in 2022', 'which school exams did you fail'.",
+         _params(limit=LIMIT), exams),
     Tool("lessons", "The lessons Stan wrote from his wins and losses (mistakes and strengths). Use for "
          "'what have you learned', 'what are your weaknesses', 'what are you good at'.",
          _params(limit=LIMIT), lessons),
     Tool("strategy", "Which strategy the paper account trades, the best strategy in each risk tier (low, medium, "
          "high), and the latest plan. Use for 'what are you trading', 'why SPY', 'which tier'.", _params(), strategy),
-    Tool("box_breakout", "The box breakout strategy on QQQ: today's box (opening range), whether a breakout signal "
-         "fired, the order and its stop and target, the result in R, recent box trades, and the box backtest "
-         "report card against the video's claims. Use for 'box', 'breakout', 'opening range', 'QQQ trade today', "
-         "'did the box trade today', 'box backtest', 'how did the box do'.", _params(), box_breakout),
+    Tool("box_breakout", "The box breakout strategy on QQQ (the strategy from the video, Stan's main strategy): "
+         "today's box (opening range), whether a breakout signal fired, the order and its stop and target, the "
+         "result in R, recent box trades, and the box backtest report card: which years made or lost money "
+         "(losing years), what happens if costs or fees double (double costs), the box vs holding QQQ (is it "
+         "better than holding), and the video's claims. Use for 'box', 'breakout', 'opening range', "
+         "'QQQ trade today', 'did the box trade today', 'box backtest', 'box report card', 'how did the box do', "
+         "'which years did the box lose money', 'losing years', 'costs', 'fees', 'double costs', "
+         "'vs holding QQQ', 'better than holding', 'the video'.", _params(), box_breakout),
     Tool("levels", "The QQQ 0DTE options levels for a day: price levels, GEX (gamma exposure), call and put walls, "
          "and the put/call table. Use for levels, GEX, walls, put/call, QQQ options questions.",
          _params(day={"type": "string", "description": "A date like 2026-01-15. Leave it out for the latest saved day."}), levels),

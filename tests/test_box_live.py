@@ -81,10 +81,11 @@ class FakeBroker:
         self.close = time(16, 0)      # today's close; time(13, 0) on a half day
         self.close_errors = 0         # close_position raises this many times first
         self.on_close_error = None    # called on each such error (e.g. a leg fills meanwhile)
+        self.is_open = True           # False: a holiday
 
     def get_clock(self):
         when = datetime.combine(DAY, self.close, tzinfo=ET)
-        return MarketClock(when, True, when + timedelta(days=1), when)
+        return MarketClock(when, self.is_open, when + timedelta(days=1), when)
 
     def get_account(self):
         return AccountInfo("a", "ACTIVE", self.paper, self.equity, self.equity, self.buying_power, None, None,
@@ -268,6 +269,7 @@ def test_incomplete_box_means_no_trade(book, gap):
 
 def test_holiday_with_no_bars_means_no_trade(book):
     broker = FakeBroker()
+    broker.is_open = False
     empty = today().iloc[:0]
     assert step(broker, book, at(9, 31, 5), minutes=empty) is False    # bars may still be on their way
     assert step(broker, book, at(9, 35, 5), minutes=empty) is True
@@ -317,8 +319,17 @@ def test_losses_from_last_week_do_not_count(book):
     assert step(broker, book, at(9, 45, 5)) is True and len(broker.sent) == 1
 
 
-def test_not_enough_buying_power_is_skipped_with_a_reason(book):
-    broker = FakeBroker(buying_power=20_000.0)       # 500 shares at $102 = $51,000
+def test_not_enough_buying_power_sizes_down_and_logs_the_smaller_risk(book):
+    broker = FakeBroker(buying_power=20_000.0)       # 500 shares at $102 = $51,000; 95% of $20k buys 186
+    assert step(broker, book, at(9, 45, 5)) is True
+    assert broker.sent == [("QQQ", 186, "buy", 100.0, 108.0, CID)]
+    state = book.get("box_today")
+    assert state["status"] == "sent" and state["order"]["risk_pct"] == pytest.approx(186 * 2 / 100_000)
+    assert "0.37% of $100,000.00, not 1%" in texts(book) and "sized down to 186 shares" in texts(book)
+
+
+def test_not_even_one_share_of_buying_power_is_skipped_with_a_reason(book):
+    broker = FakeBroker(buying_power=50.0)
     assert step(broker, book, at(9, 45, 5)) is True
     assert broker.sent == []
     state = book.get("box_today")
@@ -390,7 +401,8 @@ def test_flatten_that_does_not_fill_is_retried(book):
     broker = FakeBroker()
     sent_book(broker, book)
     broker.close_fills, broker.mark = False, 103.10
-    state = L.flatten(broker, book, at(15, 55, 5), sleep=lambda s: None, wait=3, log=lambda text: None)
+    state = L.flatten(broker, book, at(15, 55, 5), sleep=lambda s: None, wait=3, log=lambda text: None,
+                      attempts=1)
     assert state["status"] == "flatten_failed" and book.get("box_results") in (None, [])
     assert L.held_qty(broker, book) == 500
     broker.close_fills = True
@@ -795,3 +807,289 @@ def test_trend_history_skips_the_top_up_for_a_missing_or_stale_db(tmp_path):
                    (int(datetime(2026, 11, 18, 14, 0, tzinfo=timezone.utc).timestamp()),))
     hist = L.trend_history(None, fresh, start, backfill=fake_backfill, log=lambda t: None)
     assert calls == [fresh] and len(hist) == 1
+
+
+# ---------------------------------------------------------------- final review fixes
+def test_send_error_when_alpaca_cannot_be_asked_is_retried_not_failed(book):
+    broker = FakeBroker()
+    real_send, real_get = broker.submit_bracket_order, broker.get_order
+    down = {"on": False}
+
+    def send(*a, **k):
+        real_send(*a, **k)                      # Alpaca took it, but the answer was lost ...
+        down["on"] = True
+        raise TimeoutError("read timed out")
+
+    def get(cid):
+        if down["on"]:
+            down["on"] = False                  # ... and the follow-up check fails too
+            raise ConnectionError("Alpaca down")
+        return real_get(cid)
+    broker.submit_bracket_order, broker.get_order = send, get
+    with pytest.raises(TimeoutError):
+        step(broker, book, at(9, 45, 5))
+    assert book.get("box_today") is None        # not recorded as failed
+    assert step(broker, book, at(9, 46, 5)) is True       # next minute: found at Alpaca, not sent again
+    assert len(broker.sent) == 1 and book.get("box_today")["status"] == "sent"
+
+
+def test_watch_retries_a_send_whose_outcome_is_unknown(book):
+    broker, minutes = FakeBroker(), today()
+    real_send, real_get = broker.submit_bracket_order, broker.get_order
+    calls = []
+
+    def send(*a, **k):
+        calls.append(1)
+        raise TimeoutError("read timed out")    # never reached Alpaca
+
+    def get(cid):
+        if len(calls) == 1 and not getattr(get, "failed", False):
+            get.failed = True
+            raise ConnectionError("Alpaca down")
+        return real_get(cid)
+    broker.submit_bracket_order, broker.get_order = send, get
+    clock = iter([at(9, 45, 5), at(9, 46, 5)])
+    state = L.watch(broker, book, rules.bars(history(), 15), lambda now: upto(minutes, now),
+                    clock=lambda: next(clock), sleep=lambda s: None, log=lambda text: None)
+    assert len(calls) == 2 and state["status"] == "failed"     # the second send failed plainly
+    broker.submit_bracket_order = real_send
+
+
+def test_flatten_finds_todays_order_the_book_never_recorded(book):
+    broker = FakeBroker()
+    broker.submit_bracket_order("QQQ", 500, "buy", 100.0, 108.0, CID)
+    broker.fill_entry(CID, 102.1)
+    book.set("box_today", {"day": "2026-11-19", "status": "failed", "reason": "the watch ended", "box": [101.0, 100.0]})
+    broker.mark = 104.1
+    state = L.flatten(broker, book, at(15, 55, 5), sleep=lambda s: None, log=lambda text: None)
+    assert broker.closes == [("QQQ", 500, "sell", CID + "-flat1")]
+    assert state["status"] == "closed" and state["result"]["r"] == pytest.approx(1.0)
+    assert state["box"] == [101.0, 100.0] and "found at Alpaca" in state["reason"]
+    assert "is at Alpaca" in texts(book)
+    L.flatten(broker, book, at(15, 56, 5), sleep=lambda s: None, log=lambda text: None)   # closed: left alone
+    assert len(broker.closes) == 1 and len(book.get("box_results")) == 1
+
+
+def test_flatten_with_an_empty_book_still_checks_alpaca(book):
+    broker = FakeBroker()
+    broker.submit_bracket_order("QQQ", 500, "sell", 101.0, 93.0, CID)
+    broker.fill_entry(CID, 99.0)
+    broker.mark = 98.0
+    state = L.flatten(broker, book, at(15, 55, 5), sleep=lambda s: None, log=lambda text: None)
+    assert broker.closes == [("QQQ", 500, "buy", CID + "-flat1")] and state["result"]["r"] == pytest.approx(0.5)
+
+
+class SlowCancel(FakeBroker):
+    """Cancelling takes a moment: legs sit in pending_cancel, and the stop fills before the cancel lands."""
+
+    def __init__(self, fill_stop=True, **kw):
+        super().__init__(**kw)
+        self.fill_stop, self.reads = fill_stop, 0
+
+    def cancel_orders(self, prefix):
+        for o in self.orders.values():
+            for leg in o.get("legs", []):
+                if leg["status"] not in ("filled", "canceled"):
+                    leg["status"] = "pending_cancel"
+        return 2
+
+    def get_bracket(self, cid):
+        self.reads += 1
+        o = self.orders.get(cid)
+        if o and self.reads == 2 and self.fill_stop:
+            self.hit(cid, "stop", 99.9)
+        return super().get_bracket(cid)
+
+
+def test_flatten_waits_for_the_legs_so_a_stop_filling_during_the_cancel_is_not_closed_twice(book):
+    broker = SlowCancel()
+    sent_book(broker, book)
+    naps = []
+    state = L.flatten(broker, book, at(15, 55, 5), sleep=naps.append, log=lambda text: None)
+    assert broker.closes == [] and state["status"] == "closed" and state["result"]["reason"] == "stop"
+    assert naps and naps[0] == L.SETTLE_NAP
+
+
+def test_flatten_gives_up_if_the_legs_never_settle(book):
+    broker = SlowCancel(fill_stop=False)
+    sent_book(broker, book)
+    naps = []
+    state = L.flatten(broker, book, at(15, 55, 5), sleep=naps.append, log=lambda text: None, attempts=1)
+    assert broker.closes == [] and state["status"] == "flatten_failed" and "10 seconds" in state["reason"]
+    assert sum(naps) == pytest.approx(L.SETTLE_NAP * (L.SETTLE_POLLS - 1))
+
+
+def test_flatten_retries_for_a_few_minutes_before_giving_up(book):
+    broker = FakeBroker()
+    sent_book(broker, book)
+    broker.close_fills, broker.mark = False, 103.1
+    naps = []
+
+    def nap(s):
+        naps.append(s)
+        if s == L.FLATTEN_GAP and naps.count(L.FLATTEN_GAP) == 2:
+            broker.close_fills = True             # Alpaca recovers before the third attempt
+    state = L.flatten(broker, book, at(15, 55, 5), sleep=nap, wait=2, log=lambda text: None)
+    assert state["status"] == "closed" and state["result"]["r"] == pytest.approx(0.5)
+    assert [c[-1] for c in broker.closes] == [CID + "-flat1", CID + "-flat2", CID + "-flat3"]
+    assert "still open with no stop" not in texts(book)
+
+
+def test_flatten_final_failure_says_the_position_has_no_stop(book):
+    broker = FakeBroker()
+    sent_book(broker, book)
+    broker.close_fills = False
+    naps = []
+    state = L.flatten(broker, book, at(15, 55, 5), sleep=naps.append, wait=1, log=lambda text: None, attempts=3)
+    assert state["status"] == "flatten_failed" and len(broker.closes) == 3
+    assert naps.count(L.FLATTEN_GAP) == 2
+    assert texts(book).count("The position is still open with no stop") == 1
+    assert L.FLATTEN_ATTEMPTS * L.FLATTEN_GAP >= 180
+
+
+def test_flatten_retries_an_alpaca_error(book):
+    broker = FakeBroker()
+    sent_book(broker, book)
+    broker.mark = 104.1
+    real, calls = broker.cancel_orders, []
+
+    def flaky(prefix):
+        calls.append(1)
+        if len(calls) == 1:
+            raise ConnectionError("Alpaca hiccup")
+        return real(prefix)
+    broker.cancel_orders = flaky
+    state = L.flatten(broker, book, at(15, 55, 5), sleep=lambda s: None, log=lambda text: None)
+    assert state["status"] == "closed" and len(calls) == 2
+
+
+def test_empty_iex_on_an_open_day_is_a_glitch_retried_next_minute(book):
+    broker = FakeBroker()                         # the market is open: not a holiday
+    empty = today().iloc[:0]
+    assert step(broker, book, at(9, 35, 5), minutes=empty) is False
+    assert step(broker, book, at(9, 40, 5), minutes=empty) is False
+    assert book.get("box_today") is None
+    assert step(broker, book, at(9, 45, 5)) is True and len(broker.sent) == 1
+
+
+def test_kill_switch_landing_during_the_step_stops_the_send(book):
+    broker = FakeBroker()
+    real = broker.get_account
+
+    def account():
+        book.set("halted", True)                  # the 9:35 run's kill switch fires meanwhile
+        book.set("halt_reason", "Kill switch")
+        return real()
+    broker.get_account = account
+    assert step(broker, book, at(9, 45, 5)) is True
+    assert broker.sent == []
+    state = book.get("box_today")
+    assert state["status"] == "skipped" and "paused just before the order went out (Kill switch)" in state["reason"]
+
+
+def test_iex_box_gap_falls_back_to_sip_after_946(book):
+    broker = FakeBroker()
+    iex, sip = today(gap=10), today()
+    sip_calls = []
+
+    def fetch_sip():
+        sip_calls.append(1)
+        return sip[sip.index < at(9, 30)]
+    hist15 = rules.bars(history(), 15)
+    run = lambda now: L.step(broker, book, hist15, upto(iex, now), now, log=lambda text: None,
+                             fetch_sip_box=fetch_sip)
+    assert run(at(9, 45, 5)) is False and sip_calls == [] and book.get("box_today") is None
+    assert run(at(9, 46, 5)) is True and sip_calls == [1]
+    assert broker.sent == [("QQQ", 500, "buy", 100.0, 108.0, CID)]
+    assert book.get("box_today")["box"] == [101.0, 100.0]
+
+
+def test_box_gap_on_both_feeds_is_no_box(book):
+    broker = FakeBroker()
+    gappy = today(gap=10)
+    now = at(9, 46, 5)
+    assert L.step(broker, book, rules.bars(history(), 15), upto(gappy, now), now, log=lambda text: None,
+                  fetch_sip_box=lambda: gappy[gappy.index < at(9, 30)]) is True
+    state = book.get("box_today")
+    assert state["status"] == "no_box" and "both feeds" in state["reason"] and broker.sent == []
+
+
+def test_stale_trend_history_skips_the_day_with_a_reason(tmp_path, book):
+    import sqlite3
+    from agent.stan.box import data
+    db = tmp_path / "old.db"
+    with sqlite3.connect(db) as con:
+        con.execute(data.SCHEMA)
+        con.execute("INSERT INTO bars_1m VALUES ('QQQ', ?, 1, 1, 1, 1, 1, 1, 'x')",
+                    (int(datetime(2026, 11, 17, 15, 0, tzinfo=timezone.utc).timestamp()),))
+
+    def broken(client, db, log=None):
+        raise ConnectionError("SIP down")
+    hist = L.trend_history(None, db, at(9, 0), backfill=broken, log=lambda t: None, prev_session=date(2026, 11, 18))
+    assert "2026-11-17" in hist.attrs["problem"] and "SIP down" in hist.attrs["problem"]
+    ok = L.trend_history(None, db, at(9, 0), backfill=lambda c, d, log=None: 0, log=lambda t: None,
+                         prev_session=date(2026, 11, 17))
+    assert "problem" not in ok.attrs
+    hist15 = rules.bars(history(), 15)
+    hist15.attrs["problem"] = hist.attrs["problem"]
+    broker = FakeBroker()
+    assert L.step(broker, book, hist15, upto(today(), at(9, 45, 5)), at(9, 45, 5), log=lambda t: None) is True
+    state = book.get("box_today")
+    assert broker.sent == [] and state["status"] == "skipped" and "stale" in state["reason"]
+
+
+def test_previous_session_uses_the_calendar_or_the_last_weekday():
+    assert L.previous_session(date(2026, 11, 30)) == date(2026, 11, 27)              # Monday -> Friday
+    cal = lambda a, b: [date(2026, 11, 25), date(2026, 11, 27)]                      # Thanksgiving closed
+    assert L.previous_session(date(2026, 11, 27), cal) == date(2026, 11, 25)
+    assert L.previous_session(date(2026, 11, 27), lambda a, b: 1 / 0) == date(2026, 11, 26)
+
+
+def test_reconcile_on_box_halts_on_qqq_nobody_owns(book):
+    broker = TierFake()
+    broker.positions = {"QQQ": 7.0}             # no box trade, no selloff trade: unexplained QQQ
+    r = evening(broker, book)
+    assert r["halted"] and "QQQ" in book.get("halt_reason")
+
+
+def test_reconcile_on_box_halts_when_the_box_holds_less_than_alpaca_shows(book):
+    broker = TierFake()
+    assert step(broker, book, at(9, 45, 5)) is True
+    broker.fill_entry(CID, 102.1)
+    broker.positions["QQQ"] += 40                # an untracked 40 on top of the box's 500
+    assert evening(broker, book)["halted"]
+
+
+def test_reconcile_survives_the_box_entry_filling_mid_read(book):
+    broker = TierFake()
+    assert step(broker, book, at(9, 45, 5)) is True
+    real = broker.get_positions
+
+    def positions():
+        if broker.orders[CID]["status"] != "filled":
+            broker.fill_entry(CID, 102.1)        # fills after the box qty was read, before the positions
+        return real()
+    broker.get_positions = positions
+    r = evening(broker, book)
+    assert not r["halted"] and not book.get("halted")
+
+
+def test_switch_to_box_keeps_spy_owned_by_open_selloff_trades(book, tmp_path):
+    broker = TierFake()
+    broker.positions = {"SPY": 10.0}
+    book.set("strategy", "selloff")
+    book.add_trade({"symbol": "SPY", "signal_date": "2026-11-12", "status": "open", "qty": 10, "entry_order": "x",
+                    "entry_price": 500.0})
+    set_strategy(book, str(tmp_path / "j.db"), "box")
+    r = evening(broker, book)
+    assert not r["halted"] and not any(k.startswith("stan-tier") for k in broker.orders)   # no tier sell of SPY
+    assert book.get("box_tiers_sold") == "2026-11-19"
+
+
+def test_sell_all_keeps_the_shares_given():
+    from agent.stan import tiers
+    broker, said = TierFake(), []
+    broker.positions = {"SPY": 12.5, "TQQQ": 3.0}
+    assert tiers.sell_all(broker, "2026-11-19", lambda k, t: said.append(t), keep={"SPY": 10})
+    assert sorted((o["symbol"], o["qty"]) for o in broker.orders.values()) == [("SPY", 2.5), ("TQQQ", 3.0)]
+    assert any("keeping the 10" in t for t in said)

@@ -119,3 +119,38 @@ def test_training_skips_box_exam_when_db_missing(tmp_path, monkeypatch):
     _train(j)
     assert {t["key"]: t["status"] for t in j.tasks()}["box"] == "failed"
     assert "box_exam" not in j.meta() and j.meta()["state"] == "finished"
+
+
+def test_live_risk_is_capped_by_buying_power():
+    t = pd.DataFrame({"risk": [2.0, 0.2, 0.05], "entry": [100.0, 100.0, 100.0], "r": [1.0, 1.0, -1.0]})
+    # cap = 0.95 x 4 x risk / entry: 7.6% (1% applies), 0.76%, 0.19%
+    assert list(exam.live_risk(t)) == pytest.approx([0.01, 0.0076, 0.0019])
+
+
+def test_exam_live_money_view_and_facts():
+    res = exam.box_exam(synthetic())
+    live = res["live_money"]
+    assert live["leverage"] == 4.0 and live["growth"] is not None and live["worst_drop"] <= 0
+    trades = res["headline"]["trades"]
+    assert 0 <= live["sized_down"] <= trades and live["sized_down_share"] == pytest.approx(live["sized_down"] / trades)
+    assert live["growth"] <= res["money"]["growth"] + 1e-12 or live["sized_down"] == 0
+    text = " ".join(res["facts"])
+    assert "On narrow-box days the position is capped by buying power, so about" in text
+    assert "trades risk less than 1%." in text and "With live sizing" in text
+
+
+def test_exam_facts_are_self_contained():
+    res = exam.box_exam(synthetic())
+    res["by_year"] = [{"year": 2016, "avg_r": 0.1}, {"year": 2017, "avg_r": -0.1}, {"year": 2020, "avg_r": -0.02},
+                      {"year": 2021, "avg_r": 0.2}]
+    f = exam.facts(res)
+    assert "The box breakout lost money in 2017 and 2020; every other year was positive (2 of 4 years from 2024 to 2024)." in f
+    assert any(x.startswith("Versus simply holding QQQ:") for x in f)
+    assert any(x.startswith("If costs (fees and slippage) double") and "box breakout" in x for x in f)
+    assert all("box breakout" in x.lower() or x.startswith("The video claimed") for x in f)
+
+
+def test_facts_from_an_older_saved_exam_without_live_money():
+    res = exam.box_exam(synthetic())
+    res.pop("live_money")
+    assert not any("live sizing" in x for x in exam.facts(res))

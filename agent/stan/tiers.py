@@ -151,20 +151,24 @@ def run_tier(broker: Broker, book, history: dict[str, pd.DataFrame], tier: str, 
         book.set("tier_plan", {"tier": tier, "weights": p.weights, "reason": p.reason, "day": day})
 
 
-def sell_all(broker: Broker, day: str, say, dry_run: bool = False) -> bool:
-    """Sell every tier holding. True if every sell was sent (or there was nothing to sell)."""
+def sell_all(broker: Broker, day: str, say, dry_run: bool = False, keep: dict | None = None) -> bool:
+    """Sell every tier holding, except the shares in `keep` ({symbol: qty}, e.g. owned by open selloff
+    trades). True if every sell was sent (or there was nothing to sell)."""
     ok = True
+    keep = keep or {}
     for pos in broker.get_positions():
-        if pos.symbol in TIER_SYMBOLS and pos.qty > 0:
+        qty = round(pos.qty - keep.get(pos.symbol, 0), 9)
+        if pos.symbol in TIER_SYMBOLS and qty > 0:
             oid = tier_order_id(pos.symbol, day, "sell")
             if not dry_run:
                 try:
-                    broker.submit_fractional_order(pos.symbol, pos.qty, "sell", oid)
+                    broker.submit_fractional_order(pos.symbol, qty, "sell", oid)
                 except Exception as err:
                     say("fail", f"Couldn't send the {pos.symbol} sell: {err}")
                     ok = False
                     continue
-            say("fail", f"Selling all {pos.qty:g} {pos.symbol} at the next open.")
+            what = f"all {qty:g}" if qty == pos.qty else f"{qty:g} (keeping the {pos.qty - qty:g} my selloff trades own)"
+            say("fail", f"Selling {what} {pos.symbol} at the next open.")
     return ok
 
 

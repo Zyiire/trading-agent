@@ -17,6 +17,7 @@ POINT = 1 / 41.0          # one NQ point, in QQQ dollars (NQ is about 41x QQQ)
 SPLIT_YEAR = 2023         # in-sample is before, out-of-sample from here
 MC_RUNS, MC_SEED = 1000, 7
 RISK_PCT = 0.01
+LEVERAGE = 4.0            # live sizing view: assume buying power is 4x equity (a margin day-trading account)
 TARGETS = (2.5, 3.0, 3.5, 4.0)
 FLATS = (time(15, 55), time(15, 59))
 
@@ -86,8 +87,8 @@ def _trades(cands: list[tuple], target_r: float = rules.TARGET_R, flat: time = r
         px, why = res
         pnl = (px - sig.entry) if sig.side == "long" else (sig.entry - px)
         rows.append({"day": pd.Timestamp(day), "side": sig.side, "r": (pnl - cost_points * POINT) / sig.risk,
-                     "why": why, "risk": sig.risk, "box": height})
-    t = pd.DataFrame(rows, columns=["day", "side", "r", "why", "risk", "box"])
+                     "why": why, "risk": sig.risk, "entry": sig.entry, "box": height})
+    t = pd.DataFrame(rows, columns=["day", "side", "r", "why", "risk", "entry", "box"])
     t["day"] = pd.to_datetime(t["day"])
     return t
 
@@ -115,56 +116,104 @@ def _money(t: pd.DataFrame, minutes: pd.DataFrame) -> dict:
     return out
 
 
+def live_risk(t: pd.DataFrame, leverage: float = LEVERAGE) -> np.ndarray:
+    """The share of the account each trade really risks live: 1%, unless 95% of buying power
+    (`leverage` x equity) can't buy the 1% position, then less (rules.size sizes it down).
+    Risk fraction = min(1%, (0.95 x leverage x equity / entry) x 1R / equity)."""
+    if t.empty:
+        return np.array([])
+    cap = rules.BP_CAP * leverage * t["risk"].to_numpy() / t["entry"].to_numpy()
+    return np.minimum(RISK_PCT, cap)
+
+
+def _live_money(t: pd.DataFrame) -> dict:
+    out = {"risk_pct": RISK_PCT, "leverage": LEVERAGE, "growth": None, "worst_drop": None,
+           "sized_down": 0, "sized_down_share": None, "avg_risk_pct": None}
+    if t.empty:
+        return out
+    f = live_risk(t)
+    curve = np.cumprod(1 + f * t["r"].to_numpy())
+    down = int((f < RISK_PCT - 1e-12).sum())
+    out.update(growth=float(curve[-1]), worst_drop=_worst_drop(np.concatenate([[1.0], curve])),
+               sized_down=down, sized_down_share=down / len(f), avg_risk_pct=float(f.mean()))
+    return out
+
+
 def _by_year(t: pd.DataFrame) -> list[dict]:
     return [{"year": int(y), **stats(g)} for y, g in t.groupby(t["day"].dt.year)]
 
 
+def _and(items: list[str]) -> str:
+    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
+
+
 def _facts(res: dict, span: tuple[int, int]) -> list[str]:
+    """Plain sentences, each one self-contained (it names the box breakout), so a small chat model
+    can quote any single one without mixing it up with Stan's other strategies."""
     h, nf, c2, split, mc, money, v = (res[k] for k in
                                       ("headline", "no_filter", "cost_2x", "split", "monte_carlo", "money", "video"))
     if not h["trades"]:
         return [f"The box breakout found no trades on QQQ between {span[0]} and {span[1]}."]
     yrs = res["by_year"]
-    pos = sum(1 for y in yrs if (y["avg_r"] or 0) > 0)
     neg = [str(y["year"]) for y in yrs if (y["avg_r"] or 0) <= 0]
     pf = f"{h['pf']:.2f}" if h["pf"] is not None else "n/a"
     facts = [
-        f"I replayed the video's box breakout on QQQ 1-minute bars from {span[0]} to {span[1]}, "
+        f"The box breakout backtest replayed the video's rules on QQQ 1-minute bars from {span[0]} to {span[1]}, "
         f"with a cost of 1 NQ point per trade.",
-        f"With the trend filter it took {h['trades']:,} trades, won {h['win_rate'] * 100:.1f}% of them, "
-        f"and averaged {h['avg_r']:+.3f}R a trade with a profit factor of {pf}.",
-        f"The total was {h['total_r']:+.1f}R, and the worst drop was {abs(h['max_dd_r']):.1f}R.",
-        f"Without the trend filter it took {nf['trades']:,} trades and averaged {nf['avg_r']:+.3f}R, "
-        f"so the filter helped." if (nf["avg_r"] or 0) < h["avg_r"] else
-        f"Without the trend filter it took {nf['trades']:,} trades and averaged {nf['avg_r']:+.3f}R, "
-        f"so the filter did not help.",
-        f"{pos} of {len(yrs)} years were positive" + (f"; the losing years were {', '.join(neg)}." if neg else "."),
+        f"With the trend filter the box breakout took {h['trades']:,} trades, won {h['win_rate'] * 100:.1f}% of "
+        f"them, and averaged {h['avg_r']:+.3f}R a trade with a profit factor of {pf}.",
+        f"The box breakout's total was {h['total_r']:+.1f}R, and its worst drop was {abs(h['max_dd_r']):.1f}R.",
+        f"Without the trend filter the box breakout took {nf['trades']:,} trades and averaged {nf['avg_r']:+.3f}R, "
+        + ("so the filter helped." if (nf["avg_r"] or 0) < h["avg_r"] else "so the filter did not help."),
+        (f"The box breakout lost money in {_and(neg)}; every other year was positive ({len(yrs) - len(neg)} of "
+         f"{len(yrs)} years from {span[0]} to {span[1]})." if neg else
+         f"The box breakout made money in every year from {span[0]} to {span[1]} ({len(yrs)} of {len(yrs)})."),
     ]
     e, l = split["early"], split["late"]
     if e["trades"] and l["trades"]:
-        facts.append(f"Before {SPLIT_YEAR} it averaged {e['avg_r']:+.3f}R a trade. "
+        facts.append(f"Before {SPLIT_YEAR} the box breakout averaged {e['avg_r']:+.3f}R a trade. "
                      f"From {SPLIT_YEAR} on it averaged {l['avg_r']:+.3f}R.")
     if c2["avg_r"] is not None:
-        facts.append(f"If costs double to 2 NQ points, the average falls to {c2['avg_r']:+.3f}R a trade.")
+        late = (f" (from {SPLIT_YEAR} on, {c2['late_avg_r']:+.3f}R)" if c2.get("late_avg_r") is not None else "")
+        facts.append(f"If costs (fees and slippage) double to 2 NQ points a trade, the box breakout's average falls "
+                     f"from {h['avg_r']:+.3f}R to {c2['avg_r']:+.3f}R a trade{late}.")
     if mc["median_dd"] is not None:
-        facts.append(f"Shuffling the trades 1,000 times, the typical worst drop was {mc['median_dd']:.1f}R "
-                     f"and 1 time in 20 it was {mc['p95_dd']:.1f}R or worse.")
+        facts.append(f"Shuffling the box breakout's trades 1,000 times, the typical worst drop was "
+                     f"{mc['median_dd']:.1f}R and 1 time in 20 it was {mc['p95_dd']:.1f}R or worse.")
     if money["growth"] is not None:
-        facts.append(f"Risking 1% of the account per trade, $1 became ${money['growth']:.2f} with a worst drop of "
-                     f"{abs(money['worst_drop']) * 100:.1f}%. Holding QQQ turned $1 into ${money['hold_growth']:.2f} "
-                     f"with a worst drop of {abs(money['hold_worst_drop']) * 100:.1f}%.")
+        better = "better than" if money["growth"] > money["hold_growth"] else "worse than"
+        facts.append(f"Versus simply holding QQQ: risking 1% of the account per trade, the box breakout turned $1 "
+                     f"into ${money['growth']:.2f} with a worst drop of {abs(money['worst_drop']) * 100:.1f}%; "
+                     f"holding QQQ turned $1 into ${money['hold_growth']:.2f} with a worst drop of "
+                     f"{abs(money['hold_worst_drop']) * 100:.1f}%. So on money the box breakout did {better} "
+                     f"holding QQQ.")
+    live = res.get("live_money") or {}
+    if live.get("growth") is not None:
+        facts.append(f"With live sizing (buying power assumed to be {live['leverage']:g}x the account, positions "
+                     f"capped at 95% of it), the box breakout turned $1 into ${live['growth']:.2f} with a worst drop "
+                     f"of {abs(live['worst_drop']) * 100:.1f}%; {live['sized_down']:,} of {h['trades']:,} trades "
+                     "were sized down.")
+        facts.append(f"On narrow-box days the position is capped by buying power, so about "
+                     f"{live['sized_down_share'] * 100:.0f}% of box breakout trades risk less than 1%.")
     vh = v["headline"]
     facts.append(f"The video claimed {vh['trades']:,} trades on NQ, {vh['win_rate'] * 100:.1f}% wins and "
                  f"{vh['avg_r']:+.2f}R a trade, a profit factor of {vh['pf']} and a worst drop of "
-                 f"{abs(vh['max_dd_r']):.0f}R. I got {h['trades']:,} trades, {h['win_rate'] * 100:.1f}% wins and "
-                 f"{h['avg_r']:+.3f}R, a profit factor of {pf} and a worst drop of {abs(h['max_dd_r']):.1f}R.")
+                 f"{abs(vh['max_dd_r']):.0f}R. Stan's box breakout backtest got {h['trades']:,} trades, "
+                 f"{h['win_rate'] * 100:.1f}% wins and {h['avg_r']:+.3f}R, a profit factor of {pf} and a worst drop "
+                 f"of {abs(h['max_dd_r']):.1f}R.")
     if h["avg_r"] <= 0:
-        facts.append("So the video's edge did not show up on QQQ in this data.")
+        facts.append("So the video's box breakout edge did not show up on QQQ in this data.")
     elif h["avg_r"] < vh["avg_r"]:
-        facts.append("So the rules still paid on QQQ, but less per trade than the video claimed.")
+        facts.append("So the box breakout still paid on QQQ, but less per trade than the video claimed.")
     else:
-        facts.append("So the rules paid on QQQ at least as well as the video claimed.")
+        facts.append("So the box breakout paid on QQQ at least as well as the video claimed.")
     return facts
+
+
+def facts(res: dict) -> list[str]:
+    """The report card's sentences, rebuilt from a saved exam (so older saved exams get today's wording)."""
+    span = res.get("span") or [None, None]
+    return _facts(res, (span[0], span[1]))
 
 
 def box_exam(minutes: pd.DataFrame, cost_points: float = 1.0) -> dict:
@@ -195,6 +244,7 @@ def box_exam(minutes: pd.DataFrame, cost_points: float = 1.0) -> dict:
         "exits": {k: int(v) for k, v in main["why"].value_counts().items()},
         "monte_carlo": _monte_carlo(main["r"].to_numpy()),
         "money": _money(main, minutes),
+        "live_money": _live_money(main),
         "video": VIDEO,
     }
     res["facts"] = _facts(res, (first, last))

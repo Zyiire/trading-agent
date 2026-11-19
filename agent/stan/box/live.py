@@ -29,7 +29,8 @@ from agent.stan.zerodte.bars import ET
 SYMBOL = "QQQ"
 PREFIX = "stan-box-"
 WATCH_END = time(10, 31)
-NO_BOX_BY = time(9, 35)            # with no bars at all by now (a holiday), the box can't be built
+NO_BOX_BY = time(9, 35)            # with no bars at all by now, ask the clock: a holiday, or a feed glitch
+SIP_READY = time(9, 46)            # the free SIP feed has the whole 9:00-9:30 box 16 minutes after it ends
 MAX_LATE = timedelta(minutes=3)    # enter only this soon after the breakout bar closed
 WEEKLY_LIMIT_R = -3.0
 MIN_TREND_BARS = 200               # EMA(200) needs at least this many earlier 15-minute bars
@@ -62,11 +63,14 @@ def _sign(state: dict) -> int:
 
 # ---------------------------------------------------------------- watch: one pass
 def step(broker, book: PaperBook, hist15: pd.DataFrame, today: pd.DataFrame, now: datetime,
-         dry_run: bool = False, log: Callable[[str], None] = print, sleep=_time.sleep) -> bool:
+         dry_run: bool = False, log: Callable[[str], None] = print, sleep=_time.sleep,
+         fetch_sip_box: Callable[[], pd.DataFrame] | None = None) -> bool:
     """One look at the market. True once today is decided (order sent, or no trade today).
 
-    `hist15`: finished 15-minute bars before 9:00 today (SIP). `today`: today's 1-minute bars from
-    9:00 on (IEX), ET-indexed o/h/l/c. `now`: the current time, tz-aware.
+    `hist15`: finished 15-minute bars before 9:00 today (SIP); `hist15.attrs["problem"]`, if set, says
+    why the history can't be trusted today. `today`: today's 1-minute bars from 9:00 on (IEX),
+    ET-indexed o/h/l/c. `now`: the current time, tz-aware. `fetch_sip_box`: today's 9:00-9:30 SIP
+    minutes, used after 9:46 when an IEX box bucket is empty.
     """
     now = now.astimezone(ET)
     d = now.date()
@@ -110,23 +114,47 @@ def step(broker, book: PaperBook, hist15: pd.DataFrame, today: pd.DataFrame, now
     wk = weekly_r(book, d)
     if wk <= WEEKLY_LIMIT_R:
         return decide("skipped", f"this week's box trades have lost {wk:+.2f}R, at or past the 3R weekly limit")
-    close = broker.get_clock().next_close.astimezone(ET)
+    clk = broker.get_clock()
+    close = clk.next_close.astimezone(ET)
     if close.date() == d and close.time() < time(16, 0):
         return decide("skipped", f"half day: the bracket would expire at the early close ({close:%H:%M}), "
                                  "leaving the position without a stop")
 
+    if not len(today):
+        if _t(now) < NO_BOX_BY:
+            return False                    # the first minutes may still be on their way
+        if not clk.is_open:
+            return decide("no_box", "the market is closed today (a holiday), so there is no box")
+        log(f"Box watch: no IEX minutes for today at {now:%H:%M} although the market is open (a feed glitch); "
+            "trying again next minute.")
+        return False
+
     # Only count bars whose last minute has arrived, so a late minute can't fake a bar's close.
-    cutoff = now
-    if len(today):
-        cutoff = min(now, today.index.max().to_pydatetime() + timedelta(minutes=1))
+    cutoff = min(now, today.index.max().to_pydatetime() + timedelta(minutes=1))
     five = rules.bars(today, 5, now=cutoff)
     bx = rules.box(five)
     if bx is None:
-        if (len(today) and _t(cutoff) >= time(9, 30)) or _t(now) >= NO_BOX_BY:
-            got = len(five[(five.index.hour == 9) & (five.index.minute < 30)])
+        if _t(cutoff) < time(9, 30) and _t(now) < SIP_READY:
+            return False                    # the box is still forming
+        got = _box_buckets(five)
+        if fetch_sip_box is None:
             return decide("no_box", f"the 9:00-9:30 box is incomplete ({got} of 6 five-minute bars; "
-                                    "a holiday, a half day or a data gap)")
-        return False
+                                    "a half day or a data gap)")
+        if _t(now) < SIP_READY:
+            log(f"Box watch: IEX has only {got} of the six 9:00-9:30 five-minute bars; waiting until "
+                f"{SIP_READY:%H:%M} to build the box from the SIP feed.")
+            return False
+        start = pd.Timestamp(datetime.combine(d, time(9, 0), tzinfo=ET))
+        sip = rules.minute_frame(fetch_sip_box())
+        sip = sip[(sip.index >= start) & (sip.index < start + pd.Timedelta(minutes=30))]
+        today = pd.concat([sip, today[today.index >= start + pd.Timedelta(minutes=30)]])
+        five = rules.bars(today, 5, now=cutoff)
+        bx = rules.box(five)
+        if bx is None:
+            return decide("no_box", f"the 9:00-9:30 box is incomplete on both feeds (IEX {got} of 6, SIP "
+                                    f"{_box_buckets(five)} of 6 five-minute bars; a half day or a data gap)")
+        log(f"Box watch: IEX had only {got} of the six box bars, so the box comes from the SIP feed "
+            f"(${bx[0]:.2f} high, ${bx[1]:.2f} low).")
     raw = rules.signal(five, bx, None)
     if raw is None:
         if _t(cutoff) >= time(10, 30):
@@ -141,6 +169,8 @@ def step(broker, book: PaperBook, hist15: pd.DataFrame, today: pd.DataFrame, now
         return decide("skipped", f"{seen}, but I only saw it at {now:%H:%M}, too late to enter at its price",
                       box=list(bx))
     fifteen = pd.concat([hist15, rules.bars(today, 15, now=cutoff)])
+    if hist15.attrs.get("problem"):
+        return decide("skipped", f"{seen}, but {hist15.attrs['problem']}", box=list(bx))
     if len(hist15) < MIN_TREND_BARS:
         return decide("skipped", f"{seen}, but there are only {len(hist15)} 15-minute bars of history "
                                  f"for the trend filter (it needs {MIN_TREND_BARS})", box=list(bx))
@@ -157,42 +187,66 @@ def step(broker, book: PaperBook, hist15: pd.DataFrame, today: pd.DataFrame, now
     qty = rules.size(account.equity, sig.risk, account.buying_power, sig.entry, RISK_PCT)
     signal = {"side": sig.side, "bar_open": sig.bar_open.isoformat(), "entry": sig.entry, "stop": sig.stop,
               "target": sig.target, "risk": sig.risk}
+    want = math.floor(account.equity * RISK_PCT / sig.risk) if sig.risk > 0 else 0
     if qty == 0:
-        want = math.floor(account.equity * RISK_PCT / sig.risk) if sig.risk > 0 else 0
         if want < 1:
             why = (f"1% of ${account.equity:,.2f} is less than one share's risk of ${sig.risk:.2f}")
         else:
-            why = (f"{want} shares (1% risk at ${sig.risk:.2f} a share) would cost ${want * sig.entry:,.2f}, "
-                   f"more than 95% of the ${account.buying_power:,.2f} buying power")
+            why = (f"not even one share at ${sig.entry:,.2f} fits in 95% of the ${account.buying_power:,.2f} "
+                   "buying power")
         return decide("skipped", f"{seen}, but {why}", box=list(bx), signal=signal)
+    risk_pct = qty * sig.risk / account.equity
+    if qty < want:
+        risking = (f"{risk_pct * 100:.2f}% of ${account.equity:,.2f}, not 1%: {want} shares would cost "
+                   f"${want * sig.entry:,.2f}, more than 95% of the ${account.buying_power:,.2f} buying power, "
+                   f"so the position is sized down to {qty} shares")
+    else:
+        risking = f"1% of ${account.equity:,.2f}"
 
     side = "buy" if sig.side == "long" else "sell"
     what = (f"Box breakout: {seen}. Sending a bracket order to {'buy' if side == 'buy' else 'short'} {qty} "
             f"{SYMBOL} at market, stop ${sig.stop:.2f}, target ${sig.target:.2f} (3R), risking about "
-            f"${qty * sig.risk:,.2f} (1% of ${account.equity:,.2f}). Order id {cid}.")
+            f"${qty * sig.risk:,.2f} ({risking}). Order id {cid}.")
     if dry_run:
         say("thought", what + " (dry run, nothing sent)")
         return True
+    if book.get("halted", False):         # the kill switch or a pause may have landed during this step
+        return decide("skipped", f"{seen}, but trading was paused just before the order went out ("
+                                 + (book.get("halt_reason") or "switched off") + ")", box=list(bx), signal=signal)
+    if book.get("strategy", "selloff") != "box":
+        return decide("skipped", f"{seen}, but the strategy changed to {book.get('strategy', 'selloff')} just "
+                                 "before the order went out", box=list(bx), signal=signal)
     try:
         broker.submit_bracket_order(SYMBOL, qty, side, sig.stop, sig.target, cid)
     except Exception as err:
         try:
             taken = broker.get_order(cid) is not None
         except Exception:
-            taken = False
+            # Can't tell whether Alpaca took it. Retry next minute: the id check at the top of this step
+            # finds the order if it went through, so a retry never sends a second entry.
+            log(f"Box breakout: the bracket order {cid} errored ({type(err).__name__}: {err}) and Alpaca "
+                "couldn't be asked whether it arrived; checking again next minute.")
+            raise err
         if not taken:
             return decide("failed", f"{seen}, but the bracket order failed: {type(err).__name__}: {err}",
                           kind="fail", box=list(bx), signal=signal)
     book.set("box_today", {"day": day, "status": "sent", "reason": seen, "box": list(bx), "signal": signal,
                            "order": {"id": cid, "qty": qty, "side": side, "stop": sig.stop, "target": sig.target,
-                                     "risk": sig.risk, "equity": account.equity}})
+                                     "risk": sig.risk, "equity": account.equity,
+                                     "risk_pct": round(risk_pct, 6)}})
     say("progress", what)
     return True
 
 
+def _box_buckets(five: pd.DataFrame) -> int:
+    """How many of the six 9:00-9:25 five-minute bars exist."""
+    return int(((five.index.hour == 9) & (five.index.minute < 30)).sum())
+
+
 def watch(broker, book: PaperBook, hist15: pd.DataFrame, fetch_today: Callable[[datetime], pd.DataFrame],
           clock: Callable[[], datetime] = lambda: datetime.now(ET), sleep=_time.sleep, dry_run: bool = False,
-          log: Callable[[str], None] = print) -> dict | None:
+          log: Callable[[str], None] = print,
+          fetch_sip_box: Callable[[], pd.DataFrame] | None = None) -> dict | None:
     """Once a minute until 10:31: fetch today's minutes and take one step. Stops early once decided.
 
     A failed fetch or step (a broker hiccup) is logged and retried the next minute; the Alpaca order-id
@@ -203,7 +257,8 @@ def watch(broker, book: PaperBook, hist15: pd.DataFrame, fetch_today: Callable[[
         decided = False
         try:
             today = fetch_today(now)
-            decided = step(broker, book, hist15, today, now, dry_run=dry_run, log=log, sleep=sleep)
+            decided = step(broker, book, hist15, today, now, dry_run=dry_run, log=log, sleep=sleep,
+                           fetch_sip_box=fetch_sip_box)
         except Exception as err:
             problem = f"{type(err).__name__}: {err}"
             log(f"Box watch problem at {now.astimezone(ET):%H:%M}: {problem}. Trying again next minute.")
@@ -276,28 +331,101 @@ def held_qty(broker, book: PaperBook) -> float:
     return _sign(state) * left
 
 
+FLATTEN_ATTEMPTS, FLATTEN_GAP = 7, 30.0   # a failed flatten is retried for about 3 minutes
+SETTLE_POLLS, SETTLE_NAP = 20, 0.5          # after cancelling, wait up to ~10 s for every leg to be final
+SETTLED = {"filled", "canceled", "expired", "rejected", "replaced", "done_for_day"}
+
+
+def _find_today(broker, book: PaperBook, state: dict | None, now: datetime, dry_run: bool,
+                log: Callable[[str], None]) -> dict | None:
+    """Today's box order at Alpaca when the book doesn't track it (a send whose outcome was never
+    recorded). The rebuilt record, or None if Alpaca has no such order or today's trade is already closed."""
+    day = now.date().isoformat()
+    if state and state.get("day") == day and state.get("status") == "closed":
+        return None
+    cid = order_id(now.date())
+    existing = broker.get_order(cid)
+    if existing is None:
+        return None
+    rec = _recovered(broker, cid, day, existing)
+    if state and state.get("day") == day:
+        rec = {**{k: state[k] for k in ("box", "signal") if k in state}, **rec}
+    rec["reason"] = "found at Alpaca by the flatten job; my records hadn't tracked it"
+    text = (f"Box flatten: today's box order {cid} is at Alpaca ({existing.status}) although my records said "
+            f"{(state or {}).get('status', 'nothing') if (state or {}).get('day') == day else 'nothing for today'}; "
+            "closing it now.")
+    log(text)
+    if not dry_run:
+        book.log(day, "fail", text)
+        book.set("box_today", rec)
+    return rec
+
+
 def flatten(broker, book: PaperBook, now: datetime | None = None, dry_run: bool = False, sleep=_time.sleep,
-            wait: int = 30, log: Callable[[str], None] = print) -> dict | None:
-    """Cancel Stan's open box orders, close what the box trade still holds, and record its R from the fills."""
+            wait: int = 30, log: Callable[[str], None] = print, attempts: int = FLATTEN_ATTEMPTS,
+            gap: float = FLATTEN_GAP) -> dict | None:
+    """Cancel Stan's open box orders, close what the box trade still holds, and record its R from the fills.
+
+    Whatever the book says, today's `stan-box-YYYYMMDD` order is looked up at Alpaca, so a trade whose
+    send was never recorded is still closed. A failed attempt is retried every `gap` seconds, `attempts`
+    times in all (about 3 minutes)."""
     now = (now or datetime.now(ET)).astimezone(ET)
     state = book.get("box_today")
-    day = (state or {}).get("day") or now.date().isoformat()
+    if not state or state.get("status") not in OPEN or not state.get("order"):
+        found = _find_today(broker, book, state, now, dry_run, log)
+        if found is None:
+            log("Box flatten: no open box trade, nothing to close.")
+            return state
+        state = found
+    day = state["day"]
 
     def say(kind: str, text: str) -> None:
         log(text)
         if not dry_run:
             book.log(day, kind, text)
 
-    if not state or state.get("status") not in OPEN or not state.get("order"):
-        log("Box flatten: no open box trade, nothing to close.")
-        return state
     if dry_run:
         _, _, left = _fills(broker, state)
         say("thought", f"Box flatten: would cancel the open {PREFIX} orders and close {left:g} {SYMBOL} "
                        "(dry run, nothing sent).")
         return state
 
+    out = state
+    for attempt in range(1, attempts + 1):
+        final = attempt == attempts
+        try:
+            out = _flatten_once(broker, book, state, now, sleep, wait, say, final)
+        except Exception as err:
+            out = _failed(book, book.get("box_today") or state, say, f"{type(err).__name__}: {err}", final)
+        if out.get("status") != "flatten_failed":
+            return out
+        if not final:
+            log(f"Box flatten attempt {attempt} of {attempts} failed ({out.get('reason')}); "
+                f"trying again in {gap:g} s.")
+            sleep(gap)
+            state = book.get("box_today") or out
+    return out
+
+
+def _settle(broker, state: dict, sleep) -> bool:
+    """After cancelling: wait until the entry, both legs and any close orders are final (filled or
+    cancelled), so a leg filling during the cancel is counted before deciding what's left to close."""
+    for i in range(SETTLE_POLLS):
+        parent, legs = broker.get_bracket(state["order"]["id"])
+        orders = [o for o in [parent, *legs, *(broker.get_order(c) for c in state.get("close_orders", []))]
+                  if o is not None]
+        if all(o.status in SETTLED for o in orders):
+            return True
+        if i < SETTLE_POLLS - 1:
+            sleep(SETTLE_NAP)
+    return False
+
+
+def _flatten_once(broker, book: PaperBook, state: dict, now: datetime, sleep, wait: int, say, final: bool) -> dict:
     broker.cancel_orders(PREFIX)
+    if not _settle(broker, state, sleep):
+        return _failed(book, state, say, "the cancelled box orders still weren't final after about 10 seconds",
+                       final)
     parent, fills, left = _fills(broker, state)
     if left > 1e-9:
         n = len(state.get("close_orders", [])) + 1
@@ -325,7 +453,7 @@ def flatten(broker, book: PaperBook, now: datetime | None = None, dry_run: bool 
         if left > 1e-9:
             if order is None:
                 why = f"{type(err).__name__}: {err}" if err else "no order came back"
-                return _failed(book, state, say, f"couldn't send the closing order ({why})")
+                return _failed(book, state, say, f"couldn't send the closing order ({why})", final)
             for _ in range(wait):
                 o = broker.get_order(cid)
                 if o is not None and o.filled_qty >= left - 1e-9:
@@ -333,7 +461,8 @@ def flatten(broker, book: PaperBook, now: datetime | None = None, dry_run: bool 
                 sleep(1)
             parent, fills, left = _fills(broker, state)
             if left > 1e-9:
-                return _failed(book, state, say, f"the closing order {cid} hasn't filled yet ({left:g} shares left)")
+                return _failed(book, state, say, f"the closing order {cid} hasn't filled yet ({left:g} shares left)",
+                               final)
 
     day_ = state["day"]
     if parent is None or parent.filled_qty <= 0:
@@ -365,10 +494,13 @@ def flatten(broker, book: PaperBook, now: datetime | None = None, dry_run: bool 
     return state
 
 
-def _failed(book: PaperBook, state: dict, say, why: str) -> dict:
+def _failed(book: PaperBook, state: dict, say, why: str, final: bool = True) -> dict:
+    """Mark the trade flatten_failed (keeping its close orders). Only the last attempt reports it."""
     state = {**state, "status": "flatten_failed", "reason": why}
     book.set("box_today", state)
-    say("fail", f"Box flatten problem: {why}. The position may still be open; the next run tries again.")
+    if final:
+        say("fail", f"Box flatten problem: {why}. The position is still open with no stop (its stop and target "
+                    "were cancelled). The next run tries again; close it by hand if it can't wait.")
     return state
 
 
@@ -386,11 +518,30 @@ def _last_stored(db) -> datetime | None:
     return None if ts is None else pd.Timestamp(ts, unit="s", tz="UTC").tz_convert(ET).to_pydatetime()
 
 
-def trend_history(client, db, start: datetime, backfill=None, load=None, log: Callable[[str], None] = print):
+def previous_session(day: date, sessions: Callable[[date, date], list[date]] | None = None) -> date:
+    """The trading session before `day`: from `sessions(start, end)` (Alpaca's calendar) when given and
+    working, else the previous weekday."""
+    if sessions is not None:
+        try:
+            earlier = [x for x in sessions(day - timedelta(days=10), day - timedelta(days=1)) if x < day]
+            if earlier:
+                return max(earlier)
+        except Exception:
+            pass
+    d = day - timedelta(days=1)
+    while d.weekday() >= 5:
+        d -= timedelta(days=1)
+    return d
+
+
+def trend_history(client, db, start: datetime, backfill=None, load=None, log: Callable[[str], None] = print,
+                  prev_session: date | None = None):
     """Finished 15-minute SIP bars before `start` (9:00 today), after a quick top-up of the stored bars.
 
     The top-up only runs when the stored bars are at most 30 days behind, so a missing or stale database
-    can't hold up the watch. Without recent bars the history is empty and the watch skips the day."""
+    can't hold up the watch. Without recent bars the history is empty and the watch skips the day.
+    If the stored bars still end before `prev_session` after the top-up (it failed), the EMAs would be
+    stale: the frame comes back with `attrs["problem"]` set and the watch skips the day with that reason."""
     from agent.stan.box import data
     backfill, load = backfill or data.backfill, load or data.load
     empty = pd.DataFrame(columns=["o", "h", "l", "c"], index=pd.DatetimeIndex([], tz=ET), dtype=float)
@@ -400,17 +551,27 @@ def trend_history(client, db, start: datetime, backfill=None, load=None, log: Ca
             + f", more than {TOP_UP_DAYS} days behind; not fetching them during the watch. "
             "Run python -m agent.stan.box.data backfill first. No trend history today.")
         return empty
+    failed = None
     try:
         n = backfill(client, db, log=log)
         log(f"Topped up {db} with {n:,} SIP bars.")
     except Exception as err:
-        log(f"Couldn't top up the SIP bars ({type(err).__name__}: {err}); using what's stored.")
+        failed = f"{type(err).__name__}: {err}"
+        log(f"Couldn't top up the SIP bars ({failed}); using what's stored.")
     try:
         stored = load(db)
     except Exception as err:
         log(f"Couldn't read {db} ({type(err).__name__}: {err}); no trend history.")
         return empty
-    return rules.bars(stored[stored.index < pd.Timestamp(start)], 15)
+    out = rules.bars(stored[stored.index < pd.Timestamp(start)], 15)
+    last = _last_stored(db)
+    if prev_session is not None and last is not None and last.date() < prev_session:
+        out.attrs["problem"] = (f"the stored SIP bars end {last:%Y-%m-%d}, before the last session "
+                                f"({prev_session:%Y-%m-%d}), and the top-up "
+                                + (f"failed ({failed})" if failed else "brought nothing newer")
+                                + ", so the 15-minute trend would be stale")
+        log("Trend history is stale: " + out.attrs["problem"] + ".")
+    return out
 
 
 # ---------------------------------------------------------------- command line
@@ -450,7 +611,11 @@ def main(argv: list[str] | None = None) -> int:
         db = args.db or data.DB_PATH
         client = StockHistoricalDataClient(settings.api_key, settings.secret_key)
         start = datetime.combine(datetime.now(ET).date(), time(9, 0), tzinfo=ET)
-        hist15 = trend_history(client, db, start)
+        def sessions(a: date, b: date) -> list[date]:
+            from alpaca.trading.requests import GetCalendarRequest
+            return [c.date for c in broker._trading.get_calendar(GetCalendarRequest(start=a, end=b))]
+
+        hist15 = trend_history(client, db, start, prev_session=previous_session(start.date(), sessions))
         last = hist15.index.max() if len(hist15) else None
         print(f"Trend history: {len(hist15):,} 15-minute bars from the SIP feed"
               + (f", last one {last:%Y-%m-%d %H:%M}." if last is not None else "."))
@@ -459,7 +624,18 @@ def main(argv: list[str] | None = None) -> int:
         def fetch_today(now: datetime) -> pd.DataFrame:
             return rules.minute_frame(fetch_alpaca(client, SYMBOL, start, now, feed="iex"))
 
-        state = watch(broker, book, hist15, fetch_today, dry_run=args.dry_run)
+        sip_box: list[pd.DataFrame] = []
+
+        def fetch_sip_box() -> pd.DataFrame:      # 9:00-9:30 from SIP, fetched once it is complete
+            if not sip_box:
+                got = rules.minute_frame(fetch_alpaca(client, SYMBOL, start, start + timedelta(minutes=30),
+                                                      feed="sip"))
+                if _box_buckets(rules.bars(got, 5)) == 6:
+                    sip_box.append(got)
+                return got
+            return sip_box[0]
+
+        state = watch(broker, book, hist15, fetch_today, dry_run=args.dry_run, fetch_sip_box=fetch_sip_box)
         print(f"Box watch done: {(state or {}).get('status', 'nothing recorded')}"
               + (" (dry run, nothing sent or saved)" if args.dry_run else "") + ".")
         return 0

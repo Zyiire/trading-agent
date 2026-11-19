@@ -84,8 +84,9 @@ The paper account trades the opening-range "box breakout" from a video, on QQQ.
 - Anything still open is closed at 3:55 PM. One trade a day; no trade if nothing breaks out by 10:30.
 - Half days are skipped (the bracket order would expire at the early close). News days are traded.
 
-**Sizing:** 1R is 1% of the account's equity, in whole shares. Stan skips the trade if that is under one share, if it would
-cost more than 95% of buying power, after a loss of 3R in the same Monday-to-Friday week, or while trading is paused.
+**Sizing:** 1R is 1% of the account's equity, in whole shares. If that many shares would cost more than 95% of buying
+power (a narrow box), Stan buys the most whole shares that fit, so that trade risks less than 1%. He skips the trade if
+that is under one share, after a loss of 3R in the same Monday-to-Friday week, or while trading is paused.
 The 20% kill switch still applies.
 
 **The 10-year backtest against the video** (QQQ 1-minute bars, 2016 to 2026): with the trend filter, 1,327 trades, 36.2% wins,

@@ -63,8 +63,13 @@ average over 10 years too, so the gap decisions stand. The live and exam code fe
 
 ## Risk
 
-- 1R = 1% of equity at entry; quantity = floor(1% of equity / 1R); skip if under 1 share or if
-  the position would exceed 95% of buying power.
+- 1R = 1% of equity at entry; quantity = floor(1% of equity / 1R). If that position would cost more
+  than 95% of buying power (a narrow box), **size down** to the largest whole-share quantity within
+  95% of buying power, so that trade risks less than 1% (the reduced risk % is written to the paper
+  log). Skip only if that is under 1 share. (Ruling 2026-11-19, replacing the earlier "skip".)
+- The exam's "live sizing" money view shows the effect: each trade risks
+  min(1%, (0.95 x 4 x equity / entry) x 1R / equity), i.e. buying power assumed to be 4x equity; it
+  reports $1 growth, the worst drop and how many trades were sized down.
 - One trade a day; skip after a weekly loss of 3R (Monday to Friday) or when trading is paused or
   halted; the existing 20% kill switch still applies.
 - Paper only. The broker methods refuse a non-paper account.

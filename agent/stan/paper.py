@@ -236,15 +236,21 @@ def run_evening(broker: Broker, book: PaperBook, history: dict[str, pd.DataFrame
                         + f". I'll sell the remaining {left} at the next open.")
 
     # 2. reconcile with Alpaca
-    held = {p.symbol: p.qty for p in broker.get_positions()}
     from agent.stan.box import live as box_live   # late import: box.live imports this module
-    box_qty = box_live.held_qty(broker, book)     # the box trade's QQQ isn't one of the selloff trades
+    for _ in range(3):      # the box entry can fill between the two reads (the watch trades at 9:35 too)
+        box_qty = box_live.held_qty(broker, book)     # the box trade's QQQ isn't one of the selloff trades
+        held = {p.symbol: p.qty for p in broker.get_positions()}
+        if box_live.held_qty(broker, book) == box_qty:
+            break
     if box_qty:
         held[box_live.SYMBOL] = held.get(box_live.SYMBOL, 0) - box_qty
     mine: dict[str, float] = {}
     for t in book.trades(["open", "pending_exit"]):
         mine[t["symbol"]] = mine.get(t["symbol"], 0) + t["qty"]
-    mismatched = [s for s, q in mine.items() if abs(held.get(s, 0) - q) > 1e-6]
+    check = set(mine)
+    if book.get("strategy", "selloff") == "box":
+        check.add(box_live.SYMBOL)   # Alpaca's QQQ minus the box trade must be exactly the selloff trades' QQQ
+    mismatched = sorted(s for s in check if abs(held.get(s, 0) - mine.get(s, 0)) > 1e-6)
     if mismatched and not dry_run:
         book.set("halted", True)
         book.set("halt_reason", "My records don't match Alpaca for: " + ", ".join(mismatched))
@@ -304,7 +310,7 @@ def run_evening(broker: Broker, book: PaperBook, history: dict[str, pd.DataFrame
             say("thought", f"On the box breakout: {len(open_selloff)} selloff trade(s) finish first. "
                            "No new selloff trades.")
         if not book.get("box_tiers_sold"):
-            sold = tiers.sell_all(broker, d, say, dry_run)
+            sold = tiers.sell_all(broker, d, say, dry_run, keep=mine)   # not the shares selloff trades own
             if sold and not dry_run:            # a failed sell is retried at the next run
                 book.set("box_tiers_sold", d)
         if not dry_run:
