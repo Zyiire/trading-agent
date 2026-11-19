@@ -11,4 +11,6 @@ if not defined PY set "PY=python"
 echo Using: %PY% >> data\open.log
 %PY% -c "import sys; print(sys.executable)" >> data\open.log 2>&1
 %PY% -m agent.stan.paper >> data\open.log 2>&1
-echo Exit code: %errorlevel% >> data\open.log
+set "CODE=%errorlevel%"
+echo Exit code: %CODE% >> data\open.log
+%PY% -m agent.discord_bot.notify open %CODE% >> data\open.log 2>&1

@@ -11,4 +11,6 @@ if not defined PY (where py >nul 2>&1 && set "PY=py -3")
 if not defined PY set "PY=python"
 echo Using: %PY% >> data\study.log
 %PY% -m agent.stan.train --pace 0 >> data\study.log 2>&1
-echo Exit code: %errorlevel% >> data\study.log
+set "CODE=%errorlevel%"
+echo Exit code: %CODE% >> data\study.log
+%PY% -m agent.discord_bot.notify study %CODE% >> data\study.log 2>&1

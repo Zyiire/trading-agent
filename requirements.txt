@@ -9,3 +9,4 @@ yfinance>=0.2.40
 httpx>=0.27
 pytest>=8.0
 tzdata>=2024.1  # time zones on Windows (Stan uses New York market time)
+discord.py>=2.6,<3  # Stan's Discord chat (agent/discord_bot)

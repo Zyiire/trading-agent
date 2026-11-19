@@ -111,6 +111,7 @@ class OrderInfo:
     filled_qty: float
     filled_avg_price: float | None
     filled_at: datetime | None
+    submitted_at: datetime | None = None
 
 
 class Broker(Protocol):
@@ -138,5 +139,7 @@ class Broker(Protocol):
     def submit_fractional_order(self, symbol: str, qty: float, side: str, client_order_id: str) -> OrderInfo: ...
 
     def get_order(self, client_order_id: str) -> OrderInfo | None: ...
+
+    def recent_orders(self, limit: int = 20) -> list[OrderInfo]: ...
 
     def cancel_open_orders(self) -> int: ...
