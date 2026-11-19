@@ -437,7 +437,16 @@ def flatten(broker, book: PaperBook, now: datetime | None = None, dry_run: bool 
     now = (now or datetime.now(ET)).astimezone(ET)
     state = book.get("box_today")
     if not state or state.get("status") not in OPEN or not state.get("order"):
-        found = _find_today(broker, book, state, now, dry_run, log)
+        for attempt in range(attempts):          # Alpaca can be briefly unreachable; retry the lookup too
+            try:
+                found = _find_today(broker, book, state, now, dry_run, log)
+                break
+            except Exception as err:
+                if attempt == attempts - 1:
+                    raise
+                log(f"Box flatten: couldn't look up today's box order ({type(err).__name__}: {err}); "
+                    f"trying again in {gap:.0f} s.")
+                sleep(gap)
         if found is None:
             log("Box flatten: no open box trade, nothing to close.")
             return state

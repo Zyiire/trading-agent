@@ -268,12 +268,21 @@ def run_evening(broker: Broker, book: PaperBook, history: dict[str, pd.DataFrame
             except Exception as err:
                 say("fail", f"Couldn't close the box position: {type(err).__name__}: {err}")
         if not dry_run:
-            for t in book.trades(["open"]):
+            # pending_exit trades lost their exit orders to the cancel above, so they're sold here too
+            for t in book.trades(["open", "pending_exit"]):
+                qty = t["qty"]
+                if t["status"] == "pending_exit" and t.get("exit_order"):
+                    o = broker.get_order(t["exit_order"])
+                    qty = t["qty"] - int(o.filled_qty) if o is not None else qty
+                    if qty <= 0:
+                        continue      # step 1 records the fill at the next run
                 oid = order_id(t["symbol"], t["signal_date"], "sell" + d.replace("-", ""))
-                ok, err = safe_submit(broker, t["symbol"], t["qty"], "sell", oid)
+                if oid == t.get("exit_order"):
+                    oid += "k"        # today's exit order already used this id
+                ok, err = safe_submit(broker, t["symbol"], qty, "sell", oid)
                 if ok:
                     book.update(t["symbol"], t["signal_date"], status="pending_exit", exit_order=oid,
-                                exit_signal_date=d, exit_reason="kill switch")
+                                exit_signal_date=d, exit_reason="kill switch", qty=qty)
                 else:
                     say("fail", f"Couldn't send the kill-switch sell for {t['symbol']}: {err}")
             book.set("halted", True)

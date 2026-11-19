@@ -248,3 +248,20 @@ def test_paper_api(tmp_path):
     assert data["log"] and data["equity_history"]
     empty = TestClient(create_app(tmp_path / "none.db")).get("/paper").json()
     assert empty["enabled"] is False
+
+
+def test_kill_switch_resells_a_pending_exit_whose_order_it_cancelled():
+    history, broker, book = _history(), FakeAlpaca(), PaperBook(":memory:")
+    _walk(broker, book, history, 45, 56)
+    t = book.trades(["open"])[0]
+    broker.submit_open_order(t["symbol"], t["qty"], "sell", "old-exit")   # an exit still waiting for the open
+    book.update(t["symbol"], t["signal_date"], status="pending_exit", exit_order="old-exit", exit_reason="rsi")
+    broker.cash -= 30_000
+    days = history["SPY"].index
+    cut = {s: df[df.index <= days[56]] for s, df in history.items()}
+    run_evening(broker, book, cut, now=_evening(days[56]))
+    assert broker.orders["old-exit"]["status"] == "canceled"
+    after = book.trades(["pending_exit"])[0]
+    assert after["exit_reason"] == "kill switch" and after["exit_order"] != "old-exit"
+    new = broker.orders[after["exit_order"]]
+    assert new["side"] == "sell" and new["qty"] == t["qty"] and new["status"] == "accepted"

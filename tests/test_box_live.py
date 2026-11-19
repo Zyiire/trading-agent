@@ -1186,3 +1186,21 @@ def test_fetch_yahoo_prepost_is_opt_in(monkeypatch):
     assert B.fetch_yahoo("QQQ") == [] and B.fetch_yahoo("QQQ", period="1d", prepost=True) == []
     assert (seen[0]["period"], seen[0]["prepost"]) == ("7d", False)
     assert (seen[1]["period"], seen[1]["prepost"]) == ("1d", True)
+
+
+def test_flatten_retries_the_alpaca_lookup_when_it_is_unreachable(book):
+    broker = FakeBroker()
+    broker.submit_bracket_order("QQQ", 500, "buy", 100.0, 108.0, CID)
+    broker.fill_entry(CID, 102.1)
+    broker.mark = 104.1
+    real, calls = broker.get_order, []
+
+    def flaky(cid):
+        calls.append(cid)
+        if len(calls) == 1:
+            raise ConnectionError("Alpaca down")
+        return real(cid)
+    broker.get_order = flaky
+    naps = []
+    state = L.flatten(broker, book, at(15, 55, 5), sleep=naps.append, log=lambda text: None)
+    assert naps and state["status"] == "closed" and broker.closes == [("QQQ", 500, "sell", CID + "-flat1")]
