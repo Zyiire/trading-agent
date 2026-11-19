@@ -182,18 +182,43 @@ def test_exit_without_bars_is_none():
 
 
 def test_size_one_percent_rule():
-    assert rules.size(100_000, 2.0, 400_000) == 500
-    assert rules.size(100_000, 3.0, 400_000) == 333          # floors
-    assert rules.size(100_000, 2.0, 400_000, risk_pct=0.005) == 250
+    assert rules.size(100_000, 2.0, 400_000, 50.0) == 500
+    assert rules.size(100_000, 3.0, 400_000, 50.0) == 333          # floors
+    assert rules.size(100_000, 2.0, 400_000, 50.0, risk_pct=0.005) == 250
 
 
 def test_size_under_one_share_is_zero():
-    assert rules.size(1_000, 50.0, 4_000) == 0
-    assert rules.size(0, 1.0, 1_000) == 0
-    assert rules.size(10_000, 0.0, 1_000) == 0
+    assert rules.size(1_000, 50.0, 4_000, 100.0) == 0
+    assert rules.size(0, 1.0, 1_000, 10.0) == 0
+    assert rules.size(10_000, 0.0, 1_000, 10.0) == 0
 
 
 def test_size_skips_when_over_95_percent_of_buying_power():
-    assert rules.size(100_000, 1.0, 100_000, price=100.0) == 0       # 1,000 shares = $100k > 95k
-    assert rules.size(100_000, 1.0, 200_000, price=100.0) == 1000    # $100k fits
-    assert rules.size(100_000, 1.0, 105_300, price=100.0) == 1000    # $100k is under 95% of 105,300
+    assert rules.size(100_000, 1.0, 100_000, 100.0) == 0       # 1,000 shares = $100k > $95k
+    assert rules.size(100_000, 1.0, 200_000, 100.0) == 1000    # $100k fits
+    assert rules.size(100_000, 1.0, 105_300, 100.0) == 1000    # $100k is under 95% of 105,300
+    assert rules.size(100_000, 1.0, 105_200, 100.0) == 0       # just over
+
+
+def test_size_requires_price():
+    with pytest.raises(TypeError):
+        rules.size(100_000, 1.0, 200_000)
+
+
+def test_bars_now_drops_unfinished_buckets():
+    df = boxed(edits={"09:34": (100, 102, 100, 102)})
+    at = lambda hhmm, sec=0: pd.Timestamp(f"2024-03-04 {hhmm}", tz=ET) + pd.Timedelta(seconds=sec)
+    assert at("09:25") in rules.bars(df, 5, now=at("09:30")).index          # finished exactly at 9:30:00
+    assert at("09:25") not in rules.bars(df, 5, now=at("09:29", 59)).index  # still forming
+    live = rules.bars(df[df.index < at("09:33")], 5, now=at("09:33"))       # 9:30 bar half built at 9:33
+    assert at("09:30") not in live.index
+    assert rules.signal(live, (101, 99)) is None
+    full = rules.bars(df, 5, now=at("09:35"))
+    assert rules.signal(full, (101, 99)).side == "long"
+
+
+def test_box_ignores_half_built_last_bar_when_now_given():
+    df = boxed(edits={"09:24": (100, 103, 100, 100)})      # 9:25 bar would add a 103 high
+    early = rules.bars(df[df.index < pd.Timestamp("2024-03-04 09:23", tz=ET)], 5,
+                       now=pd.Timestamp("2024-03-04 09:23", tz=ET))
+    assert rules.box(early) is None

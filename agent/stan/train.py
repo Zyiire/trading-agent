@@ -426,7 +426,7 @@ def run_training(
         why = "practice data has no minute bars" if demo else "I have no minute-bar file yet"
         journal.finish_task("box", f"Skipped: {why}", failed=not demo)   # demo skips by design
         journal.think(f"I'm skipping the box breakout exam: {why}. "
-                      "Run python -m agent.stan.box.data backfill to fetch the bars.", "fail")
+                      "Run python -m agent.stan.box.data backfill to fetch the bars.", "thought")
     else:
         try:
             journal.think(

@@ -33,10 +33,18 @@ def minute_frame(minute_rows) -> pd.DataFrame:
     return df[["o", "h", "l", "c"]].astype(float)
 
 
-def bars(minute_rows, minutes: int) -> pd.DataFrame:
-    """`minutes`-long bars (label = bar open) from 1-minute bars. Buckets with no minutes are dropped."""
+def bars(minute_rows, minutes: int, now=None) -> pd.DataFrame:
+    """`minutes`-long bars (label = bar open) from 1-minute bars. Buckets with no minutes are dropped.
+
+    Pass `now` (tz-aware) to drop any bucket that has not finished by then, i.e. whose end
+    (open + `minutes`) is after `now`. Live code must always pass it; without it the last bucket
+    may be half built.
+    """
     m = minute_frame(minute_rows)
-    return m.resample(f"{minutes}min", label="left", closed="left").agg(OHLC).dropna()
+    out = m.resample(f"{minutes}min", label="left", closed="left").agg(OHLC).dropna()
+    if now is not None:
+        out = out[out.index + pd.Timedelta(minutes=minutes) <= pd.Timestamp(now)]
+    return out
 
 
 def _minute_of_day(index: pd.DatetimeIndex) -> np.ndarray:
@@ -143,11 +151,11 @@ def simulate_exit(minutes_after: pd.DataFrame, sig: Signal, flat: time = FLAT) -
     return float(win["c"].iloc[-1]), "time"
 
 
-def size(equity: float, risk_per_share: float, buying_power: float, risk_pct: float = 0.01,
-         price: float | None = None) -> int:
+def size(equity: float, risk_per_share: float, buying_power: float, price: float,
+         risk_pct: float = 0.01) -> int:
     """Whole shares risking `risk_pct` of equity. 0 means skip.
 
-    Skips (0) when under one share, or when `price` is given and the position would cost more
+    Skips (0) when under one share, or when the position (shares x `price`) would cost more
     than 95% of buying power.
     """
     if equity <= 0 or risk_per_share <= 0:
@@ -155,6 +163,6 @@ def size(equity: float, risk_per_share: float, buying_power: float, risk_pct: fl
     qty = math.floor(equity * risk_pct / risk_per_share)
     if qty < 1:
         return 0
-    if price is not None and qty * price > 0.95 * buying_power:
+    if qty * price > 0.95 * buying_power:
         return 0
     return qty

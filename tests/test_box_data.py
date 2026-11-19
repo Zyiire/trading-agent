@@ -29,7 +29,8 @@ def test_backfill_resumes_and_respects_sip_delay(tmp_path, monkeypatch):
 
 
 def test_backfill_up_to_date_fetches_nothing(tmp_path, monkeypatch):
-    monkeypatch.setattr(data, "fetch_alpaca", lambda *a, **k: [])
-    now = datetime(2024, 3, 4, 15, 0, tzinfo=timezone.utc)
-    assert data.backfill(None, tmp_path / "b.db", since=date(2024, 3, 4), now=datetime(2024, 3, 4, 0, 10,
-                         tzinfo=timezone.utc), log=lambda *_: None) == 0
+    calls = []
+    monkeypatch.setattr(data, "fetch_alpaca", lambda *a, **k: calls.append(a) or [])
+    assert data.backfill(None, tmp_path / "b.db", since=date(2024, 3, 4),
+                         now=datetime(2024, 3, 4, 0, 10, tzinfo=timezone.utc), log=lambda *_: None) == 0
+    assert calls == []
