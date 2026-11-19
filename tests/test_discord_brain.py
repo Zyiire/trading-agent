@@ -55,7 +55,7 @@ def test_runs_tools_then_returns_the_answer(tools_seen):
     assert tools_seen == [("account", {})]
     first = fake.payloads[0]
     assert first["model"] == "qwen3:14b" and first["stream"] is False and first["think"] is False
-    assert first["options"]["num_ctx"] == 8192 and len(first["tools"]) == 10
+    assert first["options"]["num_ctx"] == 8192 and len(first["tools"]) == 11
     assert [m["role"] for m in first["messages"]] == ["system", "user", "assistant", "user"]
     tool_msg = fake.payloads[1]["messages"][-1]
     assert tool_msg["role"] == "tool" and tool_msg["tool_name"] == "account"

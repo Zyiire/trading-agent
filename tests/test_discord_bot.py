@@ -80,10 +80,13 @@ def at(y, m, d, hh, mm):
 
 def test_due_checks_times_weekends_and_once_a_day():
     done: set = set()
-    assert BOT.due_checks(at(2026, 11, 17, 9, 49), done) == []
-    assert BOT.due_checks(at(2026, 11, 17, 9, 50), done) == ["open"]
-    assert BOT.due_checks(at(2026, 11, 17, 18, 30), done) == ["open", "study"]
-    done |= {("open", date(2026, 11, 17)), ("study", date(2026, 11, 17))}
+    assert BOT.due_checks(at(2026, 11, 17, 9, 44), done) == []
+    assert BOT.due_checks(at(2026, 11, 17, 9, 45), done) == ["box"]
+    assert BOT.due_checks(at(2026, 11, 17, 9, 50), done) == ["box", "open"]
+    assert BOT.due_checks(at(2026, 11, 17, 16, 4), done) == ["box", "open"]
+    assert BOT.due_checks(at(2026, 11, 17, 16, 5), done) == ["box", "open", "flatten"]
+    assert BOT.due_checks(at(2026, 11, 17, 18, 30), done) == ["box", "open", "flatten", "study"]
+    done |= {(j, date(2026, 11, 17)) for j in ("box", "open", "flatten", "study")}
     assert BOT.due_checks(at(2026, 11, 17, 20, 0), done) == []
     assert BOT.due_checks(at(2026, 11, 21, 10, 0), set()) == []   # Saturday
 
@@ -189,9 +192,11 @@ def test_missed_run_tick_survives_a_failed_send_and_retries(tmp_path):
     assert done == set() and ch.sent == []
     ch.fail = False
     asyncio.run(BOT.run_missed_checks(now, done, tmp_path, get_channel))
-    assert done == {("open", date(2026, 11, 17))} and len(ch.sent) == 1 and "hasn't run today" in ch.sent[0]
+    assert done == {("box", date(2026, 11, 17)), ("open", date(2026, 11, 17))}
+    assert len(ch.sent) == 2 and all("hasn't run today" in m for m in ch.sent)
+    assert "box breakout watch" in ch.sent[0]
     asyncio.run(BOT.run_missed_checks(now, done, tmp_path, get_channel))
-    assert len(ch.sent) == 1
+    assert len(ch.sent) == 2
 
 
 def test_missed_run_tick_with_nothing_to_send_is_marked_done(tmp_path):
@@ -200,5 +205,6 @@ def test_missed_run_tick_with_nothing_to_send_is_marked_done(tmp_path):
     async def get_channel():
         raise AssertionError("no send expected")
     done = set()
+    (tmp_path / "box.log").write_text("==== Tue 11/17/2026  9:31:01.00 ====" + chr(10) + "Exit code: 0" + chr(10))
     asyncio.run(BOT.run_missed_checks(at(2026, 11, 17, 9, 55), done, tmp_path, get_channel))
-    assert done == {("open", date(2026, 11, 17))}
+    assert done == {("box", date(2026, 11, 17)), ("open", date(2026, 11, 17))}

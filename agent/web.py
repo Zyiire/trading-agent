@@ -6,7 +6,7 @@
 It serves the page in agent/webapp/ and adds a few endpoints to the phone API:
     GET  /live                 account, positions and market clock, straight from Alpaca
     GET  /live/chart?symbol=   5-minute prices for one holding
-    POST /paper/use            choose selloff, low, medium or high
+    POST /paper/use            choose box, selloff, low, medium or high
     POST /paper/run            preview (dry run) or send Stan's trade; GET /paper/job reports on it
     POST /paper/pause, /paper/resume
 

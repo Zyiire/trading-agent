@@ -24,6 +24,7 @@ STRATEGY_NAMES = {
     "low": "the low-risk tier",
     "medium": "the medium-risk tier",
     "high": "the high-risk tier",
+    "box": "the box breakout on QQQ",
 }
 
 
@@ -324,6 +325,10 @@ def strategy(ctx: ToolContext) -> dict:
     finally:
         book.close()
     facts = [f"The paper account trades {STRATEGY_NAMES.get(name, name)}."]
+    if name == "box":
+        head = _box_headline(_journal_meta(ctx).get("box_exam"))
+        if head:
+            facts.append(head)
     arena = _journal_meta(ctx).get("arena") or {}
     by_key = {x.get("key"): x for x in arena.get("strategies", [])}
     for tier in ("low", "medium", "high"):
@@ -360,6 +365,85 @@ def levels(ctx: ToolContext, day: str | None = None) -> dict:
         store.close()
 
 
+def _box_headline(exam: dict | None) -> str | None:
+    h = (exam or {}).get("headline") or {}
+    if not h.get("trades") or h.get("win_rate") is None or h.get("avg_r") is None:
+        return None
+    span = exam.get("span")
+    years = f" from {span[0]} to {span[1]}" if span and len(span) == 2 else ""
+    return (f"Box breakout backtest on QQQ{years}: {h['trades']:,} trades, won {h['win_rate'] * 100:.1f}%, "
+            f"averaging {h['avg_r']:+.3f}R a trade.")
+
+
+def _box_today_fact(state: dict | None, today: date) -> tuple[str, dict]:
+    """One sentence about the newest box_today record, marked (today)/(yesterday)."""
+    if not state or not state.get("day"):
+        return "No box trade has been recorded yet.", {}
+    d = date.fromisoformat(state["day"])
+    on = f"{nice_day(d)}{_relative(d, today)}"
+    status, reason = state.get("status"), state.get("reason") or ""
+    o, sig, bx = state.get("order") or {}, state.get("signal") or {}, state.get("box")
+    box = f" The box was {money(bx[0])} high to {money(bx[1])} low." if bx and len(bx) == 2 else ""
+    if status in ("sent", "flatten_failed") and o:
+        side = "bought" if o.get("side") == "buy" else "shorted"
+        text = (f"On {on} Stan {side} {qty(o.get('qty') or 0)} QQQ with a bracket order, stop {money(o.get('stop'))}, "
+                f"target {money(o.get('target'))}.{box}")
+        if status == "flatten_failed":
+            text += f" The 3:55 close ran into a problem: {reason}."
+        else:
+            text += " It closes by 3:55 PM unless the stop or target hits first."
+    elif status == "closed":
+        r = state.get("result") or {}
+        if r.get("entry") is None:
+            text = f"On {on} the box order never filled, so nothing was traded."
+        else:
+            side = "long" if r.get("side") == "buy" else "short"
+            rr = f" Result {r['r']:+.2f}R" if r.get("r") is not None else " Result"
+            text = (f"On {on} the box trade was {side} {qty(r.get('qty') or 0)} QQQ from {money(r['entry'])} to "
+                    f"{money(r.get('exit'))} (exit: {r.get('reason')}).{rr}, {money(r.get('pnl'))}.{box}")
+    elif status in ("no_box", "no_signal", "blocked", "skipped", "failed"):
+        text = f"On {on} Stan made no box trade: {reason}.{box}"
+    else:
+        text = f"On {on} the box record says {status or 'unknown'}.{box}"
+    return text, {"day": state["day"], "status": status}
+
+
+def box_breakout(ctx: ToolContext) -> dict:
+    meta = _journal_meta(ctx)
+    exam = meta.get("box_exam")
+    book = PaperBook(ctx.journal_path)
+    try:
+        strategy, state = book.get("strategy", "selloff"), book.get("box_today")
+        results = book.get("box_results", []) or []
+        notes = [r for r in book.logs(30) if str(r["text"]).startswith(("Box ", "Box:"))][:3]
+    finally:
+        book.close()
+    today = ctx.now().date()
+    facts = ["The box breakout: QQQ's 9:00-9:30 range is the box; the first 5-minute close outside it by 10:30 "
+             "is the entry, the stop is the other side of the box, the target is 3R, and everything is closed at "
+             "3:55 PM. One trade a day, 1% of the account risked."]
+    if strategy != "box":
+        facts.append(f"The paper account trades {STRATEGY_NAMES.get(strategy, strategy)} right now, not the box "
+                     "breakout, so it won't place box trades.")
+    line, today_data = _box_today_fact(state, today)
+    facts.append(line)
+    done = [r for r in results if r.get("r") is not None]
+    if done:
+        total = sum(r["r"] for r in done)
+        facts.append(f"Closed box trades so far: {len(done)}, totaling {total:+.2f}R.")
+        last = done[-1]
+        d = date.fromisoformat(last["day"])
+        facts.append(f"The latest closed box trade was on {nice_day(d)}{_relative(d, today)}: {last['r']:+.2f}R.")
+    for n in notes:
+        d = date.fromisoformat(n["day"])
+        facts.append(f"Note from {nice_day(d)}{_relative(d, today)}: {n['text']}")
+    if exam and exam.get("facts"):
+        facts.extend(exam["facts"])
+    else:
+        facts.append("Stan hasn't run the box backtest yet, so there are no backtest numbers.")
+    return result(facts, {"strategy": strategy, "today": today_data, "results": len(done), "exam": exam or None})
+
+
 @dataclass(frozen=True)
 class Tool:
     name: str
@@ -394,6 +478,10 @@ TOOLS = [
          _params(limit=LIMIT), lessons),
     Tool("strategy", "Which strategy the paper account trades, the best strategy in each risk tier (low, medium, "
          "high), and the latest plan. Use for 'what are you trading', 'why SPY', 'which tier'.", _params(), strategy),
+    Tool("box_breakout", "The box breakout strategy on QQQ: today's box (opening range), whether a breakout signal "
+         "fired, the order and its stop and target, the result in R, recent box trades, and the box backtest "
+         "report card against the video's claims. Use for 'box', 'breakout', 'opening range', 'QQQ trade today', "
+         "'did the box trade today', 'box backtest', 'how did the box do'.", _params(), box_breakout),
     Tool("levels", "The QQQ 0DTE options levels for a day: price levels, GEX (gamma exposure), call and put walls, "
          "and the put/call table. Use for levels, GEX, walls, put/call, QQQ options questions.",
          _params(day={"type": "string", "description": "A date like 2026-01-15. Leave it out for the latest saved day."}), levels),

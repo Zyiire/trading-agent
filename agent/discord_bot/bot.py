@@ -20,7 +20,7 @@ from agent.discord_bot.config import ChatSettings, load_chat_settings
 from agent.discord_bot.reports import missed_run_message, split_message
 from agent.discord_bot.tools import ET, ToolContext
 
-CHECKS = (("open", time(9, 50)), ("study", time(18, 30)))
+CHECKS = (("box", time(9, 45)), ("open", time(9, 50)), ("flatten", time(16, 5)), ("study", time(18, 30)))
 NO_PINGS = discord.AllowedMentions.none()
 
 

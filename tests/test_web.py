@@ -38,6 +38,9 @@ def test_choose_tier_preview_then_send(client):
     c, broker = client
     assert c.post("/paper/use", json={"strategy": "high"}).json()["strategy"] == "high"
     assert c.post("/paper/use", json={"strategy": "yolo"}).status_code == 400
+    assert c.post("/paper/use", json={"strategy": "box"}).json()["strategy"] == "box"
+    assert c.get("/live").json()["strategy"] == "box"
+    c.post("/paper/use", json={"strategy": "high"})
     before = dict(broker.orders)
     c.post("/paper/run", json={"dry_run": True})
     job = _wait(c)
