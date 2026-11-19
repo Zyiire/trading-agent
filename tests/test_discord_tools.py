@@ -135,10 +135,18 @@ def test_schedule_reports_tasks_and_logs(ctx, tmp_path):
          "next_run": "2026-11-18T09:35:00"},
         {"name": "Stan nightly study", "state": "Ready", "last_run": "1999-11-30T00:00:00", "last_result": 267011,
          "next_run": "2026-11-17T18:00:00"},
+        {"name": "Stan Discord", "state": "Ready", "last_run": "2026-11-17T08:00:00", "last_result": 3221225786,
+         "next_run": ""},
+        {"name": "Stan odd", "state": "Ready", "last_run": "2026-11-17T08:00:00", "last_result": 3221225477,
+         "next_run": ""},
+        {"name": "Stan small", "state": "Ready", "last_run": "2026-11-17T08:00:00", "last_result": 1, "next_run": ""},
     ]
     facts = T.schedule(ctx)["facts"]
     assert "Stan open run: last ran Nov 17 at 9:35 AM (OK); next run Nov 18 at 9:35 AM." in facts
     assert "Stan nightly study: has never run; next run Nov 17 at 6:00 PM." in facts
+    assert "Stan Discord: last ran Nov 17 at 8:00 AM (stopped: the window was closed or Ctrl+C); no next run scheduled." in facts
+    assert "Stan odd: last ran Nov 17 at 8:00 AM (error code 0xC0000005); no next run scheduled." in facts
+    assert "Stan small: last ran Nov 17 at 8:00 AM (error code 1); no next run scheduled." in facts
     assert "The trading run log was last written on Nov 17, exit code 0 (OK)." in facts
     assert "The study log was last written on Nov 16, but that run never finished (no exit code)." in facts
     assert "The data collector log has no entries yet." in facts

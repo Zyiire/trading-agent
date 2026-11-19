@@ -15,7 +15,7 @@ import discord
 from discord.ext import tasks
 
 from agent.config import ConfigError
-from agent.discord_bot.brain import EMPTY, Brain
+from agent.discord_bot.brain import EMPTY, Brain, is_fixed_reply
 from agent.discord_bot.config import ChatSettings, load_chat_settings
 from agent.discord_bot.reports import missed_run_message, split_message
 from agent.discord_bot.tools import ET, ToolContext
@@ -35,13 +35,37 @@ def due_checks(now: datetime, done: set[tuple[str, date]]) -> list[str]:
     return [job for job, at in CHECKS if now.time() >= at and (job, now.date()) not in done]
 
 
+SOMETHING_WRONG = "Something went wrong on my side. Try again in a minute."
+
+
 async def handle_message(content: str, channel, brain, history: deque) -> None:
-    async with channel.typing():
-        text = await asyncio.to_thread(brain.reply, list(history), content)
-    history.append({"role": "user", "content": content})
-    history.append({"role": "assistant", "content": text})
-    for chunk in split_message(text) or [EMPTY]:
-        await channel.send(chunk, allowed_mentions=NO_PINGS)
+    try:
+        async with channel.typing():
+            text = await asyncio.to_thread(brain.reply, list(history), content)
+        history.append({"role": "user", "content": content})
+        if text and not is_fixed_reply(text):
+            history.append({"role": "assistant", "content": text})
+        for chunk in split_message(text) or [EMPTY]:
+            await channel.send(chunk, allowed_mentions=NO_PINGS)
+    except Exception as err:
+        print(f"Stan couldn't answer: {type(err).__name__}: {err}", flush=True)
+        try:
+            await channel.send(SOMETHING_WRONG, allowed_mentions=NO_PINGS)
+        except Exception as send_err:
+            print(f"Couldn't send the fallback either: {type(send_err).__name__}: {send_err}", flush=True)
+
+
+async def run_missed_checks(now: datetime, done: set, data_dir: Path, get_channel) -> None:
+    """One tick of the missed-run alert. A job is marked done only after its alert was sent (or none was
+    needed), so a failed send is retried on the next tick and never stops the loop."""
+    for job in due_checks(now, done):
+        try:
+            text = missed_run_message(job, data_dir, now.date())
+            if text:
+                await (await get_channel()).send(text)
+            done.add((job, now.date()))
+        except Exception as err:
+            print(f"Missed-run check for {job} failed: {type(err).__name__}: {err}", flush=True)
 
 
 class StanBot(discord.Client):
@@ -73,12 +97,12 @@ class StanBot(discord.Client):
 
     @tasks.loop(minutes=1)
     async def missed_run_loop(self) -> None:
-        now = datetime.now(ET)
-        for job in due_checks(now, self.done):
-            self.done.add((job, now.date()))
-            text = missed_run_message(job, self.data_dir, now.date())
-            if text:
-                await (await self._channel()).send(text)
+        await run_missed_checks(datetime.now(ET), self.done, self.data_dir, self._channel)
+
+    @missed_run_loop.error
+    async def _missed_run_loop_error(self, err: BaseException) -> None:
+        print(f"Missed-run loop stopped ({type(err).__name__}: {err}); restarting.", flush=True)
+        self.missed_run_loop.restart()
 
     @missed_run_loop.before_loop
     async def _before_missed_run_loop(self) -> None:

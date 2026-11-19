@@ -59,7 +59,7 @@ def test_runs_tools_then_returns_the_answer(tools_seen):
     assert [m["role"] for m in first["messages"]] == ["system", "user", "assistant", "user"]
     tool_msg = fake.payloads[1]["messages"][-1]
     assert tool_msg["role"] == "tool" and tool_msg["tool_name"] == "account"
-    assert json.loads(tool_msg["content"]) == {"facts": ["account fact"], "data": {}}
+    assert json.loads(tool_msg["content"]) == {"facts": ["account fact"]}   # no `data`, to save context
 
 
 def test_string_arguments_and_think_tags(tools_seen):
@@ -105,3 +105,33 @@ def test_non_dict_arguments_do_not_break_the_loop():
     fake = FakeOllama(reply_msg(tool_calls=[call("trading_log", "[1]")]), reply_msg("Done."))
     assert B.Brain(T.ToolContext(), post=fake).reply([], "?") == "Done."
     assert "tool" in [m["role"] for m in fake.payloads[1]["messages"]]
+
+
+def test_tool_error_is_sent_but_data_is_not(monkeypatch):
+    monkeypatch.setattr(B, "run_tool", lambda ctx, name, args: {"error": "down", "facts": [], "data": {"big": [1] * 99}})
+    fake = FakeOllama(reply_msg(tool_calls=[call("account")]), reply_msg("Can't tell."))
+    B.Brain(T.ToolContext(), post=fake).reply([], "?")
+    assert json.loads(fake.payloads[1]["messages"][-1]["content"]) == {"error": "down", "facts": []}
+
+
+@pytest.mark.parametrize("body", [{"nope": 1}, "not json"])
+def test_malformed_ok_body_gets_the_brain_problem_reply(body):
+    r = httpx.Response(200, json=body, request=httpx.Request("POST", URL)) if isinstance(body, dict) else         httpx.Response(200, content=b"<html>", request=httpx.Request("POST", URL))
+    assert B.Brain(T.ToolContext(), post=FakeOllama(r)).reply([], "?") == B.BAD_BODY
+
+
+def test_fixed_replies_are_recognised():
+    assert all(B.is_fixed_reply(t) for t in (B.NOT_RUNNING, B.EMPTY, B.BAD_BODY, B.TIMEOUT,
+               "My brain model isn't downloaded yet. On the PC, run: ollama pull x",
+               "My brain had a problem (HTTP 500). Try again in a minute."))
+    assert not B.is_fixed_reply("Cash is $1.")
+
+
+def test_main_prints_config_errors_not_a_traceback(monkeypatch, capsys):
+    from agent.config import ConfigError
+
+    def boom(**kw):
+        raise ConfigError("STAN_JOURNAL is bad")
+    monkeypatch.setattr("agent.discord_bot.config.load_chat_settings", boom)
+    assert B.main(["hi"]) == 2
+    assert "STAN_JOURNAL is bad" in capsys.readouterr().out

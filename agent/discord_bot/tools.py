@@ -203,7 +203,16 @@ def market_clock(ctx: ToolContext) -> dict:
 
 
 JOB_LOGS = (("trading run", "open.log"), ("study", "study.log"), ("data collector", "collect.log"))
-RESULT_WORDS = {0: "OK", 267009: "still running", 267011: "has not run yet"}
+RESULT_WORDS = {0: "OK", 267009: "still running", 267011: "has not run yet",
+                0xC000013A: "stopped: the window was closed or Ctrl+C"}
+
+
+def _result_word(code) -> str:
+    if code in RESULT_WORDS:
+        return RESULT_WORDS[code]
+    if isinstance(code, int) and (code < 0 or code > 0x7FFFFFFF):
+        return f"error code 0x{code & 0xFFFFFFFF:08X}"
+    return f"error code {code}"
 
 
 def _when(raw: str) -> datetime | None:
@@ -221,7 +230,7 @@ def schedule(ctx: ToolContext) -> dict:
         last, nxt = _when(t.get("last_run", "")), _when(t.get("next_run", ""))
         code = t.get("last_result")
         ran = (f"last ran {nice_day(last.date())} at {clock_time(last)} "
-               f"({RESULT_WORDS.get(code, f'error code {code}')})") if last else "has never run"
+               f"({_result_word(code & 0xFFFFFFFF if isinstance(code, int) and code < 0 else code)})") if last else "has never run"
         upcoming = f"next run {nice_day(nxt.date())} at {clock_time(nxt)}" if nxt else "no next run scheduled"
         facts.append(f"{t.get('name')}: {ran}; {upcoming}.")
     if not tasks:

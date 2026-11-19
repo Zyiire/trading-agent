@@ -61,6 +61,7 @@ from collections import deque
 from datetime import date, datetime
 
 from agent.discord_bot import bot as BOT
+from agent.discord_bot.brain import NOT_RUNNING
 from agent.discord_bot.tools import ET
 
 S = ChatSettings(bot_token="t", owner_id=111, channel_id=222)
@@ -138,3 +139,66 @@ def test_main_stops_on_missing_settings(monkeypatch, clean_env, capsys):
     monkeypatch.setattr("agent.discord_bot.config.load_dotenv", None)
     assert BOT.main() == 2
     assert "Missing DISCORD_BOT_TOKEN" in capsys.readouterr().out
+
+
+def test_empty_reply_sends_the_empty_fallback_and_is_not_remembered():
+    channel, history = FakeChannel(), deque(maxlen=20)
+    asyncio.run(BOT.handle_message("hm", channel, FakeBrain(""), history))
+    assert channel.sent == [BOT.EMPTY]
+    assert list(history) == [{"role": "user", "content": "hm"}]
+
+
+def test_fixed_problem_replies_are_not_stored_as_assistant_turns():
+    channel, history = FakeChannel(), deque(maxlen=20)
+    asyncio.run(BOT.handle_message("hi", channel, FakeBrain(NOT_RUNNING), history))
+    assert channel.sent and [m["role"] for m in history] == ["user"]
+
+
+def test_brain_exception_sends_the_fixed_fallback(capsys):
+    class Boom:
+        def reply(self, history, message):
+            raise RuntimeError("kaboom")
+    channel, history = FakeChannel(), deque(maxlen=20)
+    asyncio.run(BOT.handle_message("hi", channel, Boom(), history))
+    assert channel.sent == [BOT.SOMETHING_WRONG]
+    assert "kaboom" in capsys.readouterr().out
+
+
+def test_failed_fallback_send_does_not_raise():
+    class Dead(FakeChannel):
+        async def send(self, text, **kwargs):
+            raise RuntimeError("discord down")
+    asyncio.run(BOT.handle_message("hi", Dead(), FakeBrain("ok"), deque(maxlen=20)))
+
+
+def test_missed_run_tick_survives_a_failed_send_and_retries(tmp_path):
+    class Flaky:
+        def __init__(self):
+            self.fail, self.sent = True, []
+
+        async def send(self, text, **kwargs):
+            if self.fail:
+                raise RuntimeError("503")
+            self.sent.append(text)
+    ch, done = Flaky(), set()
+
+    async def get_channel():
+        return ch
+    now = at(2026, 11, 17, 9, 55)     # a weekday, no open.log in tmp_path, so an alert is due
+    asyncio.run(BOT.run_missed_checks(now, done, tmp_path, get_channel))   # must not raise
+    assert done == set() and ch.sent == []
+    ch.fail = False
+    asyncio.run(BOT.run_missed_checks(now, done, tmp_path, get_channel))
+    assert done == {("open", date(2026, 11, 17))} and len(ch.sent) == 1 and "hasn't run today" in ch.sent[0]
+    asyncio.run(BOT.run_missed_checks(now, done, tmp_path, get_channel))
+    assert len(ch.sent) == 1
+
+
+def test_missed_run_tick_with_nothing_to_send_is_marked_done(tmp_path):
+    (tmp_path / "open.log").write_text("==== Tue 11/17/2026  9:35:01.00 ===="+"\n"+"Exit code: 0"+"\n")
+
+    async def get_channel():
+        raise AssertionError("no send expected")
+    done = set()
+    asyncio.run(BOT.run_missed_checks(at(2026, 11, 17, 9, 55), done, tmp_path, get_channel))
+    assert done == {("open", date(2026, 11, 17))}

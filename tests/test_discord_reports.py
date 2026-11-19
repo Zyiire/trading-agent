@@ -41,7 +41,7 @@ ACCOUNT = {"facts": [], "data": {"equity": 100412.37, "day_change": 0.0041, "hal
 def test_open_report_with_orders_today(ctx, monkeypatch):
     fake_tools(monkeypatch, {
         "recent_trades": {"facts": [], "data": {"orders": [
-            {"day": "2026-11-17", "fact": "On Nov 17 Stan bought 52.31 SPY at $663.57 (filled)."},
+            {"day": "2026-11-17", "fact": "On Nov 17 (today) Stan bought 52.31 SPY at $663.57 (filled)."},
             {"day": "2026-11-13", "fact": "On Nov 13 Stan bought 1 QQQ at $600.00 (filled)."}]}},
         "trading_log": {"facts": [], "data": {"notes": []}},
         "account": ACCOUNT})
@@ -167,3 +167,9 @@ def test_bat_files_save_the_code_then_notify(bat, job):
     assert f"echo Exit code: %CODE% >> data\\{R.LOG_FILES[job]}" in text
     assert f"%PY% -m agent.discord_bot.notify {job} %CODE% >> data\\{R.LOG_FILES[job]} 2>&1" in text
     assert text.index('set "CODE=%errorlevel%"') < text.index("agent.discord_bot.notify")
+
+
+def test_notify_bad_arguments_exit_zero(capsys):
+    assert N.main(["bogus", "x"]) == 0
+    assert "bad arguments" in capsys.readouterr().out
+    assert N.main([]) == 0

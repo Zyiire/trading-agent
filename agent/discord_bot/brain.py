@@ -11,6 +11,7 @@ import sys
 
 import httpx
 
+from agent.config import ConfigError
 from agent.discord_bot.tools import ToolContext, run_tool, tool_specs
 from agent.stan.persona import STAN
 
@@ -18,6 +19,15 @@ MAX_TOOL_CALLS = 8
 NUM_CTX = 8192
 NOT_RUNNING = "My brain isn't running. Start Ollama on the PC and ask again."
 EMPTY = "I couldn't finish that answer. Try asking another way."
+BAD_BODY = "My brain sent back something I couldn't read. Try again in a minute."
+TIMEOUT = "My brain took too long to answer. Try again in a minute."
+MODEL_MISSING_PREFIX = "My brain model isn't downloaded yet."
+HTTP_PROBLEM_PREFIX = "My brain had a problem (HTTP"
+
+
+def is_fixed_reply(text: str) -> bool:
+    """True for the canned problem lines, which shouldn't be remembered as things Stan said."""
+    return text in (NOT_RUNNING, EMPTY, BAD_BODY, TIMEOUT) or text.startswith((MODEL_MISSING_PREFIX, HTTP_PROBLEM_PREFIX))
 
 RULES = """How you answer Zy in Discord:
 - Always call the tools that answer the question before replying. Never say you will check later. Any question about money, holdings, trades, school results, the schedule or readiness for real money needs at least one tool call.
@@ -81,16 +91,19 @@ class Brain:
                     calls += 1
                     out = run_tool(self.ctx, name, args) if calls <= MAX_TOOL_CALLS else \
                         {"error": "Too many lookups for one answer. Answer with what you have."}
-                    messages.append({"role": "tool", "tool_name": name, "content": json.dumps(out)})
+                    slim = {k: out[k] for k in ("facts", "error") if k in out}   # keep `data` out of the small context window
+                    messages.append({"role": "tool", "tool_name": name, "content": json.dumps(slim)})
             return EMPTY
         except ModelMissing:
-            return f"My brain model isn't downloaded yet. On the PC, run: ollama pull {self.model}"
+            return f"{MODEL_MISSING_PREFIX} On the PC, run: ollama pull {self.model}"
         except httpx.TimeoutException:
-            return "My brain took too long to answer. Try again in a minute."
+            return TIMEOUT
         except httpx.TransportError:
             return NOT_RUNNING
+        except (ValueError, KeyError):
+            return BAD_BODY
         except httpx.HTTPStatusError as err:
-            return f"My brain had a problem (HTTP {err.response.status_code}). Try again in a minute."
+            return f"{HTTP_PROBLEM_PREFIX} {err.response.status_code}). Try again in a minute."
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -100,7 +113,11 @@ def main(argv: list[str] | None = None) -> int:
     if not question:
         print('Usage: python -m agent.discord_bot.brain "your question"')
         return 2
-    s = load_chat_settings(require_discord=False)
+    try:
+        s = load_chat_settings(require_discord=False)
+    except ConfigError as err:
+        print(err)
+        return 2
     print(Brain(ToolContext(journal_path=s.journal_path), s.model, s.ollama_url, s.thinking).reply([], question))
     return 0
 

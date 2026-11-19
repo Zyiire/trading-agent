@@ -32,6 +32,8 @@ with a free AI model that runs on this PC (Ollama), and he posts a short report 
 He can only talk and report. Trading, pausing, changing tier and studying stay in the web app
 and the automatic schedule.
 
+Already installed Stan before this? Run `pip install -r requirements.txt` again (it adds discord.py).
+
 One-time setup:
 
 1. Ollama: install it from https://ollama.com and run `ollama pull qwen3:14b` (about 9.3 GB).
@@ -46,6 +48,7 @@ One-time setup:
    the bot now and whenever you log in.
 
 - Stan answers only you, only in that channel.
+- Don't start `run_discord.bat` by hand while the **Stan Discord** task is running, or you'll get two bots.
 - Ask a question from a terminal without Discord: `python -m agent.discord_bot.brain "how did today go?"`
 - Faster but less careful brain: set `STAN_MODEL=qwen3:8b` in `.env`.
 - The bot's log is `data/discord.log`. To stop it for good: `schtasks /Delete /TN "Stan Discord" /F`

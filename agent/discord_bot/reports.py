@@ -44,7 +44,7 @@ def _open(ctx: ToolContext) -> str:
     else:
         todays = [o["fact"] for o in orders["data"].get("orders", []) if o.get("day") == today.isoformat()]
         if todays:
-            lines += todays
+            lines += [t.replace(" (today)", "") for t in todays]   # the header already says the date
         else:
             notes = run_tool(ctx, "trading_log", {"limit": 10})
             texts = [n["text"] for n in notes.get("data", {}).get("notes", []) if n.get("day") == today.isoformat()]

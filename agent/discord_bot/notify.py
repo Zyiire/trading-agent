@@ -34,7 +34,11 @@ def main(argv: list[str] | None = None, ctx: ToolContext | None = None, post=Non
     parser = argparse.ArgumentParser(description="Send a job report to Stan's Discord channel.")
     parser.add_argument("job", choices=sorted(JOB_NAMES))
     parser.add_argument("code", type=int)
-    args = parser.parse_args(argv)
+    try:
+        args = parser.parse_args(argv)
+    except SystemExit:
+        print("Couldn't send the Discord report: bad arguments (usage: notify open|study|collect EXITCODE).")
+        return 0
     try:
         settings = load_chat_settings(require_discord=False)
         if not settings.discord_ready:
