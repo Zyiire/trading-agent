@@ -23,6 +23,7 @@ from agent.stan.persona import pct, signed_pct
 from agent.stan import daytrade, qqq_trend
 from agent.stan.price_action.exam import price_action_exam
 from agent.stan import arena, portfolio
+from agent.stan.box import data as box_data, exam as box_exam_mod
 from agent.stan.strategies import stress_test
 from agent.stan.study import StudyConfig, build_panel, find_lessons, luck_test, summarize, walk_forward
 
@@ -47,6 +48,7 @@ CURRICULUM = [
     ("daytrade", "Day-trading exam: opening-range breakout"),
     ("trend", "Day-trading exam: the QQQ trend bot from the reel"),
     ("priceaction", "Day-trading exam: price action at key levels"),
+    ("box", "Strategy exam: the box breakout on 10 years of QQQ minutes"),
     ("portfolio", "Build my portfolio, one tested stage at a time"),
     ("arena", "Strategy arena: rank 16 strategies by risk tier"),
     ("report", "Write my report card"),
@@ -416,6 +418,34 @@ def run_training(
             journal.think(f"Price action passed only {pexam['checks_passed']} of {pexam['checks_total']} checks. "
                           "On these 60 days, the playbook as written doesn't pay. Next I can test its settings "
                           "one at a time, carefully, without fitting them to this one stretch.", "lesson")
+
+    # 9b. the box breakout, replayed on 10 years of QQQ 1-minute bars
+    journal.start_task("box", "Replaying the box breakout on QQQ minute bars")
+    box_db = box_data.DB_PATH
+    if demo or not box_db.exists():
+        why = "practice data has no minute bars" if demo else "I have no minute-bar file yet"
+        journal.finish_task("box", f"Skipped: {why}", failed=not demo)   # demo skips by design
+        journal.think(f"I'm skipping the box breakout exam: {why}. "
+                      "Run python -m agent.stan.box.data backfill to fetch the bars.", "fail")
+    else:
+        try:
+            journal.think(
+                "Now the box breakout from Zy's video. Mark the high and low of the 9:00 to 9:30 bars, "
+                "enter on the first 5-minute close outside the box before 10:30, stop on the other side, "
+                "target 3R, flat at 3:55, and only trade with the 15-minute trend. I replay it on QQQ "
+                "1-minute bars and compare it with what the video claimed.", "milestone")
+            bexam = box_exam_mod.box_exam(box_data.load(box_db))
+        except Exception as e:  # a bad file must not stop the term
+            journal.finish_task("box", "The box exam failed", failed=True)
+            journal.think(f"The box breakout exam hit an error and I skipped it: {e}", "fail")
+        else:
+            journal.set_meta("box_exam", bexam)
+            h = bexam["headline"]
+            journal.finish_task("box", f"{h['trades']:,} trades, {h['avg_r']:+.3f}R a trade"
+                                if h["trades"] else "No trades found")
+            for fact in bexam["facts"]:
+                journal.think(fact, "progress")
+                pause()
 
     # 10. the portfolio: four documented edges, each kept only if it helps
     journal.start_task("portfolio", "Stage 1: the trend core")
