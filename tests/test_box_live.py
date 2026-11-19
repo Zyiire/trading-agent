@@ -1093,3 +1093,96 @@ def test_sell_all_keeps_the_shares_given():
     assert tiers.sell_all(broker, "2026-11-19", lambda k, t: said.append(t), keep={"SPY": 10})
     assert sorted((o["symbol"], o["qty"]) for o in broker.orders.values()) == [("SPY", 2.5), ("TQQQ", 3.0)]
     assert any("keeping the 10" in t for t in said)
+
+
+# ---------------------------------------------------------------- live minute sources (Yahoo, IEX, SIP)
+def gapped(df, gap):
+    return df[(df.index < at(9, gap)) | (df.index >= at(9, gap + 5))]
+
+
+def test_compose_uses_yahoo_when_its_box_is_complete_and_drops_the_forming_minute():
+    full = today()
+    calls = []
+    yahoo = lambda now: (calls.append("Y"), full[full.index <= pd.Timestamp(now).floor("min")])[1]  # incl. forming
+    iex = lambda now: (calls.append("I"), gapped(upto(full, now), 10))[1]
+    now = at(9, 45, 5)
+    out = L.compose_today([("Yahoo", yahoo), ("IEX", iex)], now, log=lambda t: None)
+    assert out.attrs["source"] == "Yahoo"
+    assert out.index.max() == at(9, 44)                       # the 9:45 minute is still forming: dropped
+    assert L._box_buckets(rules.bars(out, 5)) == 6
+
+
+def test_compose_falls_back_to_iex_when_yahoo_misses_a_bucket():
+    full = today()
+    yahoo = lambda now: gapped(upto(full, now), 15)
+    iex = lambda now: upto(full, now)
+    out = L.compose_today([("Yahoo", yahoo), ("IEX", iex)], at(9, 45, 5), log=lambda t: None)
+    assert out.attrs["source"] == "IEX" and L._box_buckets(rules.bars(out, 5)) == 6
+
+
+def test_compose_takes_signal_minutes_from_the_next_source_when_the_box_source_lags():
+    full = today()
+    yahoo = lambda now: full[full.index < at(9, 42)]          # stalled after 9:41
+    iex = lambda now: gapped(upto(full, now), 0)
+    out = L.compose_today([("Yahoo", yahoo), ("IEX", iex)], at(9, 45, 5), log=lambda t: None)
+    assert out.attrs["source"] == "box from Yahoo, signal minutes from IEX"
+    assert out.index.max() == at(9, 44) and L._box_buckets(rules.bars(out, 5)) == 6
+
+
+def test_compose_survives_a_source_error():
+    full = today()
+
+    def broken(now):
+        raise ConnectionError("Yahoo down")
+    lines = []
+    out = L.compose_today([("Yahoo", broken), ("IEX", lambda now: upto(full, now))], at(9, 45, 5), log=lines.append)
+    assert out.attrs["source"] == "IEX" and any("Yahoo down" in x for x in lines)
+
+
+def test_watch_with_both_sources_incomplete_waits_then_uses_sip_after_946(book):
+    broker, full = FakeBroker(), today()
+    lines = []
+    minutes = L.TodayMinutes([("Yahoo", lambda now: gapped(upto(full, now), 10)),
+                              ("IEX", lambda now: gapped(upto(full, now), 20))], log=lines.append)
+    sip_calls = []
+    sip = lambda: (sip_calls.append(1), full[full.index < at(9, 30)])[1]
+    clock = iter([at(9, 45, 5), at(9, 46, 5)])
+    state = L.watch(broker, book, rules.bars(history(), 15), minutes, clock=lambda: next(clock),
+                    sleep=lambda s: None, log=lines.append, fetch_sip_box=sip)
+    assert sip_calls == [1] and broker.sent == [("QQQ", 500, "buy", 100.0, 108.0, CID)]
+    assert state["source"].startswith("SIP box, signal minutes from Yahoo")
+    assert any("today's minutes come from Yahoo (box incomplete on every source)" in x for x in lines)
+
+
+def test_watch_records_yahoo_as_the_source(book):
+    broker, full = FakeBroker(), today()
+    minutes = L.TodayMinutes([("Yahoo", lambda now: upto(full, now)), ("IEX", lambda now: full.iloc[:0])],
+                             log=lambda t: None)
+    clock = iter([at(9, 45, 5)])
+    state = L.watch(broker, book, rules.bars(history(), 15), minutes, clock=lambda: next(clock),
+                    sleep=lambda s: None, log=lambda t: None)
+    assert state["status"] == "sent" and state["source"] == "Yahoo" and "Minutes from Yahoo." in texts(book)
+
+
+def test_kill_switch_keeps_spy_owned_by_open_selloff_trades(book):
+    broker = TierFake()
+    broker.positions = {"SPY": 10.0, "TQQQ": 4.0}  # SPY all owned by the selloff trade; TQQQ by the tier
+    book.add_trade({"symbol": "SPY", "signal_date": "2026-11-18", "status": "open", "qty": 10, "entry_order": "x",
+                    "entry_price": 500.0})
+    book.set("start_equity", 200_000.0)               # equity $100k: the kill switch fires
+    book.set("strategy", "medium")
+    r = evening(broker, book)
+    assert r["halted"]
+    spy = sorted(o["qty"] for o in broker.orders.values() if o["symbol"] == "SPY")
+    assert spy == [10]                                # only the selloff trade's own sell, not 10 more from sell_all
+    assert [o["qty"] for o in broker.orders.values() if o["symbol"] == "TQQQ"] == [4.0]
+
+
+def test_fetch_yahoo_prepost_is_opt_in(monkeypatch):
+    import yfinance as yf
+    from agent.stan.zerodte import bars as B
+    seen = []
+    monkeypatch.setattr(yf, "download", lambda *a, **k: seen.append(k) or None)
+    assert B.fetch_yahoo("QQQ") == [] and B.fetch_yahoo("QQQ", period="1d", prepost=True) == []
+    assert (seen[0]["period"], seen[0]["prepost"]) == ("7d", False)
+    assert (seen[1]["period"], seen[1]["prepost"]) == ("1d", True)

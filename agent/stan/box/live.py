@@ -4,8 +4,10 @@
     python -m agent.stan.box.live flatten [--dry-run]   # 3:55 PM: cancel the bracket's legs, close, record the R
 
 The rules are the exam's (agent.stan.box.rules), so live trading and the report card can't drift apart.
-Today's minutes come from Alpaca's IEX feed (the free SIP feed is about 15 minutes behind); the
-15-minute trend history comes from the SIP bars in data/box_bars.db, topped up at the start of the run.
+Today's minutes come from Yahoo's 1-minute bars with pre-market first, then Alpaca's IEX feed (thin
+before 9:30), and after 9:46 the box can come from the SIP feed (the free plan is about 15 minutes
+behind); see compose_today. The 15-minute trend history comes from the SIP bars in data/box_bars.db,
+topped up at the start of the run.
 
 State lives in paper meta: `box_today` (today's box, signal, order and result) and `box_results`
 (one row a closed trade, with its R). Every decision is written to the paper log.
@@ -76,6 +78,7 @@ def step(broker, book: PaperBook, hist15: pd.DataFrame, today: pd.DataFrame, now
     d = now.date()
     day = d.isoformat()
     state = book.get("box_today")
+    source = today.attrs.get("source")
 
     def say(kind: str, text: str) -> None:
         log(text)
@@ -153,8 +156,9 @@ def step(broker, book: PaperBook, hist15: pd.DataFrame, today: pd.DataFrame, now
         if bx is None:
             return decide("no_box", f"the 9:00-9:30 box is incomplete on both feeds (IEX {got} of 6, SIP "
                                     f"{_box_buckets(five)} of 6 five-minute bars; a half day or a data gap)")
-        log(f"Box watch: IEX had only {got} of the six box bars, so the box comes from the SIP feed "
+        log(f"Box watch: the minutes had only {got} of the six box bars, so the box comes from the SIP feed "
             f"(${bx[0]:.2f} high, ${bx[1]:.2f} low).")
+        source = f"SIP box, signal minutes from {source or 'IEX'}"
     raw = rules.signal(five, bx, None)
     if raw is None:
         if _t(cutoff) >= time(10, 30):
@@ -206,7 +210,8 @@ def step(broker, book: PaperBook, hist15: pd.DataFrame, today: pd.DataFrame, now
     side = "buy" if sig.side == "long" else "sell"
     what = (f"Box breakout: {seen}. Sending a bracket order to {'buy' if side == 'buy' else 'short'} {qty} "
             f"{SYMBOL} at market, stop ${sig.stop:.2f}, target ${sig.target:.2f} (3R), risking about "
-            f"${qty * sig.risk:,.2f} ({risking}). Order id {cid}.")
+            f"${qty * sig.risk:,.2f} ({risking}). Order id {cid}."
+            + (f" Minutes from {source}." if source else ""))
     if dry_run:
         say("thought", what + " (dry run, nothing sent)")
         return True
@@ -233,7 +238,7 @@ def step(broker, book: PaperBook, hist15: pd.DataFrame, today: pd.DataFrame, now
     book.set("box_today", {"day": day, "status": "sent", "reason": seen, "box": list(bx), "signal": signal,
                            "order": {"id": cid, "qty": qty, "side": side, "stop": sig.stop, "target": sig.target,
                                      "risk": sig.risk, "equity": account.equity,
-                                     "risk_pct": round(risk_pct, 6)}})
+                                     "risk_pct": round(risk_pct, 6)}, "source": source})
     say("progress", what)
     return True
 
@@ -241,6 +246,66 @@ def step(broker, book: PaperBook, hist15: pd.DataFrame, today: pd.DataFrame, now
 def _box_buckets(five: pd.DataFrame) -> int:
     """How many of the six 9:00-9:25 five-minute bars exist."""
     return int(((five.index.hour == 9) & (five.index.minute < 30)).sum())
+
+
+def _finished(df: pd.DataFrame, now: datetime) -> pd.DataFrame:
+    """Only minutes that have ended by `now` (Yahoo's newest row can be the minute still forming)."""
+    df = rules.minute_frame(df).dropna()
+    return df[df.index + pd.Timedelta(minutes=1) <= pd.Timestamp(now)]
+
+
+def compose_today(sources, now: datetime, log: Callable[[str], None] = print) -> pd.DataFrame:
+    """Today's minutes from the first source (in order) whose six 9:00-9:25 box buckets are all there.
+
+    `sources`: [(name, fetch(now) -> minutes)], e.g. Yahoo pre-market first, then Alpaca IEX. The signal
+    minutes from 9:30 on come from the same source as the box, unless it lacks the latest finished minute;
+    then from the next source that has it. With no complete box anywhere, the minutes of the first source
+    that has the latest minute go to `step`, which waits for the SIP box after 9:46.
+    The frame's attrs["source"] names what was used."""
+    now = pd.Timestamp(now).tz_convert(ET)
+    nine = now.normalize() + pd.Timedelta(hours=9)
+    half = nine + pd.Timedelta(minutes=30)
+    latest = now.floor("min") - pd.Timedelta(minutes=1)
+    got = []
+    for name, fetch in sources:
+        try:
+            df = _finished(fetch(now.to_pydatetime()), now.to_pydatetime())
+        except Exception as err:
+            log(f"Box watch: couldn't read today's minutes from {name} ({type(err).__name__}: {err}).")
+            continue
+        got.append((name, df[df.index >= nine]))
+    if not got:
+        raise RuntimeError("no minute source answered")
+    has_latest = [(n, df) for n, df in got if latest in df.index]
+    box_src = next(((n, df) for n, df in got if _box_buckets(rules.bars(df[df.index < half], 5)) == 6), None)
+    if box_src is None:
+        name, df = (has_latest or got)[0]
+        out = df.copy()
+        out.attrs["source"] = f"{name} (box incomplete on every source)"
+        return out
+    name, df = box_src
+    if latest >= half and latest not in df.index and has_latest:
+        sig_name, sig_df = has_latest[0]
+        out = pd.concat([df[df.index < half], sig_df[sig_df.index >= half]])
+        out.attrs["source"] = f"box from {name}, signal minutes from {sig_name}"
+        return out
+    out = df.copy()
+    out.attrs["source"] = name
+    return out
+
+
+class TodayMinutes:
+    """fetch_today for `watch`: composes the sources each minute and logs whenever the source changes."""
+
+    def __init__(self, sources, log: Callable[[str], None] = print):
+        self.sources, self.log, self.last = sources, log, None
+
+    def __call__(self, now: datetime) -> pd.DataFrame:
+        df = compose_today(self.sources, now, self.log)
+        if df.attrs.get("source") != self.last:
+            self.last = df.attrs.get("source")
+            self.log(f"Box watch: today's minutes come from {self.last}.")
+        return df
 
 
 def watch(broker, book: PaperBook, hist15: pd.DataFrame, fetch_today: Callable[[datetime], pd.DataFrame],
@@ -619,10 +684,16 @@ def main(argv: list[str] | None = None) -> int:
         last = hist15.index.max() if len(hist15) else None
         print(f"Trend history: {len(hist15):,} 15-minute bars from the SIP feed"
               + (f", last one {last:%Y-%m-%d %H:%M}." if last is not None else "."))
-        print("Today's minutes from 9:00 come from the IEX feed (SIP is about 15 minutes behind).")
+        print("Today's minutes from 9:00: Yahoo pre-market first, then Alpaca IEX, then the SIP box after 9:46.")
+        from agent.stan.zerodte.bars import fetch_yahoo
 
-        def fetch_today(now: datetime) -> pd.DataFrame:
+        def yahoo(now: datetime) -> pd.DataFrame:
+            return rules.minute_frame(fetch_yahoo(SYMBOL, period="1d", prepost=True))
+
+        def iex(now: datetime) -> pd.DataFrame:
             return rules.minute_frame(fetch_alpaca(client, SYMBOL, start, now, feed="iex"))
+
+        fetch_today = TodayMinutes([("Yahoo", yahoo), ("IEX", iex)])
 
         sip_box: list[pd.DataFrame] = []
 

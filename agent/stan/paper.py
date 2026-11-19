@@ -261,7 +261,7 @@ def run_evening(broker: Broker, book: PaperBook, history: dict[str, pd.DataFrame
     if account.equity <= floor and not book.get("halted", False):
         if not dry_run:
             broker.cancel_open_orders()
-        tiers.sell_all(broker, d, say, dry_run)
+        tiers.sell_all(broker, d, say, dry_run, keep=mine)   # the selloff trades' shares are sold below
         if box_qty:
             try:
                 box_live.flatten(broker, book, now, dry_run=dry_run, log=lambda text: None)
