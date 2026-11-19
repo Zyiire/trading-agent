@@ -15,8 +15,14 @@ from alpaca.data.historical.option import OptionHistoricalDataClient
 from alpaca.data.requests import OptionChainRequest, StockBarsRequest
 from alpaca.data.timeframe import TimeFrame
 from alpaca.trading.client import TradingClient
-from alpaca.trading.enums import OrderSide, QueryOrderStatus, TimeInForce
-from alpaca.trading.requests import GetOrdersRequest, MarketOrderRequest
+from alpaca.trading.enums import OrderClass, OrderSide, QueryOrderStatus, TimeInForce
+from alpaca.trading.requests import (
+    GetOrderByIdRequest,
+    GetOrdersRequest,
+    MarketOrderRequest,
+    StopLossRequest,
+    TakeProfitRequest,
+)
 
 from agent.broker.base import (
     AccountInfo,
@@ -41,6 +47,15 @@ def _f(value) -> float | None:
 
 def _enum_text(value) -> str:
     return str(getattr(value, "value", value))
+
+
+def _not_found(err: Exception) -> bool:
+    return "404" in str(err) or "not found" in str(err).lower() or "does not exist" in str(err).lower()
+
+
+# Order statuses that can't change any more; anything else may still fill, so it can be cancelled.
+FINAL_STATUSES = {"filled", "canceled", "expired", "rejected", "replaced", "pending_cancel", "done_for_day",
+                  "stopped", "suspended"}
 
 
 class AlpacaBroker:
@@ -191,6 +206,7 @@ class AlpacaBroker:
             filled_avg_price=_f(o.filled_avg_price),
             filled_at=o.filled_at,
             submitted_at=getattr(o, "submitted_at", None),
+            order_type=_enum_text(getattr(o, "order_type", None)) if getattr(o, "order_type", None) else None,
         )
 
     def submit_open_order(self, symbol: str, qty: int, side: str, client_order_id: str) -> OrderInfo:
@@ -223,9 +239,81 @@ class AlpacaBroker:
         try:
             return self._order_info(self._trading.get_order_by_client_id(client_order_id))
         except Exception as err:  # Alpaca answers 404 for an unknown client id
-            if "404" in str(err) or "not found" in str(err).lower():
+            if _not_found(err):
                 return None
             raise
+
+    # ----- box breakout (agent.stan.box.live) -----
+    def submit_bracket_order(self, symbol: str, qty: int, side: str, stop: float, target: float,
+                             client_order_id: str) -> OrderInfo:
+        """A market entry with a stop-loss and a take-profit attached (a day order, whole shares).
+        `side` "buy" opens a long, "sell" a short. Prices are rounded to cents."""
+        if not self._paper:
+            raise RuntimeError("Live trading is locked.")
+        if qty <= 0 or int(qty) != qty:
+            raise ValueError("Bracket orders need a whole number of shares.")
+        if side not in ("buy", "sell"):
+            raise ValueError(f"side must be buy or sell, not {side!r}")
+        order = self._trading.submit_order(MarketOrderRequest(
+            symbol=symbol, qty=int(qty), side=OrderSide.BUY if side == "buy" else OrderSide.SELL,
+            time_in_force=TimeInForce.DAY, order_class=OrderClass.BRACKET, client_order_id=client_order_id,
+            take_profit=TakeProfitRequest(limit_price=round(float(target), 2)),
+            stop_loss=StopLossRequest(stop_price=round(float(stop), 2)),
+        ))
+        return self._order_info(order)
+
+    def get_bracket(self, client_order_id: str) -> tuple[OrderInfo | None, list[OrderInfo]]:
+        """Read-only: a bracket's entry order and its two exit legs. (None, []) if Alpaca has no such id."""
+        try:
+            parent = self._trading.get_order_by_client_id(client_order_id)
+        except Exception as err:
+            if _not_found(err):
+                return None, []
+            raise
+        full = self._trading.get_order_by_id(parent.id, filter=GetOrderByIdRequest(nested=True))
+        return self._order_info(full), [self._order_info(leg) for leg in (getattr(full, "legs", None) or [])]
+
+    def cancel_orders(self, prefix: str) -> int:
+        """Cancel every unfinished order whose client id starts with `prefix`, and the legs under it.
+        Looks at the 100 newest orders, so a filled entry with open legs is found too."""
+        if not self._paper:
+            raise RuntimeError("Live trading is locked.")
+        if not prefix.startswith("stan-"):
+            raise ValueError("Only Stan's own orders (client ids starting 'stan-') can be cancelled.")
+        orders = self._trading.get_orders(GetOrdersRequest(status=QueryOrderStatus.ALL, nested=True, limit=100))
+        count = 0
+        for o in orders:
+            if not str(o.client_order_id).startswith(prefix):
+                continue
+            for x in [o, *(getattr(o, "legs", None) or [])]:
+                if _enum_text(x.status) in FINAL_STATUSES:
+                    continue
+                try:
+                    self._trading.cancel_order_by_id(x.id)
+                    count += 1
+                except Exception:   # it filled or finished a moment ago; the caller re-reads the fills
+                    pass
+        return count
+
+    def close_position(self, symbol: str, qty: float, client_order_id: str) -> OrderInfo | None:
+        """A day market order for `qty` shares the opposite way of the open position, with Stan's own
+        client id (so it can be found and cancelled). None if there is no position in `symbol`."""
+        if not self._paper:
+            raise RuntimeError("Live trading is locked.")
+        if qty <= 0 or int(qty) != qty:
+            raise ValueError("Closing needs a whole number of shares.")
+        try:
+            pos = self._trading.get_open_position(symbol)
+        except Exception as err:
+            if _not_found(err):
+                return None
+            raise
+        long = (_f(pos.qty) or 0.0) > 0
+        order = self._trading.submit_order(MarketOrderRequest(
+            symbol=symbol, qty=int(qty), side=OrderSide.SELL if long else OrderSide.BUY,
+            time_in_force=TimeInForce.DAY, client_order_id=client_order_id,
+        ))
+        return self._order_info(order)
 
     def recent_orders(self, limit: int = 20) -> list[OrderInfo]:
         """Read-only: the account's latest orders of any status, newest first."""

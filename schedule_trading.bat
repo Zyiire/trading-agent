@@ -1,5 +1,6 @@
 @echo off
-REM One-time setup: Stan trades at 9:35 AM every Monday to Friday, the 0DTE data collector
+REM One-time setup: Stan trades at 9:35 AM every Monday to Friday, watches for the box breakout
+REM from 9:31 to 10:31 and closes it at 3:55 PM, the 0DTE data collector
 REM runs from 9:25 AM to the close, Stan studies a new school term at 6 PM, and Stan's Discord bot
 REM runs whenever you're logged in, until you remove the tasks.
 REM Run this from the same terminal you use for Stan, so it remembers that Python.
@@ -9,6 +10,8 @@ REM   schtasks /Delete /TN "Stan open run" /F
 REM   schtasks /Delete /TN "Stan 0DTE data" /F
 REM   schtasks /Delete /TN "Stan nightly study" /F
 REM   schtasks /Delete /TN "Stan Discord" /F
+REM   schtasks /Delete /TN "Stan box run" /F
+REM   schtasks /Delete /TN "Stan box flatten" /F
 cd /d "%~dp0"
 if not exist data mkdir data
 for /f "delims=" %%p in ('where python 2^>nul') do (
@@ -21,6 +24,10 @@ schtasks /Create /TN "Stan 0DTE data" /TR "\"%~dp0run_collect.bat\"" /SC WEEKLY 
 if errorlevel 1 (echo Could not create the data task.) else (echo Done. The 0DTE data collector runs 9:25 AM to the close every weekday. Log: data\collect.log)
 schtasks /Create /TN "Stan nightly study" /TR "\"%~dp0run_study.bat\"" /SC WEEKLY /D MON,TUE,WED,THU,FRI /ST 18:00 /F
 if errorlevel 1 (echo Could not create the study task.) else (echo Done. Stan studies a new term at 6 PM every weekday. Log: data\study.log)
+schtasks /Create /TN "Stan box run" /TR "\"%~dp0run_box.bat\"" /SC WEEKLY /D MON,TUE,WED,THU,FRI /ST 09:31 /F
+if errorlevel 1 (echo Could not create the box run task.) else (echo Done. Stan watches for the box breakout from 9:31 to 10:31 AM every weekday. Log: data\box.log)
+schtasks /Create /TN "Stan box flatten" /TR "\"%~dp0run_flatten.bat\"" /SC WEEKLY /D MON,TUE,WED,THU,FRI /ST 15:55 /F
+if errorlevel 1 (echo Could not create the box flatten task.) else (echo Done. Stan closes the box trade at 3:55 PM every weekday. Log: data\flatten.log)
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0schedule_discord.ps1"
 if errorlevel 1 (echo Could not create the Discord task.)
 pause
